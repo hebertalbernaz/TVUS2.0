@@ -1,0 +1,186 @@
+/* REGRAS EXCLUSIVAS DE IMPRESSÃO (PDF) */
+@media print {
+  
+  /* 1. ZERA margens da folha para esconder Data, Hora, Título e URL (Localhost) */
+  @page {
+    margin: 0mm; 
+    size: auto;
+  }
+
+  /* 2. Esconde a interface do programa */
+  body * {
+    visibility: hidden;
+  }
+  
+  .no-print, .no-print * {
+    display: none !important;
+  }
+
+  /* 3. Mostra APENAS o relatório */
+  #printable-report, #printable-report * {
+    visibility: visible;
+  }
+
+  /* 4. Configura o container principal */
+  #printable-report {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    /* 🔴 AQUI É O TRUQUE: Adicionamos o espaçamento que tiramos da @page */
+    padding: 1.5cm 1.5cm 1.5cm 1.5cm; 
+    box-sizing: border-box; /* Garante que o padding não estoure a largura */
+    
+    background: white;
+    color: black;
+    font-family: 'Arial', sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  /* --- ESTILOS DO LAUDO (Mantendo o layout profissional que fizemos) --- */
+  
+  .report-table { width: 100%; border-collapse: collapse; }
+  .report-table thead { display: table-header-group; }
+  .report-table tbody { display: table-row-group; }
+
+  /* Ajuste do cabeçalho para não ficar muito colado no topo */
+  .report-header-cell {
+    padding-bottom: 15px;
+    border-bottom: 2px solid #000;
+    margin-bottom: 25px;
+  }
+
+  .header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .header-logo img {
+    max-height: 110px; /* Um pouco maior */
+    max-width: 280px;
+    object-fit: contain;
+  }
+
+  .header-info {
+    text-align: right;
+    font-size: 10pt;
+    padding-left: 20px;
+  }
+
+  .clinic-name {
+    font-size: 18pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: 0 0 8px 0;
+    color: #222;
+  }
+
+  .prof-info p { margin: 1px 0; color: #444; }
+  
+  .prof-info .ref-vet {
+    margin-top: 10px;
+    padding-top: 6px;
+    border-top: 1px solid #eee;
+    font-weight: bold;
+    color: #000;
+  }
+
+  /* --- CONTEÚDO --- */
+  .report-content-cell { padding: 20px 0; }
+
+  .patient-box {
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 30px;
+    font-size: 10pt;
+    -webkit-print-color-adjust: exact; /* Força a cor de fundo cinza a aparecer */
+    print-color-adjust: exact;
+  }
+
+  .pb-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .pb-row:last-child { margin-bottom: 0; }
+
+  .report-title {
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 16pt;
+    font-weight: bold;
+    margin: 20px 0 30px 0;
+    text-decoration: underline;
+    letter-spacing: 1px;
+  }
+
+  /* ÓRGÃOS */
+  .organ-section { margin-bottom: 25px; }
+  .organ-title {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    color: #000;
+    border-left: 4px solid #888;
+    padding-left: 8px;
+  }
+  .organ-text {
+    text-align: justify;
+    line-height: 1.6;
+    margin-left: 12px;
+  }
+  .ref-value {
+    font-size: 9pt;
+    color: #666;
+    font-style: italic;
+    margin-top: 4px;
+    margin-left: 12px;
+  }
+
+  /* IMAGENS */
+  .images-section { margin-top: 40px; border-top: 1px dashed #ccc; padding-top: 20px; }
+  .images-title { text-align: center; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
+  
+  .print-image-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  
+  .print-image-item {
+    break-inside: avoid; /* Tenta não quebrar a imagem ao meio */
+  }
+
+  .print-image-item img {
+    width: 100%;
+    height: 220px;
+    object-fit: contain;
+    border: 1px solid #eee;
+    background-color: #000; /* Fundo preto para ultrassom */
+  }
+
+  /* ASSINATURA */
+  .signature-box {
+    margin-top: 60px;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .signature-box img {
+    max-height: 90px;
+    display: block;
+    margin: 0 auto;
+  }
+  .signature-line {
+    width: 350px;
+    border-top: 1px solid #000;
+    margin: 5px auto;
+  }
+
+  .avoid-break { page-break-inside: avoid; }
+}
