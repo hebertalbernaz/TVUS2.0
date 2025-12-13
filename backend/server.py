@@ -204,12 +204,6 @@ async def _ensure_indexes(db):
 @app.on_event("startup")
 async def on_startup():
     if not settings.mongo_url:
-
-    await db.templates.create_index([("template_id", ASCENDING)], unique=True)
-    await db.templates.create_index([("lang", ASCENDING)])
-    await db.templates.create_index([("exam_type", ASCENDING)])
-    await db.templates.create_index([("organ", ASCENDING)])
-
         raise RuntimeError(
             "MONGO_URL is not set. Create /app/backend/.env with MONGO_URL or set env var."
         )
