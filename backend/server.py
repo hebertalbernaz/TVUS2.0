@@ -171,11 +171,6 @@ class TemplateUpdate(BaseModel):
     lang: Optional[Literal["pt", "en"]] = None
     exam_type: Optional[str] = Field(default=None, max_length=80)
 
-    await db.templates.create_index([("template_id", ASCENDING)], unique=True)
-    await db.templates.create_index([("lang", ASCENDING)])
-    await db.templates.create_index([("exam_type", ASCENDING)])
-    await db.templates.create_index([("organ", ASCENDING)])
-
 
 class Template(TemplateBase):
     template_id: str
