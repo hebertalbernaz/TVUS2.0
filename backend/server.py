@@ -200,6 +200,17 @@ async def _ensure_indexes(db):
     await db.images.create_index([("patient_id", ASCENDING)])
     await db.images.create_index([("sha256", ASCENDING)])
 
+    await db.templates.create_index([("template_id", ASCENDING)], unique=True)
+    await db.templates.create_index([("lang", ASCENDING)])
+    await db.templates.create_index([("exam_type", ASCENDING)])
+    await db.templates.create_index([("organ", ASCENDING)])
+    # Unique natural key for idempotent seeding
+    await db.templates.create_index(
+        [("lang", ASCENDING), ("exam_type", ASCENDING), ("organ", ASCENDING), ("title", ASCENDING)],
+        unique=True,
+    )
+
+
 
 @app.on_event("startup")
 async def on_startup():
