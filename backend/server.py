@@ -151,6 +151,34 @@ class ImageMeta(BaseModel):
     dicom_meta: Optional[Dict[str, Any]] = None
 
 
+
+class TemplateBase(BaseModel):
+    organ: str = Field(default="", max_length=120, description="Estrutura/órgão/segmento do exame")
+    title: str = Field(min_length=1, max_length=120, description="Nome curto do modelo (ex: Normal)")
+    text: str = Field(min_length=1, max_length=20000)
+    lang: Literal["pt", "en"] = "pt"
+    exam_type: Optional[str] = Field(default=None, max_length=80, description="Opcional: tipo de exame (ex: ultrasound_abd)")
+
+
+class TemplateCreate(TemplateBase):
+    pass
+
+
+class TemplateUpdate(BaseModel):
+    organ: Optional[str] = Field(default=None, max_length=120)
+    title: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    text: Optional[str] = Field(default=None, min_length=1, max_length=20000)
+    lang: Optional[Literal["pt", "en"]] = None
+    exam_type: Optional[str] = Field(default=None, max_length=80)
+
+
+class Template(TemplateBase):
+    template_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+
 # -----------------------------
 # Mongo helpers
 # -----------------------------
