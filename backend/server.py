@@ -157,8 +157,9 @@ class ImageMeta(BaseModel):
 
 def _mongo_db(client: AsyncIOMotorClient):
     # If db is included in URL, motor sets default_database.
-    # Otherwise fallback to 'tvusvet'.
-    return client.get_default_database() or client["tvusvet"]
+    # IMPORTANT: Database objects do not support truthiness checks, so compare with None.
+    default_db = client.get_default_database()
+    return default_db if default_db is not None else client["tvusvet"]
 
 
 async def _ensure_indexes(db):
