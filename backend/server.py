@@ -428,6 +428,273 @@ async def delete_exam(exam_id: str):
     return {"deleted": True, "exam_id": exam_id}
 
 
+
+
+# -----------------------------
+# Templates (Textos padrão)
+# -----------------------------
+
+@app.post("/api/templates", response_model=Template)
+async def create_template(payload: TemplateCreate = Body(...)):
+    now = utc_now()
+    tpl = {
+        "template_id": new_uuid("tpl"),
+        **payload.model_dump(),
+        "created_at": now,
+        "updated_at": now,
+    }
+    try:
+        await db().templates.insert_one(tpl)
+    except DuplicateKeyError:
+        raise HTTPException(status_code=400, detail="Duplicate template_id")
+    return Template(**clean(tpl))
+
+
+@app.get("/api/templates", response_model=List[Template])
+async def list_templates(
+    lang: Optional[Literal["pt", "en"]] = Query(default=None),
+    exam_type: Optional[str] = Query(default=None),
+    organ: Optional[str] = Query(default=None),
+    q: Optional[str] = Query(default=None, description="Search in title/text"),
+    limit: int = Query(default=200, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+):
+    selector: Dict[str, Any] = {}
+    if lang:
+        selector["lang"] = lang
+    if exam_type:
+        selector["exam_type"] = exam_type
+    if organ:
+        selector["organ"] = organ
+    if q:
+        selector["$or"] = [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"text": {"$regex": q, "$options": "i"}},
+        ]
+
+    cursor = (
+        db()
+        .templates.find(selector, {"_id": 0})
+        .sort([("organ", ASCENDING), ("title", ASCENDING)])
+        .skip(offset)
+        .limit(limit)
+    )
+    return [Template(**d) async for d in cursor]
+
+
+@app.get("/api/templates/{template_id}", response_model=Template)
+async def get_template(template_id: str):
+    doc = await db().templates.find_one({"template_id": template_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return Template(**doc)
+
+
+@app.patch("/api/templates/{template_id}", response_model=Template)
+async def update_template(template_id: str, payload: TemplateUpdate = Body(...)):
+    patch = {k: v for k, v in payload.model_dump().items() if v is not None}
+    patch["updated_at"] = utc_now()
+
+    result = await db().templates.find_one_and_update(
+        {"template_id": template_id},
+        {"$set": patch},
+        projection={"_id": 0},
+        return_document=True,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    return Template(**result)
+
+
+@app.delete("/api/templates/{template_id}")
+async def delete_template(template_id: str):
+    await db().templates.delete_one({"template_id": template_id})
+    return {"deleted": True, "template_id": template_id}
+
+
+@app.post("/api/templates/seed")
+async def seed_default_templates():
+    """Cria um conjunto de textos padrão para testes fluídos (idempotente)."""
+    now = utc_now()
+
+    defaults: List[Dict[str, Any]] = []
+
+    # Ultrasound Abdominal (vet) – textos base por órgão
+    usg_organs = [
+        "Fígado",
+        "Vesícula Biliar",
+        "Baço",
+        "Rim Direito",
+        "Rim Esquerdo",
+        "Vesícula Urinária",
+        "Estômago",
+        "Duodeno",
+        "Jejuno",
+        "Íleo",
+        "Cólon",
+        "Pâncreas",
+        "Adrenais",
+        "Linfonodos",
+        "Próstata",
+        "Testículo Direito",
+        "Testículo Esquerdo",
+        "Útero",
+        "Ovário Direito",
+        "Ovário Esquerdo",
+    ]
+
+    base_normal = {
+        "Fígado": "Fígado com dimensões preservadas, contornos regulares e ecotextura homogênea. Vascularização e vasos intra-hepáticos preservados.",
+        "Vesícula Biliar": "Vesícula biliar com paredes finas e regulares. Conteúdo anecogênico, sem sedimentos ou imagens compatíveis com colelitíase.",
+        "Baço": "Baço com dimensões preservadas, contornos regulares e ecotextura homogênea característica.",
+        "Rim Direito": "Rim direito com dimensões preservadas, contornos regulares. Relação córtico-medular preservada, sem sinais de pieloectasia.",
+        "Rim Esquerdo": "Rim esquerdo com dimensões preservadas, contornos regulares. Relação córtico-medular preservada, sem sinais de pieloectasia.",
+        "Vesícula Urinária": "Vesícula urinária moderadamente repleta, paredes finas e regulares. Conteúdo predominantemente anecogênico, sem sedimentos significativos.",
+        "Estômago": "Estômago com conteúdo compatível com ingesta. Parede com estratificação preservada, sem espessamentos focais.",
+        "Duodeno": "Duodeno com parede de espessura e estratificação preservadas. Motilidade presente.",
+        "Jejuno": "Jejuno com parede de espessura e estratificação preservadas. Motilidade presente.",
+        "Íleo": "Íleo com parede de espessura e estratificação preservadas. Motilidade presente.",
+        "Cólon": "Cólon com conteúdo fecal/gasoso. Parede com estratificação preservada.",
+        "Pâncreas": "Pâncreas visualizado parcialmente, com contornos regulares e ecogenicidade preservada.",
+        "Adrenais": "Adrenais com dimensões e morfologia preservadas, sem formações nodulares evidentes.",
+        "Linfonodos": "Linfonodos abdominais sem aumento significativo, com morfologia preservada.",
+        "Próstata": "Próstata com dimensões e ecotextura preservadas, sem alterações focais.",
+        "Testículo Direito": "Testículo direito com dimensões e ecotextura preservadas, sem lesões focais.",
+        "Testículo Esquerdo": "Testículo esquerdo com dimensões e ecotextura preservadas, sem lesões focais.",
+        "Útero": "Útero sem alterações significativas à ultrassonografia, sem conteúdo luminal evidente.",
+        "Ovário Direito": "Ovário direito com dimensões preservadas, com folículos de aspecto fisiológico.",
+        "Ovário Esquerdo": "Ovário esquerdo com dimensões preservadas, com folículos de aspecto fisiológico.",
+    }
+
+    for organ_name in usg_organs:
+        defaults.append(
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": organ_name,
+                "title": "Normal",
+                "text": base_normal.get(organ_name, "Estrutura com aspecto ultrassonográfico preservado, sem alterações significativas."),
+                "lang": "pt",
+                "exam_type": "ultrasound_abd",
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
+
+    # Seções comuns (Conclusão / Impressões Diagnósticas)
+    defaults.extend(
+        [
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Impressões Diagnósticas",
+                "title": "Sem alterações significativas",
+                "text": "Não foram observadas alterações ultrassonográficas significativas no exame realizado.",
+                "lang": "pt",
+                "exam_type": "ultrasound_abd",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Conclusão",
+                "title": "Sugestão",
+                "text": "Correlacionar os achados com histórico clínico, exame físico e exames laboratoriais. Reavaliação conforme evolução clínica.",
+                "lang": "pt",
+                "exam_type": None,
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+    )
+
+    # ECG / Ecocardiograma – seções principais
+    defaults.extend(
+        [
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Ritmo e Frequência",
+                "title": "Ritmo sinusal",
+                "text": "Ritmo sinusal com frequência cardíaca dentro do esperado para a espécie/porte, sem arritmias evidentes no traçado analisado.",
+                "lang": "pt",
+                "exam_type": "ecg",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Conclusão",
+                "title": "Sem alterações",
+                "text": "Eletrocardiograma sem alterações significativas no momento da avaliação.",
+                "lang": "pt",
+                "exam_type": "ecg",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Impressões Diagnósticas",
+                "title": "Sem evidências de cardiopatia",
+                "text": "Não há evidências eletrocardiográficas sugestivas de cardiopatia no momento, considerando as limitações do método.",
+                "lang": "pt",
+                "exam_type": "ecg",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Conclusão",
+                "title": "Função preservada",
+                "text": "Ecocardiograma com parâmetros dentro dos limites de normalidade, sem alterações estruturais significativas.",
+                "lang": "pt",
+                "exam_type": "echocardiogram",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Impressões Diagnósticas",
+                "title": "Sem alterações relevantes",
+                "text": "Não foram observadas alterações ecocardiográficas relevantes no exame realizado.",
+                "lang": "pt",
+                "exam_type": "echocardiogram",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+    )
+
+    # Inserção idempotente: usa upsert por chave natural (lang + exam_type + organ + title)
+    inserted = 0
+    updated = 0
+    for tpl in defaults:
+        key = {
+            "lang": tpl["lang"],
+            "exam_type": tpl.get("exam_type"),
+            "organ": tpl["organ"],
+            "title": tpl["title"],
+        }
+        res = await db().templates.update_one(
+            key,
+            {
+                "$setOnInsert": {
+                    "template_id": tpl["template_id"],
+                    "created_at": tpl["created_at"],
+                },
+                "$set": {
+                    "text": tpl["text"],
+                    "updated_at": now,
+                },
+            },
+            upsert=True,
+        )
+        if res.upserted_id is not None:
+            inserted += 1
+        elif res.modified_count:
+            updated += 1
+
+    total = await db().templates.count_documents({})
+    return {"seeded": True, "inserted": inserted, "updated": updated, "total_templates": total}
+
 # -----------------------------
 # Images (PNG/JPG/DICOM)
 # -----------------------------
