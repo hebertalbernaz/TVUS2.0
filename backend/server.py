@@ -526,10 +526,12 @@ async def seed_default_templates():
     defaults: List[Dict[str, Any]] = []
 
     # Ultrasound Abdominal (vet) – textos base por órgão
+    # (cobre a lista mais comum do app + variações para ficar fluido nos testes)
     usg_organs = [
         "Fígado",
         "Vesícula Biliar",
         "Baço",
+        "Rins",
         "Rim Direito",
         "Rim Esquerdo",
         "Vesícula Urinária",
@@ -537,14 +539,19 @@ async def seed_default_templates():
         "Duodeno",
         "Jejuno",
         "Íleo",
+        "Ceco",
         "Cólon",
         "Pâncreas",
         "Adrenais",
         "Linfonodos",
+        # reprodutivo
         "Próstata",
+        "Testículos",
         "Testículo Direito",
         "Testículo Esquerdo",
         "Útero",
+        "Corpo Uterino",
+        "Ovários",
         "Ovário Direito",
         "Ovário Esquerdo",
     ]
