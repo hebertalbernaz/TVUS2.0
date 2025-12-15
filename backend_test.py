@@ -426,11 +426,13 @@ class TVUSVETAPITester:
             has_expected_types = expected_types.intersection(exam_types)
             
             if no_mongo_ids and has_template_ids and has_expected_types:
+                # Sort exam types, handling None values
+                sorted_types = sorted([t for t in exam_types if t is not None]) + ([None] if None in exam_types else [])
                 return self.log_test("Get All Templates", True, 
-                                   f"Found {len(data)} templates, exam types: {sorted(exam_types)}")
+                                   f"Found {len(data)} templates, exam types: {sorted_types}")
             else:
                 return self.log_test("Get All Templates", False, 
-                                   f"Issues: no_mongo_ids={no_mongo_ids}, has_template_ids={has_template_ids}, exam_types={exam_types}")
+                                   f"Issues: no_mongo_ids={no_mongo_ids}, has_template_ids={has_template_ids}, exam_types={list(exam_types)}")
         else:
             return self.log_test("Get All Templates", False, f"Status: {status}, Data: {type(data)}, Length: {len(data) if isinstance(data, list) else 'N/A'}")
 
