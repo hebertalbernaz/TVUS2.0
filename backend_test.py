@@ -341,6 +341,187 @@ class TVUSVETAPITester:
         else:
             return self.log_test("Delete Image", False, f"Status: {status}, Data: {data}")
 
+    def test_seed_templates_initial(self) -> Dict[str, Any]:
+        """Test initial template seeding"""
+        success, data, status = self.run_request("POST", "/api/templates/seed")
+        
+        if success and status == 200:
+            initial_count = data.get("total_templates", 0)
+            inserted = data.get("inserted", 0)
+            updated = data.get("updated", 0)
+            
+            self.log_test("Seed Templates Initial", True, 
+                         f"Total: {initial_count}, Inserted: {inserted}, Updated: {updated}")
+            return data
+        else:
+            self.log_test("Seed Templates Initial", False, f"Status: {status}, Data: {data}")
+            return {}
+
+    def test_seed_templates_idempotency(self) -> bool:
+        """Test template seeding idempotency (should not create duplicates)"""
+        # First call
+        success1, data1, status1 = self.run_request("POST", "/api/templates/seed")
+        if not success1:
+            return self.log_test("Seed Templates Idempotency", False, f"First call failed: {status1}")
+        
+        initial_total = data1.get("total_templates", 0)
+        
+        # Second call - should be idempotent
+        success2, data2, status2 = self.run_request("POST", "/api/templates/seed")
+        if not success2:
+            return self.log_test("Seed Templates Idempotency", False, f"Second call failed: {status2}")
+        
+        second_total = data2.get("total_templates", 0)
+        second_inserted = data2.get("inserted", 0)
+        
+        # Should have same total count and 0 new insertions
+        if second_total == initial_total and second_inserted == 0:
+            return self.log_test("Seed Templates Idempotency", True, 
+                               f"No duplicates created. Total remained: {second_total}")
+        else:
+            return self.log_test("Seed Templates Idempotency", False, 
+                               f"Expected same total ({initial_total}) and 0 insertions, got total: {second_total}, inserted: {second_inserted}")
+
+    def test_get_templates_by_exam_type(self) -> bool:
+        """Test template filtering by exam_type"""
+        exam_types = ["radiography", "tomography", "ophthalmo_human", "ultrasound_abd"]
+        all_passed = True
+        
+        for exam_type in exam_types:
+            success, data, status = self.run_request("GET", f"/api/templates?exam_type={exam_type}")
+            
+            if success and isinstance(data, list):
+                # Verify all returned templates have the correct exam_type
+                correct_type = all(template.get("exam_type") == exam_type for template in data)
+                
+                # Verify no _id fields and template_id present
+                no_mongo_ids = all("_id" not in template for template in data)
+                has_template_ids = all("template_id" in template for template in data)
+                
+                if correct_type and no_mongo_ids and has_template_ids:
+                    self.log_test(f"Get Templates - {exam_type}", True, 
+                                f"Found {len(data)} templates, no _id fields, all have template_id")
+                else:
+                    self.log_test(f"Get Templates - {exam_type}", False, 
+                                f"Issues: correct_type={correct_type}, no_mongo_ids={no_mongo_ids}, has_template_ids={has_template_ids}")
+                    all_passed = False
+            else:
+                self.log_test(f"Get Templates - {exam_type}", False, f"Status: {status}, Data type: {type(data)}")
+                all_passed = False
+        
+        return all_passed
+
+    def test_get_all_templates(self) -> bool:
+        """Test getting all templates without filters"""
+        success, data, status = self.run_request("GET", "/api/templates")
+        
+        if success and isinstance(data, list) and len(data) > 0:
+            # Verify no _id fields and template_id present
+            no_mongo_ids = all("_id" not in template for template in data)
+            has_template_ids = all("template_id" in template for template in data)
+            
+            # Check for expected exam types
+            exam_types = set(template.get("exam_type") for template in data)
+            expected_types = {"radiography", "tomography", "ophthalmo_human", "ultrasound_abd", "ecg", "echocardiogram", None}
+            has_expected_types = expected_types.intersection(exam_types)
+            
+            if no_mongo_ids and has_template_ids and has_expected_types:
+                return self.log_test("Get All Templates", True, 
+                                   f"Found {len(data)} templates, exam types: {sorted(exam_types)}")
+            else:
+                return self.log_test("Get All Templates", False, 
+                                   f"Issues: no_mongo_ids={no_mongo_ids}, has_template_ids={has_template_ids}, exam_types={exam_types}")
+        else:
+            return self.log_test("Get All Templates", False, f"Status: {status}, Data: {type(data)}, Length: {len(data) if isinstance(data, list) else 'N/A'}")
+
+    def test_template_response_format(self) -> bool:
+        """Test that template responses have correct format"""
+        success, data, status = self.run_request("GET", "/api/templates?limit=5")
+        
+        if success and isinstance(data, list) and len(data) > 0:
+            template = data[0]
+            
+            # Required fields
+            required_fields = ["template_id", "organ", "title", "text", "lang", "created_at", "updated_at"]
+            has_required = all(field in template for field in required_fields)
+            
+            # Should not have _id
+            no_mongo_id = "_id" not in template
+            
+            # Check data types
+            correct_types = (
+                isinstance(template.get("template_id"), str) and
+                isinstance(template.get("organ"), str) and
+                isinstance(template.get("title"), str) and
+                isinstance(template.get("text"), str) and
+                isinstance(template.get("lang"), str)
+            )
+            
+            if has_required and no_mongo_id and correct_types:
+                return self.log_test("Template Response Format", True, 
+                                   f"All required fields present, no _id, correct types")
+            else:
+                return self.log_test("Template Response Format", False, 
+                                   f"Issues: has_required={has_required}, no_mongo_id={no_mongo_id}, correct_types={correct_types}")
+        else:
+            return self.log_test("Template Response Format", False, f"Status: {status}, No templates found")
+
+    def test_create_custom_template(self) -> Optional[str]:
+        """Test creating a custom template"""
+        template_data = {
+            "organ": "Test Organ",
+            "title": f"Test Template {datetime.now().strftime('%H%M%S')}",
+            "text": "This is a test template for API testing",
+            "lang": "pt",
+            "exam_type": "ultrasound_abd"
+        }
+        
+        success, data, status = self.run_request(
+            "POST", "/api/templates",
+            json=template_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        if success and status == 200 and "template_id" in data:
+            template_id = data["template_id"]
+            
+            # Verify no _id field
+            has_mongo_id = "_id" in data
+            if has_mongo_id:
+                self.log_test("Create Template - No ObjectId", False, "Found _id field in response")
+            else:
+                self.log_test("Create Template - No ObjectId", True, "No _id field found")
+            
+            return self.log_test("Create Custom Template", True, f"ID: {template_id}") and template_id
+        else:
+            self.log_test("Create Custom Template", False, f"Status: {status}, Data: {data}")
+            return None
+
+    def test_get_template(self, template_id: str) -> bool:
+        """Test get single template"""
+        success, data, status = self.run_request("GET", f"/api/templates/{template_id}")
+        
+        if success and data.get("template_id") == template_id:
+            # Verify no _id field
+            has_mongo_id = "_id" in data
+            if has_mongo_id:
+                self.log_test("Get Template - No ObjectId", False, "Found _id field in response")
+            else:
+                self.log_test("Get Template - No ObjectId", True, "No _id field found")
+            
+            return self.log_test("Get Template", True, f"Retrieved template: {data.get('title')}")
+        else:
+            return self.log_test("Get Template", False, f"Status: {status}, Data: {data}")
+
+    def test_delete_template(self, template_id: str) -> bool:
+        """Test template deletion"""
+        success, data, status = self.run_request("DELETE", f"/api/templates/{template_id}")
+        
+        if success and data.get("deleted") is True:
+            return self.log_test("Delete Template", True, f"Deleted template: {template_id}")
+        else:
+            return self.log_test("Delete Template", False, f"Status: {status}, Data: {data}")
+
     def cleanup_resources(self):
         """Clean up created test resources"""
         print("\n🧹 Cleaning up test resources...")
