@@ -666,6 +666,130 @@ async def seed_default_templates():
                 "exam_type": "echocardiogram",
                 "created_at": now,
                 "updated_at": now,
+
+
+    # Radiografia / Tomografia – textos base para testes
+    defaults.extend(
+        [
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Projeções Realizadas",
+                "title": "Padrão",
+                "text": "Foram realizadas as projeções ortogonais usuais para a região avaliada (quando aplicável).",
+                "lang": "pt",
+                "exam_type": "radiography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Tórax - Campos Pulmonares",
+                "title": "Sem alterações",
+                "text": "Campos pulmonares sem evidências radiográficas de alterações significativas no momento da avaliação.",
+                "lang": "pt",
+                "exam_type": "radiography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Tórax - Silhueta Cardíaca",
+                "title": "Sem alterações",
+                "text": "Silhueta cardíaca com dimensões dentro do esperado para a espécie/porte, sem sinais radiográficos sugestivos de cardiomegalia.",
+                "lang": "pt",
+                "exam_type": "radiography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Abdômen",
+                "title": "Sem alterações",
+                "text": "Padrão seroso preservado, sem sinais radiográficos de efusão abdominal. Alças intestinais sem distensão significativa.",
+                "lang": "pt",
+                "exam_type": "radiography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Conclusão",
+                "title": "Sugestão",
+                "text": "Recomenda-se correlação com clínica e, se necessário, complementação com ultrassonografia/TC e exames laboratoriais.",
+                "lang": "pt",
+                "exam_type": "radiography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Informações",
+                "title": "Técnica",
+                "text": "Exame realizado com técnica adequada, com reconstruções multiplanares quando aplicável.",
+                "lang": "pt",
+                "exam_type": "tomography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Achados",
+                "title": "Sem alterações",
+                "text": "Não foram identificados achados tomográficos significativos na região avaliada, considerando as limitações do método.",
+                "lang": "pt",
+                "exam_type": "tomography",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Conclusão",
+                "title": "Sugestão",
+                "text": "Correlacionar os achados com clínica e exames complementares. Seguimento conforme evolução.",
+                "lang": "pt",
+                "exam_type": "tomography",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+    )
+
+    # Oftalmo (humano) – defaults baseados no módulo profissional
+    defaults.extend(
+        [
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Biomicroscopia (Segmento Anterior)",
+                "title": "Normal",
+                "text": "Biomicroscopia sem alterações significativas: conjuntivas calmas, córnea transparente, câmara anterior formada, íris trófica e cristalino sem opacidades relevantes.",
+                "lang": "pt",
+                "exam_type": "ophthalmo_human",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Fundoscopia (Segmento Posterior)",
+                "title": "Normal",
+                "text": "Fundoscopia com disco óptico normocorado e bordas nítidas, mácula sem alterações, retina aplicada e vasos com relação A/V preservada.",
+                "lang": "pt",
+                "exam_type": "ophthalmo_human",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Conclusão",
+                "title": "Sem alterações",
+                "text": "Exame oftalmológico sem alterações significativas no momento da avaliação.",
+                "lang": "pt",
+                "exam_type": "ophthalmo_human",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+    )
+
             },
             {
                 "template_id": new_uuid("tpl"),
