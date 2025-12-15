@@ -790,19 +790,6 @@ async def seed_default_templates():
         ]
     )
 
-            },
-            {
-                "template_id": new_uuid("tpl"),
-                "organ": "Impressões Diagnósticas",
-                "title": "Sem alterações relevantes",
-                "text": "Não foram observadas alterações ecocardiográficas relevantes no exame realizado.",
-                "lang": "pt",
-                "exam_type": "echocardiogram",
-                "created_at": now,
-                "updated_at": now,
-            },
-        ]
-    )
 
     # Inserção idempotente: usa upsert por chave natural (lang + exam_type + organ + title)
     inserted = 0
