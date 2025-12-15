@@ -594,6 +594,30 @@ class TVUSVETAPITester:
         
         return self.get_results()
 
+    def run_template_focused_tests(self) -> Dict[str, Any]:
+        """Run template-focused tests as requested by main agent"""
+        print("🚀 Starting TVUSVET Template-Focused Backend Tests\n")
+        
+        # Basic connectivity
+        self.test_root_endpoint()
+        self.test_health_check()
+        
+        # Template seeding and management tests
+        print("\n📝 Testing Template Seeding and Management...")
+        seed_result = self.test_seed_templates_initial()
+        self.test_seed_templates_idempotency()
+        self.test_get_templates_by_exam_type()
+        self.test_get_all_templates()
+        self.test_template_response_format()
+        
+        # Custom template CRUD to verify endpoints work
+        template_id = self.test_create_custom_template()
+        if template_id:
+            self.test_get_template(template_id)
+            self.test_delete_template(template_id)
+        
+        return self.get_results()
+
     def get_results(self, error_msg: str = None) -> Dict[str, Any]:
         """Get test results summary"""
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
