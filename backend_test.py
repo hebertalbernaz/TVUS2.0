@@ -546,7 +546,22 @@ class TVUSVETAPITester:
         self.test_root_endpoint()
         self.test_health_check()
         
+        # Template seeding and management tests (focus of this iteration)
+        print("\n📝 Testing Template Management...")
+        self.test_seed_templates_initial()
+        self.test_seed_templates_idempotency()
+        self.test_get_templates_by_exam_type()
+        self.test_get_all_templates()
+        self.test_template_response_format()
+        
+        # Custom template CRUD
+        template_id = self.test_create_custom_template()
+        if template_id:
+            self.test_get_template(template_id)
+            self.test_delete_template(template_id)
+        
         # Patient CRUD tests
+        print("\n👤 Testing Patient Management...")
         patient_id = self.test_create_patient()
         if not patient_id:
             return self.get_results("Failed to create patient - stopping tests")
@@ -556,6 +571,7 @@ class TVUSVETAPITester:
         self.test_update_patient(patient_id)
         
         # Exam CRUD tests
+        print("\n🔬 Testing Exam Management...")
         exam_id = self.test_create_exam(patient_id)
         if not exam_id:
             return self.get_results("Failed to create exam - stopping tests")
@@ -565,6 +581,7 @@ class TVUSVETAPITester:
         self.test_update_exam(exam_id)
         
         # Image management tests
+        print("\n🖼️ Testing Image Management...")
         image_id = self.test_upload_image(patient_id, exam_id)
         if image_id:
             self.test_get_image_meta(image_id)
