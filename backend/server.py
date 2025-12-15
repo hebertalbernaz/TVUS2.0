@@ -666,7 +666,19 @@ async def seed_default_templates():
                 "exam_type": "echocardiogram",
                 "created_at": now,
                 "updated_at": now,
-
+            },
+            {
+                "template_id": new_uuid("tpl"),
+                "organ": "Impressões Diagnósticas",
+                "title": "Sem alterações relevantes",
+                "text": "Não foram observadas alterações ecocardiográficas relevantes no exame realizado.",
+                "lang": "pt",
+                "exam_type": "echocardiogram",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+    )
 
     # Radiografia / Tomografia – textos base para testes
     defaults.extend(
