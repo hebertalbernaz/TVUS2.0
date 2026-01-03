@@ -117,6 +117,16 @@ class DatabaseService {
       const query = pid ? { selector: { patient_id: pid } } : {};
       return await this._files(db.exams.find(query).sort({ date: 'desc' }));
   }
+
+  /**
+   * Returns prescriptions for patient.
+   * (Used by timeline; also useful for future screens.)
+   */
+  async getPrescriptions(patientId = null) {
+      const db = await getDatabase();
+      const query = patientId ? { selector: { patient_id: patientId } } : {};
+      return await this._files(db.prescriptions.find(query).sort({ date: 'desc' }));
+  }
   
   async getExam(id) { 
       const db = await getDatabase();
