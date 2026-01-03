@@ -78,7 +78,7 @@ describe('db.getPatientTimeline', () => {
       status: 'draft',
       created_at: new Date('2025-01-03T12:00:00.000Z').toISOString(),
       updated_at: new Date('2025-01-03T12:00:00.000Z').toISOString(),
-      finalized_at: '',
+      finalized_at: new Date('2025-01-03T12:00:00.000Z').toISOString(),
       finalized_by: ''
     });
 
