@@ -141,6 +141,7 @@ export default function PatientHistoryPage() {
             timeline.map((entry) => {
               const isExam = entry.collection === 'exams';
               const isPrescription = entry.collection === 'prescriptions';
+              const isLab = entry.collection === 'lab_exams';
               const { date, time } = formatDate(entry.date);
 
               if (isExam) {
