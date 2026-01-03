@@ -60,7 +60,7 @@ function LabReportView({ exam, settings, onClose }) {
       {/* Report Content */}
       <div className="max-w-4xl mx-auto p-8 print:p-0 print:max-w-none" id="lab-report-print">
         {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-border pb-4 mb-6 print:border-gray-800">
+        <div className="flex justify-between items-start border-b-2 border-border pb-4 mb-6 print:border-black">
           <div>
             {settings?.letterhead_path && (
               <img src={settings.letterhead_path} alt="Logo" className="h-16 mb-2" />
@@ -149,7 +149,7 @@ function LabReportView({ exam, settings, onClose }) {
           {settings?.signature_path && (
             <img src={settings.signature_path} alt="Assinatura" className="h-16 mx-auto mb-2" />
           )}
-          <div className="w-64 mx-auto border-t border-border pt-2 print:border-gray-800">
+          <div className="w-64 mx-auto border-t border-border pt-2 print:border-black">
             <p className="font-bold">{settings?.veterinarian_name || exam.veterinarian_name}</p>
             <p className="text-sm text-muted-foreground">CRMV: {settings?.crmv}</p>
           </div>
