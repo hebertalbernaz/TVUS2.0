@@ -32,7 +32,6 @@ export default function HomePage() {
     } catch (error) { console.error(error); }
   }, [activeScope]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadPatients(); }, [loadPatients]);
 
   const filteredPatients = patients.filter(p =>
