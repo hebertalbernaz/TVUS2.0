@@ -133,6 +133,25 @@ export function PatientCard({ patient, onUpdate }) {
         )}
 
         <div className="flex gap-2 mt-auto">
+          {/* Botão RESTAURADO: Histórico do Paciente (timeline unificada) */}
+          <Button
+            data-testid={`patient-card-history-${patient.id}`}
+            onClick={() => {
+              const baseUrl = window.location.href.split('#')[0];
+              const historyUrl = `${baseUrl}#/history/${patient.id}`;
+              window.open(
+                historyUrl,
+                'Histórico',
+                'width=700,height=900,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
+              );
+            }}
+            variant="secondary"
+            className="h-9 text-xs border border-transparent hover:border-primary/20 bg-secondary/50 hover:bg-secondary"
+            title="Histórico do paciente"
+          >
+            <FileText className="mr-2 h-3 w-3" /> Hist.
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="flex-1 h-9 text-xs shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground">
