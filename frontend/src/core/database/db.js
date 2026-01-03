@@ -60,6 +60,8 @@ const _create = async () => {
   // Create Collections with migration strategies for ALL versioned schemas
   try {
     await db.addCollections({
+      // Ensure indentation inside addCollections
+
     patients: { 
         schema: PatientSchema,
         migrationStrategies: {
