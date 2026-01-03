@@ -26,9 +26,42 @@ class DatabaseService {
   async createPatient(p) { 
       const db = await getDatabase();
       const inferredScope = p?.scope || (p?.practice === 'human' ? 'HUMAN' : 'VET');
-      const np = { ...p, scope: inferredScope, id: genId(), created_at: new Date().toISOString() }; 
-      await db.patients.insert(np);
-      return np; 
+
+      // Sanitize payload to avoid RxDB schema validation errors (e.g. weight: null)
+      const np = {
+          ...p,
+          scope: inferredScope,
+          id: genId(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+      };
+
+      // Remove null/undefined fields (RxDB does not accept null unless schema allows it)
+      Object.keys(np).forEach((k) => {
+          if (np[k] === undefined || np[k] === null) delete np[k];
+      });
+
+      // Normalize known fields
+      if ('weight' in np) {
+          const w = Number(np.weight);
+          if (Number.isNaN(w)) {
+              delete np.weight;
+          } else {
+              np.weight = w;
+          }
+      }
+      if ('birth_year' in np) {
+          // ensure string if present
+          np.birth_year = String(np.birth_year);
+      }
+
+      try {
+          await db.patients.insert(np);
+          return np;
+      } catch (error) {
+          console.error('Erro ao criar paciente (RxDB insert falhou):', error, { payload: np });
+          throw error;
+      }
   }
   
   /**
@@ -87,8 +120,32 @@ class DatabaseService {
       const db = await getDatabase();
       const doc = await db.patients.findOne(id).exec();
       if (doc) {
-          await doc.patch(d);
-          return doc.toJSON();
+          const patch = { ...d, updated_at: new Date().toISOString() };
+
+          // Remove null/undefined fields to prevent schema errors
+          Object.keys(patch).forEach((k) => {
+              if (patch[k] === undefined || patch[k] === null) delete patch[k];
+          });
+
+          if ('weight' in patch) {
+              const w = Number(patch.weight);
+              if (Number.isNaN(w)) {
+                  delete patch.weight;
+              } else {
+                  patch.weight = w;
+              }
+          }
+          if ('birth_year' in patch) {
+              patch.birth_year = String(patch.birth_year);
+          }
+
+          try {
+              await doc.patch(patch);
+              return doc.toJSON();
+          } catch (error) {
+              console.error('Erro ao atualizar paciente (RxDB patch falhou):', error, { patientId: id, patch });
+              throw error;
+          }
       }
       throw new Error('Not found');
   }
