@@ -5,11 +5,8 @@ import 'fake-indexeddb/auto';
 
 // RxDB + leader election relies on BroadcastChannel.
 // In Jest/jsdom it might be missing, so we polyfill it.
-import { BroadcastChannel } from 'broadcast-channel';
-
-if (typeof globalThis.BroadcastChannel === 'undefined') {
-  globalThis.BroadcastChannel = BroadcastChannel;
-}
+// NOTE: Node 18+/jsdom already has BroadcastChannel.
+// We should not override it (broadcast-channel library throws if you do).
 
 // RxDB + uuid may require crypto.getRandomValues
 try {
