@@ -182,7 +182,12 @@ export function PatientCard({ patient, onUpdate }) {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button onClick={loadExams} variant="secondary" className="flex-1 h-9 text-xs border border-transparent hover:border-primary/20 bg-secondary/50 hover:bg-secondary">
+          <Button
+            data-testid={`patient-card-exams-${patient.id}`}
+            onClick={loadExams}
+            variant="secondary"
+            className="flex-1 h-9 text-xs border border-transparent hover:border-primary/20 bg-secondary/50 hover:bg-secondary"
+          >
             <FileText className="mr-2 h-3 w-3" /> Exames ({examsCount})
           </Button>
         </div>
