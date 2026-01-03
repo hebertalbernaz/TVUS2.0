@@ -39,10 +39,22 @@ const _create = async () => {
       ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() }) 
       : getRxStorageDexie();
 
+  // Hash function for Jest/Node.js environment
+  const hashFunction = async (data) => {
+    try {
+      const crypto = require("crypto");
+      return crypto.createHash("sha256").update(data).digest("hex");
+    } catch (e) {
+      // Fallback for browser environments
+      return data;
+    }
+  };
+
   const db = await createRxDatabase({
-    name: 'tvusvet_db_v7', // BUMPED to V7 for Professional Ophthalmo
+    name: "tvusvet_db_v7", // BUMPED to V7 for Professional Ophthalmo
     storage: storage,
-    ignoreDuplicate: true
+    ignoreDuplicate: true,
+    hashFunction: hashFunction
   });
 
   // Create Collections with migration strategies for ALL versioned schemas
