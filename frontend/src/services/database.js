@@ -18,16 +18,57 @@ class DatabaseService {
   }
 
   // ================= PACIENTES =================
+  /**
+   * Creates patient ensuring strict segregation scope.
+   * - If caller already passed scope, keep it.
+   * - Else infer from legacy "practice" or fallback to VET.
+   */
   async createPatient(p) { 
       const db = await getDatabase();
-      const np = { ...p, id: genId(), created_at: new Date().toISOString() }; 
+      const inferredScope = p?.scope || (p?.practice === 'human' ? 'HUMAN' : 'VET');
+      const np = { ...p, scope: inferredScope, id: genId(), created_at: new Date().toISOString() }; 
       await db.patients.insert(np);
       return np; 
   }
   
-  async getPatients() { 
+  /**
+   * Returns all patients OR filtered by scope.
+   * @param {Object} [filters]
+   * @param {'VET'|'HUMAN'} [filters.scope]
+   */
+  async getPatients(filters = {}) { 
       const db = await getDatabase();
-      return await this._files(db.patients.find().sort({ name: 'asc' }));
+      const selector = {};
+      if (filters.scope) selector.scope = filters.scope;
+      return await this._files(db.patients.find({ selector }).sort({ name: 'asc' }));
+  }
+
+  /**
+   * Patient unified timeline: Exams + Prescriptions.
+   * Returns array of entries: { collection: 'exams'|'prescriptions', date, data }
+   */
+  async getPatientTimeline(patientId) {
+      const db = await getDatabase();
+      const [exams, prescriptions] = await Promise.all([
+          this._files(db.exams.find({ selector: { patient_id: patientId } })),
+          this._files(db.prescriptions.find({ selector: { patient_id: patientId } }))
+      ]);
+
+      const examEntries = (exams || []).map(e => ({
+          collection: 'exams',
+          date: e.date || e.exam_date || e.examDate || new Date().toISOString(),
+          data: e
+      }));
+
+      const rxEntries = (prescriptions || []).map(r => ({
+          collection: 'prescriptions',
+          date: r.date || new Date().toISOString(),
+          data: r
+      }));
+
+      const merged = [...examEntries, ...rxEntries];
+      merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return merged;
   }
   
   async getPatient(id) { 
