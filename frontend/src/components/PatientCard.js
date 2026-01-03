@@ -23,15 +23,16 @@ export function PatientCard({ patient, onUpdate }) {
   const [examToDelete, setExamToDelete] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => { loadExamsCount(); }, [patient.id]);
-
-  const loadExamsCount = async () => {
+  const loadExamsCount = useCallback(async () => {
     try {
       const patientExams = await db.getExams(patient.id);
       setExamsCount(patientExams.length);
       setExams(patientExams);
     } catch (e) { console.error(e); }
-  };
+  }, [patient.id]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadExamsCount(); }, [loadExamsCount]);
 
   const loadExams = async () => {
     try {
