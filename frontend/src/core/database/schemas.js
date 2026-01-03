@@ -31,8 +31,8 @@ export const SettingsSchema = {
 // --- PATIENTS ---
 export const PatientSchema = {
   title: 'patient schema',
-  // v3: bump to avoid DB6 when schema v2 on disk differs (keeps scope segregation)
-  version: 3,
+  // v2: Added "scope" for strict segregation (VET vs HUMAN)
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -317,8 +317,8 @@ export const OphthalmoSchema = {
 // --- FINANCIAL ---
 export const FinancialSchema = {
   title: 'financial schema',
-  // v2: bump to avoid DB6 when schema v1 on disk differs (keeps pro cashflow fields)
-  version: 2,
+  // v1: professional cashflow fields (status, payment_method, due_date, paid_at)
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
