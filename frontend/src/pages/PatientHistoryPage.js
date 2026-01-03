@@ -1,31 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import { db } from '@/services/database';
-import { Calendar, FileText, ImageIcon } from 'lucide-react';
+import { Calendar, FileText, ImageIcon, Pill, ArrowLeft } from 'lucide-react';
 import { getExamTypeName } from '@/lib/exam_types';
 
 export default function PatientHistoryPage() {
   const { patientId } = useParams();
+  const navigate = useNavigate();
+
   const [patient, setPatient] = useState(null);
-  const [exams, setExams] = useState([]);
+  const [timeline, setTimeline] = useState([]); // unified: exams + prescriptions
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      if (!patientId) return;
-      
-      const p = await db.getPatient(patientId);
-      setPatient(p);
+      if (!patientId) {
+        setLoading(false);
+        return;
+      }
 
-      const e = await db.getExams(patientId);
-      // Ordena do mais recente para o mais antigo
-      e.sort((a, b) => new Date(b.exam_date) - new Date(a.exam_date));
-      setExams(e);
+      try {
+        const p = await db.getPatient(patientId);
+        setPatient(p);
+
+        // Unified timeline query: { collection: 'exams'|'prescriptions', date, data }
+        const t = await db.getPatientTimeline(patientId);
+        setTimeline(t);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, [patientId]);
+
+  const hasPatient = !!patientId;
 
   // --- FORMATADORES PARA PORTUGUÊS ---
   const formatSpecies = (s) => {
