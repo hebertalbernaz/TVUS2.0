@@ -62,7 +62,7 @@ const _create = async () => {
     await db.addCollections({
       // Ensure indentation inside addCollections
 
-    patients: { 
+      patients: { 
         schema: PatientSchema,
         migrationStrategies: {
             1: returnSameDoc,
