@@ -41,7 +41,7 @@ function LabReportView({ exam, settings, onClose }) {
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-white dark:bg-background overflow-auto print:static print:overflow-visible">
+    <div className="fixed inset-0 z-50 bg-background overflow-auto print:static print:overflow-visible">
       {/* Print Header */}
       <div className="no-print sticky top-0 bg-muted border-b p-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
@@ -60,7 +60,7 @@ function LabReportView({ exam, settings, onClose }) {
       {/* Report Content */}
       <div className="max-w-4xl mx-auto p-8 print:p-0 print:max-w-none" id="lab-report-print">
         {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 mb-6">
+        <div className="flex justify-between items-start border-b-2 border-border pb-4 mb-6 print:border-gray-800">
           <div>
             {settings?.letterhead_path && (
               <img src={settings.letterhead_path} alt="Logo" className="h-16 mb-2" />
