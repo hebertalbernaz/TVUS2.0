@@ -124,26 +124,6 @@ export default function HomePage() {
                 {searchTerm ? `Nenhum ${terms.patient_label.toLowerCase()} encontrado` : `Lista vazia`}
             </h3>
 
-        {/* Ação rápida: Histórico do Paciente (restaurado) */}
-        <div className="flex justify-end mb-6">
-          <Button
-            data-testid="open-patient-history-button"
-            variant="outline"
-            className="border-primary/20 text-primary hover:bg-primary/5"
-            onClick={() => {
-              // Abre a tela de histórico (o paciente específico é acessado pelo card)
-              const baseUrl = window.location.href.split('#')[0];
-              const historyUrl = `${baseUrl}#/history`;
-              window.open(
-                historyUrl,
-                'Histórico',
-                'width=700,height=900,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
-              );
-            }}
-          >
-            Abrir Histórico
-          </Button>
-        </div>
 
             <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
                 {searchTerm ? 'Verifique a grafia ou tente outro termo.' : 'Comece cadastrando agora.'}
