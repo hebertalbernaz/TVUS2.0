@@ -352,15 +352,30 @@ class DatabaseService {
       }
   }
 
-  // ================= FINANCIAL (NEW) =================
+  // ================= FINANCIAL (PRO CASHFLOW) =================
   async addTransaction(data) {
       const db = await getDatabase();
+      const nowIso = new Date().toISOString();
+
+      const status = data.status || 'paid';
+      const dueDateIso = data.due_date || data.dueDate || data.date || nowIso;
+      const paidAtIso = data.paid_at || data.paidAt || (status === 'paid' ? (data.date || nowIso) : null);
+
       const transaction = {
           id: genId(),
-          type: data.type, // 'income' or 'expense'
+          type: data.type, // 'income' | 'expense'
           category: data.category || 'Geral',
           amount: parseFloat(data.amount),
-          date: data.date || new Date().toISOString(),
+
+          // Keep legacy date
+          date: data.date || nowIso,
+
+          // New cashflow fields
+          status,
+          payment_method: data.payment_method || data.paymentMethod || 'cash',
+          due_date: dueDateIso,
+          paid_at: paidAtIso,
+
           description: data.description || '',
           patient_id: data.patient_id || null
       };
@@ -374,28 +389,60 @@ class DatabaseService {
       if (filters.type) selector.type = filters.type;
       if (filters.category) selector.category = filters.category;
       if (filters.patient_id) selector.patient_id = filters.patient_id;
-      
-      return await this._files(db.financial.find({ selector }).sort({ date: 'desc' }));
+      if (filters.status) selector.status = filters.status;
+
+      // Month filter (by due_date if exists else date)
+      // Note: RxDB does not support $or with sort reliably across versions; filter in-memory.
+      const rows = await this._files(db.financial.find({ selector }).sort({ date: 'desc' }));
+      if (filters.month && filters.year) {
+        const start = new Date(filters.year, filters.month - 1, 1);
+        const end = new Date(filters.year, filters.month, 1);
+        return rows.filter(t => {
+          const base = t.due_date || t.date;
+          const d = new Date(base);
+          return d >= start && d < end;
+        });
+      }
+      return rows;
   }
 
-  async getBalance() {
+  async getBalance(filters = {}) {
       const db = await getDatabase();
-      const transactions = await this._files(db.financial.find());
-      
+      const all = await this._files(db.financial.find());
+
+      const start = (filters.month && filters.year) ? new Date(filters.year, filters.month - 1, 1) : null;
+      const end = (filters.month && filters.year) ? new Date(filters.year, filters.month, 1) : null;
+
+      const inMonth = (t) => {
+        if (!start || !end) return true;
+        const base = t.due_date || t.date;
+        const d = new Date(base);
+        return d >= start && d < end;
+      };
+
       let totalIncome = 0;
       let totalExpense = 0;
-      
-      transactions.forEach(t => {
+      let pendingForecast = 0;
+
+      all.filter(inMonth).forEach(t => {
+          const amt = Number(t.amount) || 0;
+          if (t.status === 'pending') {
+              pendingForecast += amt;
+              return;
+          }
+          if (t.status !== 'paid') return;
+
           if (t.type === 'income') {
-              totalIncome += t.amount;
+              totalIncome += amt;
           } else if (t.type === 'expense') {
-              totalExpense += t.amount;
+              totalExpense += amt;
           }
       });
-      
+
       return {
           totalIncome,
           totalExpense,
+          pendingForecast,
           balance: totalIncome - totalExpense
       };
   }
@@ -410,7 +457,22 @@ class DatabaseService {
       const db = await getDatabase();
       const doc = await db.financial.findOne(id).exec();
       if (doc) {
-          await doc.patch(data);
+          const patch = { ...data };
+
+          // Normalize camelCase/snake_case
+          if (patch.dueDate && !patch.due_date) patch.due_date = patch.dueDate;
+          if (patch.paidAt && !patch.paid_at) patch.paid_at = patch.paidAt;
+          if (patch.paymentMethod && !patch.payment_method) patch.payment_method = patch.paymentMethod;
+
+          // Auto-set paid_at when status becomes paid
+          if (patch.status === 'paid' && !patch.paid_at) {
+            patch.paid_at = new Date().toISOString();
+          }
+          if (patch.status === 'pending') {
+            patch.paid_at = null;
+          }
+
+          await doc.patch(patch);
           return doc.toJSON();
       }
       throw new Error('Transaction not found');
