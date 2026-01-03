@@ -92,7 +92,20 @@ const _create = async () => {
     templates: { schema: TemplateSchema },
     reference_values: { schema: ReferenceValueSchema },
     profiles: { schema: ProfileSchema },
-    financial: { schema: FinancialSchema },
+    financial: {
+        schema: FinancialSchema,
+        migrationStrategies: {
+            // v1 migration: add professional cashflow fields while keeping legacy behavior
+            1: (oldDoc) => ({
+              ...oldDoc,
+              status: oldDoc.status || 'paid',
+              payment_method: oldDoc.payment_method || 'cash',
+              // if we already had date, use it as both due and paid for legacy entries
+              due_date: oldDoc.due_date ?? oldDoc.date ?? null,
+              paid_at: oldDoc.paid_at ?? (oldDoc.status === 'pending' ? null : (oldDoc.date ?? null))
+            })
+        }
+    },
     lab_exams: { schema: LabExamSchema },
     
     // Ophthalmo with version: 1 needs migration
