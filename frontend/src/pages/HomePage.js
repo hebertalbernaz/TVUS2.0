@@ -104,6 +104,23 @@ export default function HomePage() {
                 className="h-12 px-8 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
             >
                 <Plus className="mr-2 h-5 w-5" /> Novo {terms.patient_label}
+
+        {/* Ação rápida: Histórico do Paciente (janela dedicada) */}
+        <div className="flex justify-end mb-3">
+          <Button
+            data-testid="open-patient-history-button"
+            variant="outline"
+            className="border-primary/20 text-primary hover:bg-primary/5"
+            onClick={() => {
+              const baseUrl = window.location.href.split('#')[0];
+              const historyUrl = `${baseUrl}#/history`; // tela explica para abrir pelo card
+              window.open(historyUrl, 'Histórico', 'width=700,height=900,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+            }}
+          >
+            Abrir Histórico
+          </Button>
+        </div>
+
             </Button>
         </div>
 
