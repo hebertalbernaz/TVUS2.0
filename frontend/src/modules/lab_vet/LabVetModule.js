@@ -95,7 +95,7 @@ function LabReportView({ exam, settings, onClose }) {
             <h3 className="text-lg font-bold bg-primary/10 px-3 py-2 rounded-t border-b-2 border-primary">
               {getCategoryLabel(category)}
             </h3>
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse text-foreground">
               <thead>
                 <tr className="bg-muted/30 text-sm">
                   <th className="text-left p-2 border font-semibold w-2/5">Analito</th>
@@ -149,7 +149,7 @@ function LabReportView({ exam, settings, onClose }) {
           {settings?.signature_path && (
             <img src={settings.signature_path} alt="Assinatura" className="h-16 mx-auto mb-2" />
           )}
-          <div className="w-64 mx-auto border-t border-gray-800 pt-2">
+          <div className="w-64 mx-auto border-t border-border pt-2 print:border-gray-800">
             <p className="font-bold">{settings?.veterinarian_name || exam.veterinarian_name}</p>
             <p className="text-sm text-gray-600">CRMV: {settings?.crmv}</p>
           </div>
