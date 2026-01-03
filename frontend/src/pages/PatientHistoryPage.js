@@ -29,7 +29,8 @@ export default function PatientHistoryPage() {
 
         // Unified timeline query: { collection: 'exams'|'prescriptions', date, data }
         const t = await db.getPatientTimeline(patientId);
-        setTimeline(t);
+        // Defensive: ensure contract contains { collection, date }
+        setTimeline((t || []).filter(x => x?.collection && x?.date));
       } finally {
         setLoading(false);
       }
