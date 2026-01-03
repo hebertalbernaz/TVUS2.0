@@ -50,7 +50,12 @@ const _create = async () => {
     patients: { 
         schema: PatientSchema,
         migrationStrategies: {
-            1: returnSameDoc
+            1: returnSameDoc,
+            // v2 migration: add default scope so existing records do not disappear
+            2: (oldDoc) => ({
+              ...oldDoc,
+              scope: oldDoc.scope || (oldDoc.practice === 'human' ? 'HUMAN' : 'VET')
+            })
         }
     },
     settings: { 
