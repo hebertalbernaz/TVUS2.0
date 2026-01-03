@@ -215,7 +215,7 @@ export function PatientCard({ patient, onUpdate }) {
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-foreground truncate">{getExamTypeName(exam.exam_type || 'ultrasound_abd')}</span>
                             <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground bg-background whitespace-nowrap">
-                              {new Date(exam.exam_date).toLocaleDateString('pt-BR')}
+                              {new Date(exam.date || exam.exam_date || new Date().toISOString()).toLocaleDateString('pt-BR')}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">

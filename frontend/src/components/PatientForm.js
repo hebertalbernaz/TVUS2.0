@@ -65,6 +65,8 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
       // Conversão de Tipos Rigorosa para RxDB
       const dataToSave = {
         name: formData.name.trim(),
+        // Strict segregation (White Label safety)
+        scope: practice === 'human' ? 'HUMAN' : 'VET',
         species: practice === 'human' ? 'human' : (formData.species || 'dog'),
         breed: formData.breed || '',
         sex: formData.sex || 'male',
