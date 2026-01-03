@@ -100,7 +100,6 @@ const _create = async () => {
               ...oldDoc,
               status: oldDoc.status || 'paid',
               payment_method: oldDoc.payment_method || 'cash',
-              // if we already had date, use it as both due and paid for legacy entries
               due_date: oldDoc.due_date ?? oldDoc.date ?? null,
               paid_at: oldDoc.paid_at ?? (oldDoc.status === 'pending' ? null : (oldDoc.date ?? null))
             })
