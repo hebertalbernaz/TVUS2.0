@@ -49,9 +49,10 @@ class DatabaseService {
    */
   async getPatientTimeline(patientId) {
       const db = await getDatabase();
-      const [exams, prescriptions] = await Promise.all([
+      const [exams, prescriptions, labExams] = await Promise.all([
           this._files(db.exams.find({ selector: { patient_id: patientId } })),
-          this._files(db.prescriptions.find({ selector: { patient_id: patientId } }))
+          this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
+          this._files(db.lab_exams.find({ selector: { patient_id: patientId } }))
       ]);
 
       const examEntries = (exams || []).map(e => ({
@@ -66,7 +67,13 @@ class DatabaseService {
           data: r
       }));
 
-      const merged = [...examEntries, ...rxEntries];
+      const labEntries = (labExams || []).map(l => ({
+          collection: 'lab_exams',
+          date: l.date || l.created_at || new Date().toISOString(),
+          data: l
+      }));
+
+      const merged = [...examEntries, ...rxEntries, ...labEntries];
       merged.sort((a, b) => new Date(b.date) - new Date(a.date));
       return merged;
   }

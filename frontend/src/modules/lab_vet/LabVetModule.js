@@ -182,7 +182,8 @@ function PatientSelector({ isOpen, onClose, onSelect }) {
   const loadPatients = async () => {
     try {
       setLoading(true);
-      const list = await dbService.getPatients();
+      // Safety: LabVet must only see VET-scoped patients
+      const list = await dbService.getPatients({ scope: 'VET' });
       setPatients(list);
     } catch (e) {
       console.error(e);
