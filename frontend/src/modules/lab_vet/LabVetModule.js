@@ -76,7 +76,7 @@ function LabReportView({ exam, settings, onClose }) {
         </div>
 
         {/* Patient Info */}
-        <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded mb-6 print:bg-gray-100">
+        <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded mb-6 print:bg-gray-100">
           <div>
             <p><strong>Paciente:</strong> {exam.patient_name}</p>
             <p><strong>Espécie:</strong> {exam.patient_species === 'dog' ? 'Canino' : exam.patient_species === 'cat' ? 'Felino' : exam.patient_species}</p>
@@ -97,7 +97,7 @@ function LabReportView({ exam, settings, onClose }) {
             </h3>
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100 text-sm">
+                <tr className="bg-muted/30 text-sm">
                   <th className="text-left p-2 border font-semibold w-2/5">Analito</th>
                   <th className="text-center p-2 border font-semibold w-1/5">Resultado</th>
                   <th className="text-center p-2 border font-semibold w-1/5">Unidade</th>
@@ -122,8 +122,8 @@ function LabReportView({ exam, settings, onClose }) {
                           </span>
                         )}
                       </td>
-                      <td className="p-2 border text-center text-gray-600">{r.unit}</td>
-                      <td className="p-2 border text-center text-gray-600 font-mono text-xs">
+                      <td className="p-2 border border-border text-center text-muted-foreground">{r.unit}</td>
+                      <td className="p-2 border border-border text-center text-muted-foreground font-mono text-xs">
                         {r.ref_min !== undefined && r.ref_max !== undefined 
                           ? `${r.ref_min} - ${r.ref_max}` 
                           : '-'}
