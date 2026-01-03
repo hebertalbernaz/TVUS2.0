@@ -90,12 +90,12 @@ const _create = async () => {
     },
     
     // Collections with version: 0 don't need migration strategies
-    drugs: { schema: DrugSchema },
-    prescriptions: { schema: PrescriptionSchema },
-    templates: { schema: TemplateSchema },
-    reference_values: { schema: ReferenceValueSchema },
-    profiles: { schema: ProfileSchema },
-    financial: {
+      drugs: { schema: DrugSchema },
+      prescriptions: { schema: PrescriptionSchema },
+      templates: { schema: TemplateSchema },
+      reference_values: { schema: ReferenceValueSchema },
+      profiles: { schema: ProfileSchema },
+      financial: {
         schema: FinancialSchema,
         migrationStrategies: {
             // v1 migration: add professional cashflow fields while keeping legacy behavior
