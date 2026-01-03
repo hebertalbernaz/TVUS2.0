@@ -21,12 +21,16 @@ export default function HomePage() {
   const [editingPatient, setEditingPatient] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => { loadPatients(); }, []);
+  // Segregation mapping: practice (vet/human) -> scope (VET/HUMAN)
+  const activeScope = practice === 'human' ? 'HUMAN' : 'VET';
+
+  useEffect(() => { loadPatients(); }, [practice]);
 
   const loadPatients = async () => {
     try {
-      const allPatients = await db.getPatients();
-      setPatients(allPatients);
+      // Filter by scope to prevent cross-contamination
+      const scopedPatients = await db.getPatients({ scope: activeScope });
+      setPatients(scopedPatients);
     } catch (error) { console.error(error); }
   };
 
