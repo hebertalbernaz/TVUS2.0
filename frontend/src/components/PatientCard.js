@@ -146,7 +146,7 @@ export function PatientCard({ patient, onUpdate }) {
               );
             }}
             variant="secondary"
-            className="h-9 text-xs border border-transparent hover:border-primary/20 bg-secondary/50 hover:bg-secondary"
+            className="h-9 w-[92px] text-xs border border-transparent hover:border-primary/20 bg-secondary/50 hover:bg-secondary"
             title="Histórico do paciente"
           >
             <FileText className="mr-2 h-3 w-3" /> Hist.
