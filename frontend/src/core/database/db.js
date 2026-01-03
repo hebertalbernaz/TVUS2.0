@@ -58,7 +58,8 @@ const _create = async () => {
   });
 
   // Create Collections with migration strategies for ALL versioned schemas
-  await db.addCollections({
+  try {
+    await db.addCollections({
     patients: { 
         schema: PatientSchema,
         migrationStrategies: {
