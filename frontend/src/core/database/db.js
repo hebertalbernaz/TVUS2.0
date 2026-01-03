@@ -80,7 +80,7 @@ const _create = async () => {
             2: returnSameDoc
         }
     },
-    exams: { 
+      exams: { 
         schema: ExamSchema,
         migrationStrategies: {
             1: returnSameDoc,
