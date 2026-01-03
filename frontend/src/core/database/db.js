@@ -14,7 +14,7 @@ import {
 import { initialDrugs, initialSettings, initialTemplates } from '../../config/seeds';
 import { v4 as uuidv4 } from 'uuid';
 
-const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
+const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === undefined;
 
 // Plugins
 try {
