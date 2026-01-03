@@ -76,7 +76,7 @@ function LabReportView({ exam, settings, onClose }) {
         </div>
 
         {/* Patient Info */}
-        <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded mb-6 print:bg-gray-100">
+        <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded mb-6 print:bg-white">
           <div>
             <p><strong>Paciente:</strong> {exam.patient_name}</p>
             <p><strong>Espécie:</strong> {exam.patient_species === 'dog' ? 'Canino' : exam.patient_species === 'cat' ? 'Felino' : exam.patient_species}</p>
