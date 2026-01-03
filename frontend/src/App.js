@@ -84,6 +84,14 @@ function App() {
                 </PrivateRoute>
               } />
 
+              <Route path="/history/:patientId" element={
+                <PrivateRoute>
+                  <AppLayout>
+                    <PatientHistoryPage />
+                  </AppLayout>
+                </PrivateRoute>
+              } />
+
               <Route path="/settings" element={
                 <PrivateRoute>
                   <AppLayout>
