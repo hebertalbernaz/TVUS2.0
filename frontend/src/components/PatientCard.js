@@ -31,7 +31,6 @@ export function PatientCard({ patient, onUpdate }) {
     } catch (e) { console.error(e); }
   }, [patient.id]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadExamsCount(); }, [loadExamsCount]);
 
   const loadExams = async () => {
