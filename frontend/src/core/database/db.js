@@ -73,7 +73,7 @@ const _create = async () => {
             })
         }
     },
-    settings: { 
+      settings: { 
         schema: SettingsSchema,
         migrationStrategies: {
             1: returnSameDoc,
