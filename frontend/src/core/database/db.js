@@ -66,7 +66,7 @@ const _create = async () => {
         schema: PatientSchema,
         migrationStrategies: {
             1: returnSameDoc,
-            // v2 migration: add default scope so existing records do not disappear
+            // v2 migration: inject scope for old records
             2: (oldDoc) => ({
               ...oldDoc,
               scope: oldDoc.scope || (oldDoc.practice === 'human' ? 'HUMAN' : 'VET')
@@ -98,13 +98,13 @@ const _create = async () => {
       financial: {
         schema: FinancialSchema,
         migrationStrategies: {
-            // v1 migration: add professional cashflow fields while keeping legacy behavior
+            // v1 migration: ensure pro cashflow fields exist for legacy entries
             1: (oldDoc) => ({
               ...oldDoc,
-              status: oldDoc.status || 'paid',
-              payment_method: oldDoc.payment_method || 'cash',
-              due_date: oldDoc.due_date ?? oldDoc.date ?? null,
-              paid_at: oldDoc.paid_at ?? (oldDoc.status === 'pending' ? null : (oldDoc.date ?? null))
+              status: 'paid',
+              payment_method: 'cash',
+              due_date: oldDoc.date ?? null,
+              paid_at: oldDoc.date ?? null
             })
         }
     },
