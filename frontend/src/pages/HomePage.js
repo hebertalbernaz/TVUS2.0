@@ -91,6 +91,7 @@ export default function HomePage() {
             <div className="relative flex-1 group">
                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
+                    data-testid="patient-search-input"
                     placeholder={searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
