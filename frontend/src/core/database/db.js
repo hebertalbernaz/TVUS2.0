@@ -108,10 +108,10 @@ const _create = async () => {
             })
         }
     },
-    lab_exams: { schema: LabExamSchema },
-    
-    // Ophthalmo with version: 1 needs migration
-    ophthalmo: { 
+      lab_exams: { schema: LabExamSchema },
+      
+      // Ophthalmo with version: 1 needs migration
+      ophthalmo: { 
         schema: OphthalmoSchema,
         migrationStrategies: {
             1: (oldDoc) => {
