@@ -138,7 +138,7 @@ function LabReportView({ exam, settings, onClose }) {
 
         {/* Conclusion */}
         {exam.conclusion && (
-          <div className="mt-6 p-4 border-2 border-gray-300 rounded">
+          <div className="mt-6 p-4 border-2 border-border rounded">
             <h3 className="font-bold mb-2">Conclusão / Observações:</h3>
             <p className="whitespace-pre-wrap text-sm">{exam.conclusion}</p>
           </div>
@@ -151,12 +151,12 @@ function LabReportView({ exam, settings, onClose }) {
           )}
           <div className="w-64 mx-auto border-t border-border pt-2 print:border-gray-800">
             <p className="font-bold">{settings?.veterinarian_name || exam.veterinarian_name}</p>
-            <p className="text-sm text-gray-600">CRMV: {settings?.crmv}</p>
+            <p className="text-sm text-muted-foreground">CRMV: {settings?.crmv}</p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-8 pt-4 border-t text-center text-xs text-gray-400">
+        <div className="mt-8 pt-4 border-t border-border text-center text-xs text-muted-foreground">
           <p>Documento gerado em {new Date().toLocaleString('pt-BR')}</p>
           <p>TVUSVET - Sistema de Laudos Veterinários</p>
         </div>
