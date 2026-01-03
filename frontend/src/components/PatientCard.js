@@ -154,7 +154,7 @@ export function PatientCard({ patient, onUpdate }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="flex-1 h-9 text-xs shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button data-testid={`patient-card-new-${patient.id}`} className="flex-1 h-9 text-xs shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Plus className="mr-2 h-3 w-3" /> Novo
               </Button>
             </DropdownMenuTrigger>
