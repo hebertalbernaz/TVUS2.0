@@ -268,6 +268,82 @@ export default function PatientHistoryPage() {
                 );
               }
 
+              if (isLab) {
+                const lab = entry.data;
+                const examLabel = lab.exam_type_label || lab.exam_type || 'Exame Laboratorial';
+                const abnormalCount = (lab.results || []).filter(r => r.flag && r.flag !== 'normal' && r.flag !== '').length;
+
+                return (
+                  <Card
+                    key={`lab-${lab.id}`}
+                    className="border-l-4 border-l-violet-500/60 shadow-sm hover:shadow transition-all"
+                    data-testid={`timeline-lab-${lab.id}`}
+                  >
+                    <CardHeader className="pb-3 bg-muted/5 border-b">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-violet-500/10 p-2.5 rounded-full text-violet-700">
+                            <FlaskConical className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg text-foreground">{date}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{time}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs font-semibold px-3 py-1 uppercase tracking-wide"
+                            data-testid={`timeline-lab-badge-${lab.id}`}
+                          >
+                            Laboratório
+                          </Badge>
+                          <Badge variant="outline" className="text-xs" data-testid={`timeline-lab-type-${lab.id}`}>
+                            {examLabel}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <div className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Veterinário:</span> {lab.veterinarian_name || '--'}
+                        </div>
+                        {lab.requesting_vet ? (
+                          <div className="text-muted-foreground">
+                            <span className="font-semibold text-foreground">Solicitante:</span> {lab.requesting_vet}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid={`timeline-lab-stats-${lab.id}`}>
+                        <div className="p-3 rounded-md border bg-card">
+                          <div className="text-xs text-muted-foreground">Parâmetros</div>
+                          <div className="text-lg font-bold text-foreground">{(lab.results || []).length}</div>
+                        </div>
+                        <div className="p-3 rounded-md border bg-card">
+                          <div className="text-xs text-muted-foreground">Alterados</div>
+                          <div className="text-lg font-bold text-foreground">{abnormalCount}</div>
+                        </div>
+                        <div className="p-3 rounded-md border bg-card">
+                          <div className="text-xs text-muted-foreground">Status</div>
+                          <div className="text-sm font-semibold text-foreground">{lab.status === 'finalized' ? 'Finalizado' : 'Rascunho'}</div>
+                        </div>
+                      </div>
+
+                      {lab.conclusion ? (
+                        <div className="pt-3 border-t text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conclusão / Observações</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{lab.conclusion}</div>
+                        </div>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+
               return null;
             })
           )}
