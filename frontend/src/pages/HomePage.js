@@ -46,7 +46,7 @@ export default function HomePage() {
       : `Buscar ${terms.patient_label.toLowerCase()} ou ${terms.owner_label.toLowerCase()}...`;
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300 relative overflow-hidden" data-testid="home-page">
+    <div className="min-h-screen bg-background transition-colors duration-300 relative overflow-hidden" data-testid="home-page" data-scope={activeScope}>
       
       {/* 1. MARCA D'ÁGUA NO FUNDO */}
       <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none select-none opacity-[0.03] dark:opacity-[0.05]">
