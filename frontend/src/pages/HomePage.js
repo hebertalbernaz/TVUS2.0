@@ -24,15 +24,15 @@ export default function HomePage() {
   // Segregation mapping: practice (vet/human) -> scope (VET/HUMAN)
   const activeScope = practice === 'human' ? 'HUMAN' : 'VET';
 
-  useEffect(() => { loadPatients(); }, [practice]);
-
-  const loadPatients = async () => {
+  const loadPatients = useCallback(async () => {
     try {
       // Filter by scope to prevent cross-contamination
       const scopedPatients = await db.getPatients({ scope: activeScope });
       setPatients(scopedPatients);
     } catch (error) { console.error(error); }
-  };
+  }, [activeScope]);
+
+  useEffect(() => { loadPatients(); }, [loadPatients]);
 
   const filteredPatients = patients.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
