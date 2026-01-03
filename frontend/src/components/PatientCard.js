@@ -125,7 +125,7 @@ export function PatientCard({ patient, onUpdate }) {
         </div>
       </CardHeader>
       
-      <CardContent className="px-4 pb-4 flex-1 flex flex-col justify-end">
+      <CardContent className="px-4 pb-4 flex-1 flex flex-col justify-end" data-testid={`patient-card-${patient.id}`}>
         {patient.owner_name && (
             <div className="text-xs text-muted-foreground mb-3 pl-2 border-l-2 border-muted truncate">
                 {terms.owner_label}: <span className="font-semibold text-foreground">{patient.owner_name}</span>
