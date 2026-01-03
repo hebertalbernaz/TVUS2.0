@@ -1,3 +1,5 @@
+/** @jest-environment jsdom */
+
 import { getDatabase } from '../core/database/db';
 import { db } from '../services/database';
 
