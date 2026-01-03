@@ -107,6 +107,28 @@ export default function HomePage() {
             </Button>
         </div>
 
+
+        {/* Ação rápida: Histórico do Paciente (restaurado) */}
+        <div className="flex justify-end mb-6">
+          <Button
+            data-testid="open-patient-history-button"
+            variant="outline"
+            className="border-primary/20 text-primary hover:bg-primary/5"
+            onClick={() => {
+              // Abre a tela de histórico (o paciente específico é acessado pelo card)
+              const baseUrl = window.location.href.split('#')[0];
+              const historyUrl = `${baseUrl}#/history`;
+              window.open(
+                historyUrl,
+                'Histórico',
+                'width=700,height=900,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
+              );
+            }}
+          >
+            Abrir Histórico
+          </Button>
+        </div>
+
         {/* LISTA */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-10">
           {filteredPatients.map(patient => (
