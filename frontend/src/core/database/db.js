@@ -125,6 +125,20 @@ const _create = async () => {
         }
     }
   });
+  } catch (e) {
+    // DB6 happens when IndexedDB already has the collection with a different schema version/shape.
+    // This typically occurs after downgrades or local disk containing newer schema.
+    console.error('RxDB addCollections() failed. Possible schema conflict (DB6).', e);
+
+    if (isDev) {
+      console.error(
+        'DEV HINT: If you recently changed schema versions, you may need to clear the local IndexedDB (Application -> Storage -> IndexedDB) and reload. ' +
+          'Prefer bumping schema versions + adding migrations over clearing data.'
+      );
+    }
+    throw e;
+  }
+
 
   await seedDatabase(db);
   console.log('Database: Ready.');
