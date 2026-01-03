@@ -43,7 +43,7 @@ function LabReportView({ exam, settings, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-auto print:static print:overflow-visible">
       {/* Print Header */}
-      <div className="no-print sticky top-0 bg-muted border-b p-4 flex items-center justify-between z-10">
+      <div className="no-print sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowLeft className="h-5 w-5" />
@@ -66,12 +66,12 @@ function LabReportView({ exam, settings, onClose }) {
               <img src={settings.letterhead_path} alt="Logo" className="h-16 mb-2" />
             )}
             <h1 className="text-xl font-bold">{settings?.clinic_name || 'Laboratório Veterinário'}</h1>
-            <p className="text-sm text-gray-600">{settings?.clinic_address}</p>
-            <p className="text-sm text-gray-600">{settings?.professional_phone}</p>
+            <p className="text-sm text-muted-foreground">{settings?.clinic_address}</p>
+            <p className="text-sm text-muted-foreground">{settings?.professional_phone}</p>
           </div>
           <div className="text-right">
             <h2 className="text-2xl font-bold text-primary">LAUDO LABORATORIAL</h2>
-            <p className="text-sm text-gray-500">Data: {new Date(exam.date).toLocaleDateString('pt-BR')}</p>
+            <p className="text-sm text-muted-foreground">Data: {new Date(exam.date).toLocaleDateString('pt-BR')}</p>
           </div>
         </div>
 
