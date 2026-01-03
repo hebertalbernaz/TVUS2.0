@@ -31,18 +31,29 @@ export const SettingsSchema = {
 // --- PATIENTS ---
 export const PatientSchema = {
   title: 'patient schema',
-  version: 1,
+  // v2: Added "scope" for strict segregation (VET vs HUMAN)
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
     name: { type: 'string' },
-    species: { type: 'string' }, 
+
+    /**
+     * Segregation scope:
+     * - VET: pacientes veterinários
+     * - HUMAN: pacientes humanos
+     *
+     * IMPORTANT: Not required to avoid breaking existing records; migration fills defaults.
+     */
+    scope: { type: 'string', enum: ['VET', 'HUMAN'], default: 'VET' },
+
+    species: { type: 'string' },
     breed: { type: 'string' },
     size: { type: 'string' },
     owner_name: { type: 'string' },
     ownerPhone: { type: 'string' },
-    document: { type: 'string' }, 
+    document: { type: 'string' },
     birth_date: { type: 'string', format: 'date' },
     birth_year: { type: 'string' },
     weight: { type: 'number' },
@@ -50,6 +61,8 @@ export const PatientSchema = {
     is_neutered: { type: 'boolean' },
     created_at: { type: 'string', format: 'date-time' },
     updated_at: { type: 'string', format: 'date-time' },
+
+    // Legacy field kept for backward compatibility
     practice: { type: 'string' }
   },
   required: ['id', 'name']
