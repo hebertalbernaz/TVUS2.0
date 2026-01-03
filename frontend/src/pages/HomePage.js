@@ -100,6 +100,7 @@ export default function HomePage() {
             </div>
             
             <Button 
+                data-testid="new-patient-button"
                 onClick={() => {setEditingPatient(null); setShowNewPatient(true);}} 
                 size="lg" 
                 className="h-12 px-8 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
