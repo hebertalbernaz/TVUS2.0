@@ -19,3 +19,15 @@ try {
 } catch (e) {
   // ignore
 }
+
+// Polyfill structuredClone for fake-indexeddb
+if (!globalThis.structuredClone) {
+  globalThis.structuredClone = (obj) => {
+    try {
+      return JSON.parse(JSON.stringify(obj));
+    } catch (e) {
+      // Fallback for complex objects
+      return obj;
+    }
+  };
+}
