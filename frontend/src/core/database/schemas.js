@@ -317,17 +317,56 @@ export const OphthalmoSchema = {
 // --- FINANCIAL ---
 export const FinancialSchema = {
   title: 'financial schema',
-  version: 0,
+  // v1: professional cashflow fields (status, payment_method, due_date, paid_at)
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
+
+    // Income or Expense
     type: { type: 'string', enum: ['income', 'expense'] },
+
+    // Business classification
     category: { type: 'string' },
+
+    // Amount in BRL
     amount: { type: 'number' },
+
+    /**
+     * Legacy/base date (kept for backward compatibility).
+     * In UI we prefer:
+     * - due_date for pending
+     * - paid_at for paid
+     */
     date: { type: 'string', format: 'date-time' },
+
     description: { type: 'string' },
-    patient_id: { type: 'string' }
+
+    // Optional link to patient
+    patient_id: { type: 'string' },
+
+    // Cashflow state
+    status: { type: 'string', enum: ['pending', 'paid', 'cancelled'], default: 'paid' },
+
+    // Payment method (optional but validated if present)
+    payment_method: { type: 'string', enum: ['pix', 'credit_card', 'debit_card', 'cash', 'transfer'] },
+
+    // Forecast date (vencimento / previsão)
+    due_date: {
+      oneOf: [
+        { type: 'string', format: 'date-time' },
+        { type: 'null' }
+      ]
+    },
+
+    // Actual payment/receipt date
+    paid_at: {
+      oneOf: [
+        { type: 'string', format: 'date-time' },
+        { type: 'null' }
+      ]
+    }
   },
   required: ['id', 'type', 'amount', 'date']
 };
