@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trash2, Edit, Save, Search, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { db } from '@/services/database';
+import { useLicense } from '@/contexts/LicenseContext';
 import { 
   ECHOCARDIOGRAM_STRUCTURES, ECG_STRUCTURES, 
   ABDOMINAL_ORGANS, REPRODUCTIVE_ORGANS_MALE, REPRODUCTIVE_ORGANS_FEMALE
