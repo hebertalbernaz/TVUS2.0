@@ -82,10 +82,11 @@ class DatabaseService {
    */
   async getPatientTimeline(patientId) {
       const db = await getDatabase();
-      const [exams, prescriptions, labExams] = await Promise.all([
+      const [exams, prescriptions, labExams, anamnesis] = await Promise.all([
           this._files(db.exams.find({ selector: { patient_id: patientId } })),
           this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
-          this._files(db.lab_exams.find({ selector: { patient_id: patientId } }))
+          this._files(db.lab_exams.find({ selector: { patient_id: patientId } })),
+          this._files(db.anamnesis.find({ selector: { patient_id: patientId } }))
       ]);
 
       const examEntries = (exams || []).map(e => ({
