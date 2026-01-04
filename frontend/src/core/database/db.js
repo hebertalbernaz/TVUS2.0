@@ -165,16 +165,26 @@ const seedDatabase = async (db) => {
         await db.settings.insert(initialSettings);
       }
 
+      // SMART SEED: Drugs
+      // If DB is old/basic (or empty), upgrade by bulkInsert.
       const drugsCount = await db.drugs.count().exec();
-      if (drugsCount === 0) {
-         console.log('Seeding Drugs...');
-         await db.drugs.bulkInsert(initialDrugs);
+      if (drugsCount < 5) {
+         console.log('NexaClinq: Upgrading Drug Database...');
+         try {
+            await db.drugs.bulkInsert(initialDrugs);
+         } catch (e) {
+            // Ignore conflicts for already existing docs
+            console.log('Drug DB update partial: some items existed.');
+         }
       }
 
+      // SMART SEED: Templates
       const templatesCount = await db.templates.count().exec();
-      if (templatesCount === 0) {
-          console.log('Seeding Templates...');
-          await db.templates.bulkInsert(initialTemplates);
+      if (templatesCount < 3) {
+          console.log('NexaClinq: Upgrading Templates...');
+          try {
+            await db.templates.bulkInsert(initialTemplates);
+          } catch (e) {}
       }
   } catch (e) {
       console.warn("Seed warning:", e);
