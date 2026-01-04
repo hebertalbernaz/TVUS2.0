@@ -145,7 +145,12 @@ export function DrugsManager() {
           {drugs.map(drug => (
               <div key={drug.id} className="p-4 flex justify-between items-center hover:bg-muted/50">
                   <div>
-                      <div className="font-bold">{drug.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold">{drug.name}</div>
+                        {drug.category ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full border bg-muted/40 text-muted-foreground">{drug.category}</span>
+                        ) : null}
+                      </div>
                       <div className="text-sm text-muted-foreground">{drug.default_dosage}</div>
                   </div>
                   <div className="flex gap-2">
