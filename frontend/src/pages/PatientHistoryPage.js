@@ -381,6 +381,22 @@ export default function PatientHistoryPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+
+
+      <AnamnesisModal
+        open={showAnamnesis}
+        onOpenChange={setShowAnamnesis}
+        patient={patient}
+        defaultDoctorName={''}
+        onSave={async (payload) => {
+          // type is derived from patient.scope
+          const type = (patient?.scope || 'VET') === 'HUMAN' ? 'human' : 'vet';
+          await db.createAnamnesis({ ...payload, type });
+          const t = await db.getPatientTimeline(patientId);
+          setTimeline((t || []).filter(x => x?.collection && x?.date));
+        }}
+      />
+
                           <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 uppercase tracking-wide" data-testid={`timeline-anamnesis-badge-${a.id}`}>
                             Anamnese
                           </Badge>
