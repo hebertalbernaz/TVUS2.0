@@ -152,21 +152,6 @@ export function PatientCard({ patient, onUpdate }) {
               <TooltipContent>Criar novo exame</TooltipContent>
             </Tooltip>
 
-            {/* Receita */}
-              <DropdownMenuContent align="start" className="w-64">
-                {getAllExamTypes().map((type) => (
-                  <DropdownMenuItem
-                    key={type.id}
-                    onClick={() => createNewExam(type.id)}
-                    className="cursor-pointer gap-2 py-2"
-                    data-testid={`patient-card-new-exam-${patient.id}-${type.id}`}
-                  >
-                    <span className="text-lg">{type.icon}</span>
-                    <span className="font-medium">{type.name}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             <Button
               data-testid={`patient-card-prescription-button-${patient.id}`}
