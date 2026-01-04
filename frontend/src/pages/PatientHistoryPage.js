@@ -130,7 +130,9 @@ export default function PatientHistoryPage() {
           </div>
           <div>
             <span className="font-bold block text-foreground">Tutor</span>
-
+            {patient.owner_name}
+          </div>
+        </div>
 
         {/* Ações rápidas (PEP) */}
         <div className="mt-4 flex flex-wrap gap-2 justify-end" data-testid="patient-history-actions">
@@ -141,10 +143,6 @@ export default function PatientHistoryPage() {
           >
             <ClipboardList className="h-4 w-4 mr-2" /> Nova Anamnese
           </Button>
-        </div>
-
-            {patient.owner_name}
-          </div>
         </div>
       </div>
 
