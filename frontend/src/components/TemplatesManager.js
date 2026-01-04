@@ -71,8 +71,10 @@ export function TemplatesManager({ templates, onUpdate }) {
   };
 
   const filtered = templates.filter(t => 
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    t.organ?.toLowerCase().includes(searchTerm.toLowerCase())
+    (t.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    t.organ?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    // NOVO FILTRO DE SEGURANÇA (segregação Vet vs Med)
+    (t.title.includes(practice === 'vet' ? '[VET]' : '[MED]') || !t.title.includes('['))
   );
 
   return (
