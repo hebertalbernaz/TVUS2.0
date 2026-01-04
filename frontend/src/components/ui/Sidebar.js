@@ -72,8 +72,8 @@ export function Sidebar() {
            <LayoutGrid className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="font-bold text-lg leading-none">TVUSVET</h1>
-          <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+          <h1 className="font-bold text-lg leading-none">NexaClinq</h1>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
             {practice === 'vet' ? 'Veterinary' : 'Human MD'}
           </span>
         </div>
