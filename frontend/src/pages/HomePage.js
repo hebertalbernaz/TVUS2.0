@@ -13,6 +13,7 @@ import { ProfileSelector } from '@/components/ProfileSelector';
 import { useLicense } from '@/contexts/LicenseContext';
 import logoImg from '../logo-tvusvet.png';
 
+
 export default function HomePage() {
   const { terms, practice } = useLicense(); // 🟢 Contexto
   const [patients, setPatients] = useState([]);
@@ -29,7 +30,9 @@ export default function HomePage() {
       // Filter by scope to prevent cross-contamination
       const scopedPatients = await db.getPatients({ scope: activeScope });
       setPatients(scopedPatients);
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error('loadPatients failed:', error);
+    }
   }, [activeScope]);
 
   useEffect(() => { loadPatients(); }, [loadPatients]);
@@ -63,8 +66,8 @@ export default function HomePage() {
                   <LayoutGrid className="h-6 w-6" />
                </div>
                <div>
-                  <h1 className="text-xl font-bold tracking-tight leading-none text-foreground">TVUSVET</h1>
-                  <p className="text-xs text-muted-foreground font-medium">Sistema de Laudos</p>
+                  <h1 className="text-xl font-bold tracking-tight leading-none text-foreground">NexaClinq</h1>
+                  <p className="text-xs text-muted-foreground font-medium">Gestão & Inteligência Clínica</p>
                </div>
             </div>
 
