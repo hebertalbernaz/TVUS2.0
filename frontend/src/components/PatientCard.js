@@ -122,16 +122,37 @@ export function PatientCard({ patient, onUpdate }) {
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           {/* Ações clínicas */}
           <div className="flex flex-wrap gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  data-testid={`patient-card-new-exam-button-${patient.id}`}
-                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  disabled={busy}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Novo Exame
-                </Button>
-              </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      data-testid={`patient-card-new-exam-button-${patient.id}`}
+                      className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                      disabled={busy}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Novo Exame
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-64">
+                    {getAllExamTypes().map((type) => (
+                      <DropdownMenuItem
+                        key={type.id}
+                        onClick={() => createNewExam(type.id)}
+                        className="cursor-pointer gap-2 py-2"
+                        data-testid={`patient-card-new-exam-${patient.id}-${type.id}`}
+                      >
+                        <span className="text-lg">{type.icon}</span>
+                        <span className="font-medium">{type.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent>Criar novo exame</TooltipContent>
+            </Tooltip>
+
+            {/* Receita */}
               <DropdownMenuContent align="start" className="w-64">
                 {getAllExamTypes().map((type) => (
                   <DropdownMenuItem
