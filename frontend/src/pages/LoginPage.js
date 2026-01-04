@@ -20,7 +20,7 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      toast.success("Bem-vindo ao TVUSVET 2.0");
+      toast.success("Bem-vindo ao NexaClinq");
       navigate('/'); // Redireciona para a Home após login
     } catch (error) {
       console.error(error);
