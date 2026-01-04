@@ -184,7 +184,9 @@ const seedDatabase = async (db) => {
           console.log('NexaClinq: Upgrading Templates...');
           try {
             await db.templates.bulkInsert(initialTemplates);
-          } catch (e) {}
+          } catch (e) {
+            // ignore duplicates
+          }
       }
   } catch (e) {
       console.warn("Seed warning:", e);
