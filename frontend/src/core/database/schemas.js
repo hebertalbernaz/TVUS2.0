@@ -372,6 +372,35 @@ export const FinancialSchema = {
 };
 
 // --- LAB EXAMS ---
+// --- ANAMNESIS (PEP) ---
+export const AnamnesisSchema = {
+  title: 'anamnesis schema',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
+    date: { type: 'string', format: 'date-time' },
+    doctor_name: { type: 'string' },
+
+    // type of record based on scope
+    type: { type: 'string', enum: ['vet', 'human'] },
+
+    main_complaint: { type: 'string' },
+    history: { type: 'string' },
+
+    // Free-form objects (dynamic fields by scope)
+    general_data: { type: 'object', additionalProperties: true },
+    physical_exam: { type: 'object', additionalProperties: true },
+
+    diagnosis: { type: 'string' },
+    conduct: { type: 'string' }
+  },
+  required: ['id', 'patient_id', 'date', 'type']
+};
+
+// --- LAB EXAMS ---
 export const LabExamSchema = {
   title: 'lab exam schema',
   version: 0,
