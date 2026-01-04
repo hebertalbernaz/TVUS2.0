@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { db } from '@/services/database';
 import { PatientForm } from './PatientForm';
 import { getAllExamTypes, getExamTypeName } from '@/lib/exam_types';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLicense } from '../contexts/LicenseContext';
 
