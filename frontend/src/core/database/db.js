@@ -166,9 +166,12 @@ const seedDatabase = async (db) => {
       }
 
       // SMART SEED: Drugs
-      // If DB is old/basic (or empty), upgrade by bulkInsert.
+      // If DB is old/basic (or empty) OR still has the old/dummy dataset, upgrade by bulkInsert.
       const drugsCount = await db.drugs.count().exec();
-      if (drugsCount < 5) {
+      const hasNewVetMarker = await db.drugs.findOne('v_atb_01').exec();
+      const hasNewHumanMarker = await db.drugs.findOne('h_cv_01').exec();
+
+      if (drugsCount < 5 || !hasNewVetMarker || !hasNewHumanMarker) {
          console.log('NexaClinq: Upgrading Drug Database...');
          try {
             await db.drugs.bulkInsert(initialDrugs);
@@ -180,7 +183,10 @@ const seedDatabase = async (db) => {
 
       // SMART SEED: Templates
       const templatesCount = await db.templates.count().exec();
-      if (templatesCount < 3) {
+      const hasNewTemplateVet = await db.templates.findOne('vt_abd_01').exec();
+      const hasNewTemplateHuman = await db.templates.findOne('ht_abd_01').exec();
+
+      if (templatesCount < 3 || !hasNewTemplateVet || !hasNewTemplateHuman) {
           console.log('NexaClinq: Upgrading Templates...');
           try {
             await db.templates.bulkInsert(initialTemplates);
