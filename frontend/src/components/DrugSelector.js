@@ -28,7 +28,7 @@ export function DrugSelector({ onSelect }) {
           const docs = await db.drugs.find({
             selector: {
               name: { 
-                $regex: searchTerm,  // Passamos a string direta do input
+                $regex: searchTerm.trim(),  // Garantir que é uma string válida
                 $options: 'i'        
               },
               type: practice 
