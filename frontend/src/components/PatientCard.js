@@ -153,15 +153,21 @@ export function PatientCard({ patient, onUpdate }) {
             </Tooltip>
 
 
-            <Button
-              data-testid={`patient-card-prescription-button-${patient.id}`}
-              onClick={() => navigate(`/prescription/new/${patient.id}`)}
-              className="h-9 bg-green-600 hover:bg-green-700 text-white"
-              disabled={!canUsePrescription}
-              title={canUsePrescription ? 'Criar nova receita' : 'Módulo de prescrição não habilitado na licença'}
-            >
-              <Pill className="h-4 w-4 mr-2" /> Nova Receita
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid={`patient-card-prescription-button-${patient.id}`}
+                  onClick={() => navigate(`/prescription/new/${patient.id}`)}
+                  className="h-9 bg-green-600 hover:bg-green-700 text-white"
+                  disabled={!canUsePrescription}
+                >
+                  <Pill className="h-4 w-4 mr-2" /> Receita
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {canUsePrescription ? 'Nova receita' : 'Módulo de prescrição não habilitado na licença'}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Info extra compacta */}
