@@ -74,7 +74,7 @@ export function Sidebar() {
         <div>
           <h1 className="font-bold text-lg leading-none">NexaClinq</h1>
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-            {practice === 'vet' ? 'Veterinary' : 'Human MD'}
+            Gestão & Inteligência Clínica
           </span>
         </div>
       </div>
