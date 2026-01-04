@@ -185,13 +185,15 @@ export const ProfileSchema = {
 // --- DRUGS ---
 export const DrugSchema = {
   title: 'drug schema',
-  version: 0,
+  // v1: add "category" for NexaClinq medical intelligence
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
     name: { type: 'string' },
     type: { type: 'string', enum: ['vet', 'human'] },
+    category: { type: 'string' },
     default_dosage: { type: 'string' }
   },
   required: ['id', 'name']
