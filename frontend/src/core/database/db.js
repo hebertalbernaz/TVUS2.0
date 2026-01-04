@@ -110,6 +110,7 @@ const _create = async () => {
         }
     },
       lab_exams: { schema: LabExamSchema },
+      anamnesis: { schema: AnamnesisSchema },
       
       // Ophthalmo with version: 1 needs migration
       ophthalmo: { 
