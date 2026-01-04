@@ -197,7 +197,7 @@ export function DrugsManager() {
                         placeholder="Ex: Antibiótico, Analgesia, Cardio..."
                     />
                 </div>
-                </div>
+
                 <div className="space-y-2">
                     <Label>Posologia Padrão</Label>
                     <Input 
