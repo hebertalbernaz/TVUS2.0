@@ -85,7 +85,7 @@ export function DrugsManager() {
 
         setIsDialogOpen(false);
         setEditingDrug(null);
-        setFormData({ name: '', default_dosage: '' });
+        setFormData({ name: '', category: '', default_dosage: '' });
         loadDrugs();
     } catch (e) {
         console.error(e);
