@@ -16,11 +16,8 @@ import { useLicense } from '../contexts/LicenseContext';
 
 export function PatientCard({ patient, onUpdate }) {
   const { terms, practice, hasModule } = useLicense(); // added hasModule
-  const [exams, setExams] = useState([]);
-  const [examsCount, setExamsCount] = useState(0);
-  const [showExams, setShowExams] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [examToDelete, setExamToDelete] = useState(null);
+  // NOTE: History is accessed only via "Abrir Prontuário" button (PatientHistoryPage).
   const navigate = useNavigate();
 
   const loadExamsCount = useCallback(async () => {
