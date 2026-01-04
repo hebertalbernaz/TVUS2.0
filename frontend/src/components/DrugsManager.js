@@ -36,10 +36,10 @@ export function DrugsManager() {
         sort: [{ name: 'asc' }]
       };
 
-      if (searchTerm) {
-        // CORREÇÃO QU16 TAMBÉM AQUI
+      if (searchTerm && searchTerm.trim().length > 0) {
+        // CORREÇÃO QU16 TAMBÉM AQUI - Garantir que searchTerm é uma string válida
         query.selector.name = { 
-            $regex: searchTerm, 
+            $regex: searchTerm.trim(), 
             $options: 'i' 
         };
       }
