@@ -78,7 +78,8 @@ export function PatientCard({ patient, onUpdate }) {
   };
 
   return (
-    <Card className="group hover:shadow-lg hover:border-primary/40 transition-all duration-300 bg-card overflow-hidden" data-testid={`patient-card-${patient.id}`}>
+    <TooltipProvider>
+      <Card className="rounded-xl shadow-sm hover:shadow-md border border-border/60 hover:border-primary/30 transition-all duration-300 bg-background overflow-hidden" data-testid={`patient-card-${patient.id}`}>
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
