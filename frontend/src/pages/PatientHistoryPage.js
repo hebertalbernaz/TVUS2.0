@@ -432,6 +432,20 @@ export default function PatientHistoryPage() {
           )}
         </div>
       </ScrollArea>
+
+      <AnamnesisModal
+        open={showAnamnesis}
+        onOpenChange={setShowAnamnesis}
+        patient={patient}
+        defaultDoctorName={''}
+        onSave={async (payload) => {
+          // type is derived from patient.scope
+          const type = (patient?.scope || 'VET') === 'HUMAN' ? 'human' : 'vet';
+          await db.createAnamnesis({ ...payload, type });
+          const t = await db.getPatientTimeline(patientId);
+          setTimeline((t || []).filter(x => x?.collection && x?.date));
+        }}
+      />
     </div>
   );
 }
