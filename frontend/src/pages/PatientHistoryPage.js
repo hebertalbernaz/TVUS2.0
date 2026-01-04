@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/database';
+import { AnamnesisModal } from '@/components/AnamnesisModal';
 import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList } from 'lucide-react';
 import { getExamTypeName } from '@/lib/exam_types';
 
