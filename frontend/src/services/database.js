@@ -107,7 +107,13 @@ class DatabaseService {
           data: l
       }));
 
-      const merged = [...examEntries, ...rxEntries, ...labEntries];
+      const anamnesisEntries = (anamnesis || []).map(a => ({
+          collection: 'anamnesis',
+          date: a.date || new Date().toISOString(),
+          data: a
+      }));
+
+      const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries];
       merged.sort((a, b) => new Date(b.date) - new Date(a.date));
       return merged;
   }
