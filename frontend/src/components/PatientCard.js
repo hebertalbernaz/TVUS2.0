@@ -20,24 +20,8 @@ export function PatientCard({ patient, onUpdate }) {
   // NOTE: History is accessed only via "Abrir Prontuário" button (PatientHistoryPage).
   const navigate = useNavigate();
 
-  const loadExamsCount = useCallback(async () => {
-    try {
-      const patientExams = await db.getExams(patient.id);
-      setExamsCount(patientExams.length);
-      setExams(patientExams);
-    } catch (e) { console.error(e); }
-  }, [patient.id]);
 
-  useEffect(() => { loadExamsCount(); }, [loadExamsCount]);
 
-  const loadExams = async () => {
-    try {
-      const patientExams = await db.getExams(patient.id);
-      setExams(patientExams);
-      setExamsCount(patientExams.length);
-      setShowExams(true);
-    } catch (e) { toast.error('Erro ao carregar'); }
-  };
 
   const createNewExam = async (examType) => {
     try {
