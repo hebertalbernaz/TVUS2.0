@@ -114,7 +114,7 @@ export function DrugsManager() {
 
   const openNew = () => {
       setEditingDrug(null);
-      setFormData({ name: '', default_dosage: '' });
+      setFormData({ name: '', category: '', default_dosage: '' });
       setIsDialogOpen(true);
   };
 
