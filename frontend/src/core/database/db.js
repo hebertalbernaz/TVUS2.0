@@ -9,7 +9,7 @@ import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
 import { 
   PatientSchema, SettingsSchema, DrugSchema, PrescriptionSchema, 
   ExamSchema, OphthalmoSchema, TemplateSchema, ReferenceValueSchema, 
-  ProfileSchema, FinancialSchema, LabExamSchema        
+  ProfileSchema, FinancialSchema, LabExamSchema, AnamnesisSchema        
 } from './schemas';
 import { initialDrugs, initialSettings, initialTemplates } from '../../config/seeds';
 import { v4 as uuidv4 } from 'uuid';
