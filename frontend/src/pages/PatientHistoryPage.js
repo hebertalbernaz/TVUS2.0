@@ -159,6 +159,7 @@ export default function PatientHistoryPage() {
               const isExam = entry.collection === 'exams';
               const isPrescription = entry.collection === 'prescriptions';
               const isLab = entry.collection === 'lab_exams';
+              const isAnamnesis = entry.collection === 'anamnesis';
               const { date, time } = formatDate(entry.date);
 
               if (isExam) {
