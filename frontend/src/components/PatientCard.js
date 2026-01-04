@@ -24,7 +24,9 @@ export function PatientCard({ patient, onUpdate }) {
 
   const createNewExam = async (examType) => {
     try {
-      const newExam = await db.createExam({ patient_id: patient.id, exam_weight: patient.weight, exam_type: examType });
+      // Creation-only; history stays in PatientHistoryPage
+      const { db: dbService } = await import('@/services/database');
+      const newExam = await dbService.createExam({ patient_id: patient.id, exam_weight: patient.weight, exam_type: examType });
       toast.success('Exame criado!');
       navigate(`/exam/${newExam.id}`);
     } catch (e) { toast.error('Erro ao criar'); }
