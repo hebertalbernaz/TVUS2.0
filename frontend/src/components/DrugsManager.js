@@ -186,6 +186,9 @@ export function DrugsManager() {
                         value={formData.name} 
                         onChange={e => setFormData({...formData, name: e.target.value})}
                         placeholder="Ex: Doxiciclina 100mg"
+                    />
+                </div>
+
                 <div className="space-y-2">
                     <Label>Categoria</Label>
                     <Input 
@@ -194,8 +197,6 @@ export function DrugsManager() {
                         placeholder="Ex: Antibiótico, Analgesia, Cardio..."
                     />
                 </div>
-
-                    />
                 </div>
                 <div className="space-y-2">
                     <Label>Posologia Padrão</Label>
