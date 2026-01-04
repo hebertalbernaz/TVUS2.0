@@ -33,7 +33,7 @@ try {
 const returnSameDoc = (oldDoc) => oldDoc;
 
 const _create = async () => {
-  console.log(`Database: Initializing RxDB tvusvet_db_v7 [Env: ${isDev ? 'DEV' : 'PROD'}]...`);
+  console.log(`Database: Initializing RxDB tvusvet_db_v8 [Env: ${isDev ? 'DEV' : 'PROD'}]...`);
 
   const storage = isDev 
       ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() }) 
@@ -51,7 +51,8 @@ const _create = async () => {
   };
 
   const db = await createRxDatabase({
-    name: "tvusvet_db_v7", // BUMPED to V7 for Professional Ophthalmo
+    name: "tvusvet_db_v8", // Fresh start to mitigate DB6 schema conflicts (IndexedDB cache)
+
     storage: storage,
     ignoreDuplicate: true,
     hashFunction: hashFunction
