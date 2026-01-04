@@ -10,7 +10,7 @@ import { Plus, FileText, Edit, Trash2, Dog, Cat, HelpCircle, User, Pill } from '
 import { toast } from 'sonner';
 import { db } from '@/services/database';
 import { PatientForm } from './PatientForm';
-import { getAllExamTypes, getExamTypeName } from '@/lib/exam_types';
+import { getAllExamTypes } from '@/lib/exam_types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLicense } from '../contexts/LicenseContext';
 
