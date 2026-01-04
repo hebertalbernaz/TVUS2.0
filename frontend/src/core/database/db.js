@@ -164,7 +164,7 @@ const seedDatabase = async (db) => {
       }
 
       const templatesCount = await db.templates.count().exec();
-      if (templatesCount === 0 && initialTemplates?.length > 0) {
+      if (templatesCount === 0) {
           console.log('Seeding Templates...');
           await db.templates.bulkInsert(initialTemplates);
       }
