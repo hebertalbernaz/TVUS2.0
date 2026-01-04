@@ -15,6 +15,9 @@ export default function PatientHistoryPage() {
 
   const [patient, setPatient] = useState(null);
   const [timeline, setTimeline] = useState([]); // unified: exams + prescriptions
+
+  const [showAnamnesis, setShowAnamnesis] = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
