@@ -31,15 +31,17 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4" data-testid="login-page">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4" data-testid="login-page">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center justify-center text-center">
-          <img src="./logo-tvusvet.png" alt="TVUSVET" className="h-24 w-auto mb-4" />
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 shadow-sm">
+            <span className="text-primary font-bold text-xl">N</span>
+          </div>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Acesso ao Sistema
+            NexaClinq
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Versão 2.0 - SaaS Híbrido
+            Gestão & Inteligência Clínica
           </p>
         </div>
 
