@@ -208,7 +208,7 @@ export function DrugsManager() {
                     />
                     {practice === 'vet' && (
                         <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                            Use "mg/kg" (ex: <i>10mg/kg</i>) para cálculo automático baseado no peso.
+                            Use &quot;mg/kg&quot; (ex: <i>10mg/kg</i>) para cálculo automático baseado no peso.
                         </p>
                     )}
                 </div>
