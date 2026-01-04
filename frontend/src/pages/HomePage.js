@@ -182,7 +182,12 @@ export default function HomePage() {
           </DialogHeader>
           <PatientForm 
             patient={editingPatient}
-            onSuccess={() => { setShowNewPatient(false); setEditingPatient(null); loadPatients(); }} 
+            onSuccess={() => {
+              setShowNewPatient(false);
+              setEditingPatient(null);
+              // reload patients with a slight delay to avoid RxDB replication timing
+              setTimeout(() => loadPatients(), 150);
+            }} 
             onCancel={() => { setShowNewPatient(false); setEditingPatient(null); }} 
           />
         </DialogContent>
