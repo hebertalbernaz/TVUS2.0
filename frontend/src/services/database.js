@@ -193,6 +193,33 @@ class DatabaseService {
    * Returns prescriptions for patient.
    * (Used by timeline; also useful for future screens.)
    */
+
+  // ================= ANAMNESIS (PEP) =================
+  async createAnamnesis(data) {
+      const db = await getDatabase();
+      const nowIso = new Date().toISOString();
+      const record = {
+          id: genId(),
+          patient_id: data.patient_id,
+          date: data.date || nowIso,
+          doctor_name: data.doctor_name || '',
+          type: data.type, // 'vet' | 'human'
+          main_complaint: data.main_complaint || '',
+          history: data.history || '',
+          general_data: data.general_data || {},
+          physical_exam: data.physical_exam || {},
+          diagnosis: data.diagnosis || '',
+          conduct: data.conduct || ''
+      };
+      await db.anamnesis.insert(record);
+      return record;
+  }
+
+  async getAnamnesis(patientId) {
+      const db = await getDatabase();
+      return await this._files(db.anamnesis.find({ selector: { patient_id: patientId } }).sort({ date: 'desc' }));
+  }
+
   async getPrescriptions(patientId = null) {
       const db = await getDatabase();
       const query = patientId ? { selector: { patient_id: patientId } } : {};
