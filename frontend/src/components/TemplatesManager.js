@@ -35,6 +35,7 @@ const SUGGESTED_ORGANS = [
 ];
 
 export function TemplatesManager({ templates, onUpdate }) {
+  const { practice } = useLicense();
   const [showNew, setShowNew] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState(null);
