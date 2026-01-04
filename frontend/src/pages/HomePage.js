@@ -153,7 +153,12 @@ export default function HomePage() {
                 {searchTerm ? 'Verifique a grafia ou tente outro termo.' : 'Comece cadastrando agora.'}
             </p>
             {!searchTerm && (
-                <Button onClick={() => setShowNewPatient(true)} variant="outline" className="mt-4 border-primary/20 text-primary hover:bg-primary/5">
+                <Button
+                    data-testid="empty-state-create-patient-button"
+                    onClick={() => { setEditingPatient(null); setShowNewPatient(true); }}
+                    variant="outline"
+                    className="mt-4 border-primary/20 text-primary hover:bg-primary/5"
+                >
                     Cadastrar {terms.patient_label}
                 </Button>
             )}

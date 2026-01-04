@@ -54,13 +54,7 @@ export function PatientCard({ patient, onUpdate }) {
   const canUsePrescription = hasModule?.('prescription');
 
   const openHistory = () => {
-    const baseUrl = window.location.href.split('#')[0];
-    const historyUrl = `${baseUrl}#/history/${patient.id}`;
-    window.open(
-      historyUrl,
-      'Prontuário',
-      'width=780,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
-    );
+    navigate(`/history/${patient.id}`);
   };
 
   const createNewExam = async (examType) => {
