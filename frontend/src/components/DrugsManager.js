@@ -69,6 +69,7 @@ export function DrugsManager() {
             if (doc) {
                 await doc.patch({
                     name: formData.name,
+                    category: formData.category || doc.toJSON().category || 'Geral',
                     default_dosage: formData.default_dosage
                 });
                 toast.success("Atualizado com sucesso!");
