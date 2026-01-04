@@ -176,6 +176,7 @@ export function PatientCard({ patient, onUpdate }) {
           </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </TooltipProvider>
   );
 }
