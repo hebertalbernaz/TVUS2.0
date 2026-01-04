@@ -1,6 +1,9 @@
 /**
- * TVUSVET V2.0 - Seed Data (Dados Iniciais)
- * Popula o banco com dados de teste e produção inicial
+ * NexaClinq - Seed Data (Base de Conhecimento)
+ *
+ * IMPORTANT:
+ * - NÃO INVENTAR DADOS.
+ * - Este arquivo é baseado em conteúdo clinicamente validado fornecido pelo time médico.
  */
 
 export const initialSettings = {
@@ -12,94 +15,138 @@ export const initialSettings = {
   theme: 'light'
 };
 
-export const initialDrugs = [
-  // --- VETERINÁRIA ---
-  { id: 'd_v1', name: 'Doxiciclina 100mg', type: 'vet', default_dosage: '10mg/kg a cada 12h por 21 dias' },
-  { id: 'd_v2', name: 'Meloxicam 2mg', type: 'vet', default_dosage: '0.1mg/kg SID por 3 dias' },
-  { id: 'd_v3', name: 'Dipirona 500mg', type: 'vet', default_dosage: '25mg/kg a cada 8h' },
-  { id: 'd_v4', name: 'Prednisolona 20mg', type: 'vet', default_dosage: '0.5mg/kg SID' },
-  
-  // --- HUMANA ---
-  { id: 'd_h1', name: 'Dipirona Monoidratada 1g', type: 'human', default_dosage: '1 comprimido a cada 6h se necessário' },
-  { id: 'd_h2', name: 'Amoxicilina + Clavulanato 875mg', type: 'human', default_dosage: '1 comprimido a cada 12h por 10 dias' },
-  { id: 'd_h3', name: 'Losartana Potássica 50mg', type: 'human', default_dosage: '1 comprimido pela manhã (uso contínuo)' },
-  { id: 'd_h4', name: 'Sinvastatina 20mg', type: 'human', default_dosage: '1 comprimido à noite' }
-];
-
-export const initialTemplates = [
+// =========================
+// MEDICAMENTOS (VET)
+// =========================
+const VET_DRUGS_DB = [
   {
-    id: 't_usg_liver_normal',
-    organ: 'Fígado',
-    title: 'Fígado Normal',
-    text: 'Fígado com dimensões preservadas, contornos regulares e bordas finas. Ecotextura homogênea e ecogenicidade preservada. Calibre dos vasos intra-hepáticos preservado.',
-    lang: 'pt'
+    id: 'vet_drug_01', name: 'Doxiciclina 80mg (Doxitec)', type: 'vet',
+    default_dosage: '5mg/kg a cada 12h ou 10mg/kg a cada 24h, via oral, por 21 a 28 dias.'
   },
   {
-    id: 't_usg_spleen_normal',
-    organ: 'Baço',
-    title: 'Baço Normal',
-    text: 'Baço com dimensões preservadas, contornos regulares e ecotextura homogênea característica.',
-    lang: 'pt'
+    id: 'vet_drug_02', name: 'Amoxicilina + Clavulanato 250mg (Agemoxi)', type: 'vet',
+    default_dosage: '12,5mg/kg a cada 12h, via oral, por 7 a 10 dias.'
   },
   {
-    id: 't_usg_thyroid_nodule',
-    organ: 'Tireoide',
-    title: 'Nódulo Sólido (TI-RADS 4)',
-    text: 'Presença de nódulo sólido, hipoecoico, com contornos irregulares, medindo 1.2 x 0.8 cm no lobo direito. Vascularização central ao Doppler.',
-    lang: 'pt'
-  },
-
-  // ========================
-  // Imagem (Vet)
-  // ========================
-  {
-    id: 't_usg_vet_abd_normal_canine',
-    organ: 'USG',
-    title: 'USG Abdominal Normal (Canino)',
-    text: 'Exame ultrassonográfico abdominal dentro dos padrões de normalidade para a espécie. Fígado com dimensões e ecotextura preservadas; vesícula biliar sem conteúdo anormal; baço com ecotextura homogênea; rins com relação córtico-medular preservada e sem dilatações pielocalicinais; alças intestinais com estratificação mantida e peristalse presente. Sem evidência de efusão abdominal ou massas.',
-    lang: 'pt'
+    id: 'vet_drug_03', name: 'Meloxicam 0.2% (Maxicam)', type: 'vet',
+    default_dosage: '0,1mg/kg (1º dia) seguido de 0,05mg/kg a cada 24h, por 3 a 5 dias.'
   },
   {
-    id: 't_usg_vet_gestational_feline',
-    organ: 'USG',
-    title: 'USG Gestacional (Felino)',
-    text: 'Achados compatíveis com gestação. Presença de vesículas gestacionais em cavidade uterina, com embriões/fetos viáveis, com movimentação e batimentos cardíacos presentes. Líquido amniótico dentro da normalidade. Recomenda-se acompanhamento ultrassonográfico seriado conforme idade gestacional e orientação clínica.',
-    lang: 'pt'
-  },
-
-  // ========================
-  // Imagem (Humano)
-  // ========================
-  {
-    id: 't_usg_human_thyroid_normal',
-    organ: 'USG',
-    title: 'USG Tireoide (Normal)',
-    text: 'Tireoide com dimensões preservadas, contornos regulares e ecotextura homogênea. Ausência de nódulos suspeitos. Vascularização habitual ao Doppler. Linfonodos cervicais sem alterações significativas. Conclusão: exame dentro da normalidade.',
-    lang: 'pt'
+    id: 'vet_drug_04', name: 'Dipirona Sódica 500mg/mL (Gotas)', type: 'vet',
+    default_dosage: '25mg/kg (1 gota por kg) a cada 8h, se houver dor ou febre.'
   },
   {
-    id: 't_usg_human_abd_steatosis_mild',
-    organ: 'USG',
-    title: 'USG Abdome Total (Esteatose Leve)',
-    text: 'Fígado com discreto aumento difuso da ecogenicidade, compatível com esteatose hepática leve, sem sinais de lesões focais. Vias biliares sem dilatação. Pâncreas e baço sem alterações relevantes. Rins com dimensões preservadas e sem hidronefrose. Ausência de ascite. Conclusão: achados compatíveis com esteatose hepática leve.',
-    lang: 'pt'
-  },
-
-  // ========================
-  // Templates de Anamnese (PEP)
-  // ========================
-  {
-    id: 't_anamnesis_vet_physical_normal',
-    organ: 'ANAMNESE',
-    title: 'Exame Físico Padrão (Sem alterações) - Vet',
-    text: 'Paciente em bom estado geral, normohidratado, mucosas normocoradas, TPC < 2s. Auscultação cardiopulmonar sem alterações audíveis. Palpação abdominal sem dor/sem massas palpáveis. Linfonodos periféricos sem aumento. Temperatura corporal dentro da normalidade. Conduta: orientar monitoramento e retorno se houver piora.',
-    lang: 'pt'
+    id: 'vet_drug_05', name: 'Metronidazol 250mg (Giardicid)', type: 'vet',
+    default_dosage: '15mg a 25mg/kg a cada 12h, via oral, por 5 a 7 dias.'
   },
   {
-    id: 't_anamnesis_human_physical_normal_adult',
-    organ: 'ANAMNESE',
-    title: 'Exame Físico Normal (Adulto) - Humano',
-    text: 'Paciente em bom estado geral, corado(a), hidratado(a), afebril. PA e FC dentro de limites aceitáveis. Ausculta cardíaca e pulmonar sem ruídos adventícios. Abdome flácido, indolor, sem massas. Extremidades sem edema. Conduta: orientar sinais de alarme e retorno conforme necessidade clínica.',
-    lang: 'pt'
+    id: 'vet_drug_06', name: 'Prednisolona 20mg', type: 'vet',
+    default_dosage: 'Anti-inflamatório: 0,5 a 1mg/kg/dia. Imunossupressor: 2 a 4mg/kg/dia.'
+  },
+  {
+    id: 'vet_drug_07', name: 'Sarolaner (Simparic) - Antipulgas', type: 'vet',
+    default_dosage: 'Dose única mensal de acordo com o peso do animal.'
+  },
+  {
+    id: 'vet_drug_08', name: 'Omeprazol 20mg', type: 'vet',
+    default_dosage: '1mg/kg a cada 24h, via oral, preferencialmente em jejum.'
+  },
+  {
+    id: 'vet_drug_09', name: 'Tramadol 50mg', type: 'vet',
+    default_dosage: '2 a 4mg/kg a cada 8h ou 12h, para controle da dor moderada a grave.'
+  },
+  {
+    id: 'vet_drug_10', name: 'Ondansetrona 5mg (Vonau)', type: 'vet',
+    default_dosage: '0,5 a 1mg/kg a cada 12h ou 8h, via oral, para controle de vômito.'
   }
 ];
+
+// =========================
+// MEDICAMENTOS (HUMAN)
+// =========================
+const HUMAN_DRUGS_DB = [
+  {
+    id: 'human_drug_01', name: 'Losartana Potássica 50mg', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral, a cada 12 ou 24 horas (conforme PA).'
+  },
+  {
+    id: 'human_drug_02', name: 'Dipirona Monohidratada 1g', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral a cada 6 horas, se dor ou febre.'
+  },
+  {
+    id: 'human_drug_03', name: 'Azitromicina 500mg', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral, uma vez ao dia, por 3 a 5 dias.'
+  },
+  {
+    id: 'human_drug_04', name: 'Amoxicilina 500mg', type: 'human',
+    default_dosage: 'Tomar 1 cápsula via oral a cada 8 horas, por 7 dias.'
+  },
+  {
+    id: 'human_drug_05', name: 'Omeprazol 20mg', type: 'human',
+    default_dosage: 'Tomar 1 cápsula em jejum, pela manhã, por 30 dias.'
+  },
+  {
+    id: 'human_drug_06', name: 'Sinvastatina 20mg', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral, à noite.'
+  },
+  {
+    id: 'human_drug_07', name: 'Metformina 850mg (Glifage)', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral, junto às refeições (almoço/jantar).'
+  },
+  {
+    id: 'human_drug_08', name: 'Ciprofloxacino 500mg', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral a cada 12 horas, por 7 a 14 dias.'
+  },
+  {
+    id: 'human_drug_09', name: 'Paracetamol 750mg', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral a cada 6 ou 8 horas, se dor.'
+  },
+  {
+    id: 'human_drug_10', name: 'Pantoprazol 40mg', type: 'human',
+    default_dosage: 'Tomar 1 comprimido via oral, pela manhã, em jejum.'
+  }
+];
+
+// =========================
+// TEMPLATES DE LAUDOS (REPORT)
+// =========================
+const REPORT_TEMPLATES_DB = [
+  // --- VETERINÁRIA ---
+  {
+    id: 'vet_usg_abd_01', title: 'USG Abdominal Total (Canino - Normal)', organ: 'Abdomen', lang: 'pt',
+    text: `FÍGADO: Dimensões preservadas, contornos regulares e bordos afilados. Ecotextura homogênea e ecogenicidade preservada. Veia porta e veias hepáticas sem alterações.\n\nVESÍCULA BILIAR: Repleta, conteúdo anecóico, paredes finas e regulares.\n\nBAÇO: Dimensões preservadas, contornos regulares e ecotextura homogênea.\n\nRINS: Topografia habitual, dimensões preservadas, formato conservado. Relação córtico-medular mantida (1:1). Ausência de cálculos ou hidronefrose.\n\nBEXIGA: Repleta, conteúdo anecóico, paredes finas e regulares. Ausência de sedimentos ou urólitos visíveis.\n\nESTÔMAGO E ALÇAS INTESTINAIS: Preservados, com peristaltismo presente. Não há sinais de obstrução ou espessamento parietal.\n\nCONCLUSÃO: Estudo sonográfico abdominal dentro dos limites da normalidade para a espécie.`
+  },
+  {
+    id: 'vet_usg_gest_01', title: 'USG Gestacional (Diagnóstico)', organ: 'Gestacional', lang: 'pt',
+    text: `ÚTERO: Identificada presença de vesículas gestacionais com embriões viáveis.\n\nBATIMENTOS CARDÍACOS: Presentes e rítmicos em todos os fetos visualizados (FC > 180 bpm).\n\nVIABILIDADE: Movimentação fetal presente. Líquido amniótico com aspecto normal.\n\nESTIMATIVA: Vesículas medindo em média [XX] cm, compatível com aproximadamente [XX] dias de gestação.\n\nCONCLUSÃO: Gestação tópica com fetos viáveis no momento do exame.`
+  },
+
+  // --- HUMANA ---
+  {
+    id: 'human_usg_abd_01', title: 'USG Abdome Total (Normal)', organ: 'Abdomen', lang: 'pt',
+    text: `FÍGADO: Com dimensões, contornos e morfologia normais. Ecotextura homogênea e ecogenicidade habitual. Ausência de lesões focais. Veia porta e veias hepáticas de calibre normal.\n\nVIAS BILIARES: Intra e extra-hepáticas sem dilatação.\n\nVESÍCULA BILIAR: Tópica, distendida, com paredes finas e conteúdo anecóico (sem cálculos).\n\nPÂNCREAS: Com dimensões e ecotextura normais para a faixa etária.\n\nBAÇO: Com dimensões e ecotextura normais.\n\nRINS: Tópicos, com dimensões normais e contornos regulares. Espessura e ecogenicidade do parênquima preservadas. Ausência de sinais de hidronefrose ou cálculos.\n\nAORTA ABDOMINAL: Com calibre e trajeto normais.\n\nBEXIGA: Com boa repleção, paredes finas e conteúdo anecóico.\n\nCONCLUSÃO: Exame ultrassonográfico do abdome total sem alterações significativas.`
+  },
+  {
+    id: 'human_usg_thyroid_01', title: 'USG Tireoide (Normal)', organ: 'Tireoide', lang: 'pt',
+    text: `GLÂNDULA TIREOIDE: Tópica, com dimensões normais e contornos regulares.\n\nECOTEXTURA: Homogênea, com ecogenicidade preservada.\n\nLOBOS:\n- Lobo Direito: Medindo [XX] x [XX] x [XX] cm.\n- Lobo Esquerdo: Medindo [XX] x [XX] x [XX] cm.\n- Ístmo: Espessura de [XX] cm.\n\nNÓDULOS: Não foram visibilizados nódulos ou cistos sólidos ou mistos.\n\nVASCULARIZAÇÃO: Ao Doppler colorido, nota-se vascularização parenquimatosa habitual.\n\nCONCLUSÃO: Tireoide de aspecto ecográfico normal.`
+  },
+  {
+    id: 'human_usg_prostate_01', title: 'USG Próstata (Via Abdominal)', organ: 'Prostata', lang: 'pt',
+    text: `BEXIGA: Com boa repleção, paredes finas e regulares. Resíduo pós-miccional desprezível.\n\nPRÓSTATA: Tópica, com contornos regulares e ecotextura homogênea.\n\nDIMENSÕES:\n- Diâmetro Transverso: [XX] cm\n- Diâmetro Antero-posterior: [XX] cm\n- Diâmetro Longitudinal: [XX] cm\n\nVOLUME ESTIMADO: [XX] cm³ (Valor de referência: até 30 cm³).\n\nCONCLUSÃO: Próstata com volume e aspecto ultrassonográfico dentro dos limites da normalidade.`
+  }
+];
+
+// =========================
+// ANAMNESE DEFAULTS
+// =========================
+const ANAMNESIS_TEMPLATES = {
+  vet_default: "Paciente ativo, normocorado, hidratado. TPC < 2s. Linfonodos não reativos à palpação. Ausculta cardíaca e pulmonar sem alterações. Temperatura retal normal. Abdome indolor à palpação.",
+  human_default: "Paciente em Bom Estado Geral (BEG), Lúcido, Orientado em Tempo e Espaço (LOTE). Eupneico, Afebril, Acianótico, Anictérico. Hidratado e Corado. \nACV: Ritmo Cardíaco Regular em 2 Tempos (RCR 2T), bulhas normofonéticas, sem sopros.\nAR: Murmúrio Vesicular presente (MV+), sem ruídos adventícios.\nABD: Flácido, indolor, RHA presentes."
+};
+
+// =========================
+// EXPORTS (consumidos pelo seed do RxDB)
+// =========================
+export const initialDrugs = [...VET_DRUGS_DB, ...HUMAN_DRUGS_DB];
+export const initialTemplates = [...REPORT_TEMPLATES_DB];
+export const anamnesisDefaults = ANAMNESIS_TEMPLATES;
