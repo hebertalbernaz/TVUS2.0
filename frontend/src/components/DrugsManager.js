@@ -23,7 +23,7 @@ export function DrugsManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDrug, setEditingDrug] = useState(null);
   
-  const [formData, setFormData] = useState({ name: '', default_dosage: '' });
+  const [formData, setFormData] = useState({ name: '', category: '', default_dosage: '' });
 
   const loadDrugs = useCallback(async () => {
     try {
