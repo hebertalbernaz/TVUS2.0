@@ -361,6 +361,73 @@ export default function PatientHistoryPage() {
                 );
               }
 
+              if (isAnamnesis) {
+                const a = entry.data;
+                return (
+                  <Card
+                    key={`anamnesis-${a.id}`}
+                    className="border-l-4 border-l-sky-500/60 shadow-sm hover:shadow transition-all"
+                    data-testid={`timeline-anamnesis-${a.id}`}
+                  >
+                    <CardHeader className="pb-3 bg-muted/5 border-b">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-sky-500/10 p-2.5 rounded-full text-sky-700">
+                            <ClipboardList className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg text-foreground">{date}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{time}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 uppercase tracking-wide" data-testid={`timeline-anamnesis-badge-${a.id}`}>
+                            Anamnese
+                          </Badge>
+                          <Badge variant="outline" className="text-xs" data-testid={`timeline-anamnesis-type-${a.id}`}>
+                            {a.type === 'human' ? 'Humano' : 'Vet'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">Profissional:</span> {a.doctor_name || '--'}
+                      </div>
+
+                      {a.main_complaint ? (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Queixa Principal</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{a.main_complaint}</div>
+                        </div>
+                      ) : null}
+
+                      {a.history ? (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">História</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{a.history}</div>
+                        </div>
+                      ) : null}
+
+                      {(a.diagnosis || a.conduct) ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t">
+                          <div>
+                            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnóstico</div>
+                            <div className="whitespace-pre-wrap text-foreground/80 text-sm">{a.diagnosis || '--'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta</div>
+                            <div className="whitespace-pre-wrap text-foreground/80 text-sm">{a.conduct || '--'}</div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+
 
               return null;
             })
