@@ -90,8 +90,16 @@ const _create = async () => {
         }
     },
     
-    // Collections with version: 0 don't need migration strategies
-      drugs: { schema: DrugSchema },
+    drugs: {
+      schema: DrugSchema,
+      migrationStrategies: {
+        // v1 migration: add missing category for legacy seed entries
+        1: (oldDoc) => ({
+          ...oldDoc,
+          category: oldDoc.category || 'Geral'
+        })
+      }
+    },
       prescriptions: { schema: PrescriptionSchema },
       templates: { schema: TemplateSchema },
       reference_values: { schema: ReferenceValueSchema },
