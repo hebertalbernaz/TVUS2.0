@@ -78,6 +78,7 @@ export function DrugsManager() {
             await db.drugs.insert({
                 id: genId(),
                 name: formData.name,
+                category: formData.category || 'Geral',
                 default_dosage: formData.default_dosage,
                 type: practice
             });
