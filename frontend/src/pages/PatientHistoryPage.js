@@ -116,7 +116,7 @@ export default function PatientHistoryPage() {
           <Button data-testid="patient-history-header-back" variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-primary">Histórico Clínico</h1>
+          <h1 className="text-2xl font-bold text-primary">Prontuário Eletrônico | NexaClinq</h1>
         </div>
 
         <div className="text-sm text-muted-foreground grid grid-cols-2 md:grid-cols-4 gap-4 bg-muted/20 p-3 rounded-lg" data-testid="patient-history-header">
