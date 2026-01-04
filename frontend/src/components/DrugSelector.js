@@ -63,10 +63,11 @@ export function DrugSelector({ onSelect }) {
       </div>
 
       {showResults && results.length > 0 && (
-        <Card className="absolute w-full mt-1 max-h-60 overflow-auto shadow-xl border-primary/20 bg-white z-50">
+        <Card className="absolute w-full mt-1 max-h-60 overflow-auto shadow-xl border-primary/20 bg-card z-50" data-testid="drug-selector-results">
           {results.map(drug => (
             <div 
               key={drug.id}
+              data-testid={`drug-selector-item-${drug.id}`}
               className="p-3 hover:bg-accent cursor-pointer border-b last:border-none flex justify-between items-center"
               onClick={() => {
                 onSelect(drug);
@@ -75,11 +76,18 @@ export function DrugSelector({ onSelect }) {
                 setShowResults(false);
               }}
             >
-              <div>
-                <div className="font-medium text-sm">{drug.name}</div>
-                <div className="text-xs text-muted-foreground">{drug.default_dosage}</div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="font-medium text-sm truncate">{drug.name}</div>
+                  {drug.category ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border bg-muted/40 text-muted-foreground whitespace-nowrap" data-testid={`drug-category-${drug.id}`}>
+                      {drug.category}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="text-xs text-muted-foreground line-clamp-2">{drug.default_dosage}</div>
               </div>
-              <Plus className="h-4 w-4 text-primary" />
+              <Plus className="h-4 w-4 text-primary flex-shrink-0" />
             </div>
           ))}
         </Card>
