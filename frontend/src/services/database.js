@@ -216,29 +216,38 @@ class DatabaseService {
   // ================= SETTINGS & PROFILES =================
   async getSettings() { 
       const db = await getDatabase();
-      let s = await this._one(db.settings.findOne('global_settings'));
-      
-      // FALLBACK: Create settings if not found
-      if (!s) {
-        console.warn('Settings not found, creating defaults...');
-        const defaultSettings = {
-          id: 'global_settings',
-          practice_type: 'vet',
-          active_modules: ['core', 'ultrasound', 'financial', 'prescription'],
-          clinic_name: '',
-          theme: 'light',
-          active_profile_id: null,
-          active_profile_name: null
-        };
-        try {
+
+      const defaultSettings = {
+        id: 'global_settings',
+        practice_type: 'vet',
+        active_modules: ['core', 'ultrasound', 'financial', 'prescription'],
+        clinic_name: '',
+        theme: 'light',
+        active_profile_id: null,
+        active_profile_name: null
+      };
+
+      try {
+        let s = await this._one(db.settings.findOne('global_settings'));
+
+        // FALLBACK: Create settings if not found (fresh DB start)
+        if (!s) {
+          console.warn('Settings not found, creating defaults...');
           await db.settings.insert(defaultSettings);
           s = defaultSettings;
-        } catch (e) {
-          console.error('Error creating settings:', e);
-          return defaultSettings;
         }
+
+        return s || defaultSettings;
+      } catch (e) {
+        console.error('getSettings failed (will recreate defaults):', e);
+        try {
+          // Best-effort: create defaults if db is empty/corrupted
+          await db.settings.upsert(defaultSettings);
+        } catch (e2) {
+          console.error('Failed to upsert default settings:', e2);
+        }
+        return defaultSettings;
       }
-      return s || {};
   }
   
   async updateSettings(d) { 
