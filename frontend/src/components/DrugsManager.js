@@ -51,6 +51,7 @@ export function DrugsManager() {
     }
   }, [searchTerm, practice]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     loadDrugs();
   }, [loadDrugs]);
