@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, FileText, Edit, Trash2, Dog, Cat, HelpCircle, User, Pill } from 'lucide-react';
 import { toast } from 'sonner';
-import { db } from '@/services/database';
 import { PatientForm } from './PatientForm';
 import { getAllExamTypes } from '@/lib/exam_types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
