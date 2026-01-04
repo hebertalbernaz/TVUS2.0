@@ -101,15 +101,19 @@ export function PatientCard({ patient, onUpdate }) {
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Button
-              data-testid={`patient-card-history-button-${patient.id}`}
-              onClick={openHistory}
-              variant="secondary"
-              className="h-9"
-              title="Abrir prontuário/histórico"
-            >
-              <FileText className="h-4 w-4 mr-2" /> Abrir Prontuário
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid={`patient-card-history-button-${patient.id}`}
+                  onClick={openHistory}
+                  variant="secondary"
+                  className="h-9"
+                >
+                  <FileText className="h-4 w-4 mr-2" /> Prontuário
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Abrir prontuário/histórico</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </CardHeader>
