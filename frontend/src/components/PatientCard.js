@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, FileText, Edit, Trash2, Dog, Cat, HelpCircle, User, Pill } from 'lucide-react';
 import { toast } from 'sonner';
 import { db } from '@/services/database';
