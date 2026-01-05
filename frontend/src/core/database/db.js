@@ -33,7 +33,7 @@ try {
 const returnSameDoc = (oldDoc) => oldDoc;
 
 const _create = async () => {
-  console.log(`Database: Initializing RxDB tvusvet_db_v8 [Env: ${isDev ? 'DEV' : 'PROD'}]...`);
+  console.log(`Database: Initializing RxDB tvusvet_db_v9 [Env: ${isDev ? 'DEV' : 'PROD'}]...`);
 
   const storage = isDev 
       ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() }) 
