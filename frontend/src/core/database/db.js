@@ -51,7 +51,7 @@ const _create = async () => {
   };
 
   const db = await createRxDatabase({
-    name: "tvusvet_db_v8", // Fresh start to mitigate DB6 schema conflicts (IndexedDB cache)
+    name: "tvusvet_db_v9", // Reset limpo para forçar atualização de seeds
 
     storage: storage,
     ignoreDuplicate: true,
