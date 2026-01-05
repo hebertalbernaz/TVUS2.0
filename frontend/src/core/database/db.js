@@ -165,9 +165,7 @@ const seedDatabase = async (db) => {
         await db.settings.insert(initialSettings);
       }
 
-      // SMART SEED: Drugs
-      // If DB is old/basic (or empty) OR still has the old/dummy dataset, upgrade by bulkInsert.
-            // Se count de drugs for baixo, roda o bulkInsert(initialDrugs) novamente
+      // Se count de drugs for baixo, roda o bulkInsert(initialDrugs) novamente
       const drugsCount = await db.drugs.count().exec();
       if (drugsCount < 5) {
         try {
