@@ -177,11 +177,7 @@ const seedDatabase = async (db) => {
 
       // SMART SEED: Templates
       const templatesCount = await db.templates.count().exec();
-      const hasNewTemplateVet = await db.templates.findOne('vt_abd_01').exec();
-      const hasNewTemplateHuman = await db.templates.findOne('ht_abd_01').exec();
-
-      if (templatesCount < 3 || !hasNewTemplateVet || !hasNewTemplateHuman) {
-          console.log('NexaClinq: Upgrading Templates...');
+      if (templatesCount < 3) {
           try {
             await db.templates.bulkInsert(initialTemplates);
           } catch (e) {
