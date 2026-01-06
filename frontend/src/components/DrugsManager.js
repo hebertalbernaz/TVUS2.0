@@ -29,22 +29,20 @@ export function DrugsManager() {
     try {
       const db = await getDatabase();
       
-      const query = {
+      let query = {
         selector: {
           type: practice
         },
         sort: [{ name: 'asc' }]
       };
 
-      if (searchTerm && searchTerm.trim().length > 0) {
-        // CORREÇÃO QU16 TAMBÉM AQUI - Garantir que searchTerm é uma string válida
+      // Only add regex search if we have a valid search term
+      if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
         const trimmedSearch = searchTerm.trim();
-        if (trimmedSearch) {
-          query.selector.name = { 
-              $regex: trimmedSearch, 
-              $options: 'i' 
-          };
-        }
+        query.selector.name = { 
+            $regex: trimmedSearch, 
+            $options: 'i' 
+        };
       }
 
       const docs = await db.drugs.find(query).exec();
