@@ -25,10 +25,16 @@ export function DrugSelector({ onSelect }) {
           // --- CORREÇÃO DO ERRO QU16 AQUI ---
           // O RxDB exige que o regex seja uma STRING, e não um objeto new RegExp().
           // Usamos $options: 'i' para ignorar maiúsculas/minúsculas.
+          const trimmedSearch = searchTerm.trim();
+          if (!trimmedSearch) {
+            setResults([]);
+            return;
+          }
+          
           const docs = await db.drugs.find({
             selector: {
               name: { 
-                $regex: searchTerm.trim(),  // Garantir que é uma string válida
+                $regex: trimmedSearch,  // Garantir que é uma string válida
                 $options: 'i'        
               },
               type: practice 
