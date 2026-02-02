@@ -1,11 +1,44 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, Trash2, MoreVertical, FlaskConical, Eye } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import {
+  Stethoscope,
+  FileText,
+  Pill,
+  Dog,
+  Cat,
+  User,
+  Trash2,
+  MoreVertical,
+  FlaskConical,
+  Eye,
+  Edit,
+  ClipboardList,
+  FileCheck,
+  Paperclip
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useLicense } from '../contexts/LicenseContext';
 import { getAllExamTypes } from '@/lib/exam_types';
@@ -39,6 +72,17 @@ const calcAgeLabel = (patient) => {
   }
 };
 
+const formatSpecies = (species, practice) => {
+  if (practice === 'human') return 'Humano';
+  const map = { dog: 'Canino', cat: 'Felino', other: 'Outro' };
+  return map[species] || species || '--';
+};
+
+const formatSex = (sex) => {
+  const map = { male: 'Macho', female: 'Fêmea', M: 'Masculino', F: 'Feminino' };
+  return map[sex] || sex || '--';
+};
+
 export function PatientCard({ patient, onUpdate }) {
   const { terms, practice, hasModule } = useLicense();
   const navigate = useNavigate();
@@ -46,13 +90,24 @@ export function PatientCard({ patient, onUpdate }) {
 
   const ageLabel = useMemo(() => calcAgeLabel(patient), [patient]);
 
-  // Ícone Dinâmico
-  let SpeciesIcon = HelpCircle;
-  if (patient?.species === 'cat') SpeciesIcon = Cat;
-  else if (patient?.species === 'dog') SpeciesIcon = Dog;
-  else if (practice === 'human') SpeciesIcon = User;
+  // Ícone e cor dinâmicos por espécie
+  let SpeciesIcon = User;
+  let iconColor = 'text-slate-600 bg-slate-100';
+
+  if (patient?.species === 'cat') {
+    SpeciesIcon = Cat;
+    iconColor = 'text-amber-600 bg-amber-100';
+  } else if (patient?.species === 'dog') {
+    SpeciesIcon = Dog;
+    iconColor = 'text-blue-600 bg-blue-100';
+  } else if (practice === 'human') {
+    SpeciesIcon = User;
+    iconColor = 'text-emerald-600 bg-emerald-100';
+  }
 
   const canUsePrescription = hasModule?.('prescription');
+  const canUseOphthalmo = practice === 'human' && hasModule?.('ophthalmo_human');
+  const canUseLab = practice === 'vet' && hasModule?.('lab_vet');
 
   const openHistory = () => {
     navigate(`/history/${patient.id}`);
@@ -61,7 +116,11 @@ export function PatientCard({ patient, onUpdate }) {
   const createNewExam = async (examType) => {
     try {
       setBusy(true);
-      const newExam = await db.createExam({ patient_id: patient.id, exam_weight: patient.weight, exam_type: examType });
+      const newExam = await db.createExam({
+        patient_id: patient.id,
+        exam_weight: patient.weight,
+        exam_type: examType
+      });
       toast.success('Exame criado!');
       navigate(`/exam/${newExam.id}`);
     } catch (e) {
@@ -87,186 +146,253 @@ export function PatientCard({ patient, onUpdate }) {
   };
 
   return (
-    <TooltipProvider>
-      <Card className="rounded-xl shadow-sm border border-border/60 hover:shadow-md hover:border-primary/30 transition-all duration-300 bg-background overflow-hidden" data-testid={`patient-card-${patient.id}`}>
-      <CardHeader className="pb-2 pt-4 px-4">
+    <Card
+      className="group hover:shadow-lg transition-all duration-300 border-border/60 hover:border-primary/40"
+      data-testid={`patient-card-${patient.id}`}
+    >
+      {/* HEADER: Avatar + Name + Badges | Menu */}
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="p-2.5 rounded-full bg-primary/10 text-primary flex-shrink-0">
-              <SpeciesIcon className="h-5 w-5" />
+          {/* Left: Avatar + Info */}
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className={`p-3 rounded-xl ${iconColor} flex-shrink-0 shadow-sm`}>
+              <SpeciesIcon className="h-6 w-6" />
             </div>
-            <div className="min-w-0">
-              <CardTitle className="text-lg font-bold leading-tight truncate" title={patient.name} data-testid={`patient-card-name-${patient.id}`}>
+
+            <div className="min-w-0 flex-1">
+              <h3
+                className="text-lg font-bold text-foreground truncate leading-tight mb-1"
+                title={patient.name}
+                data-testid={`patient-card-name-${patient.id}`}
+              >
                 {patient.name}
-              </CardTitle>
-              <div className="mt-1 text-xs text-muted-foreground truncate" data-testid={`patient-card-subtitle-${patient.id}`}>
-                {practice === 'vet' ? (patient.breed || '--') : 'Paciente'}
-                {' • '}
-                {terms.owner_label}: {patient.owner_name || '--'}
-                {' • '}
-                Idade: {ageLabel}
+              </h3>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-xs font-medium">
+                  {formatSpecies(patient.species, practice)}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {formatSex(patient.sex)}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {ageLabel}
+                </Badge>
+                {practice === 'vet' && patient.breed && (
+                  <Badge variant="outline" className="text-xs">
+                    {patient.breed}
+                  </Badge>
+                )}
+                {practice === 'vet' && patient.weight && (
+                  <Badge variant="outline" className="text-xs">
+                    {patient.weight}kg
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid={`patient-card-history-button-${patient.id}`}
-                  onClick={openHistory}
-                  variant="secondary"
-                  className="h-9"
-                >
-                  <FileText className="h-4 w-4 mr-2" /> Prontuário
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Abrir prontuário/histórico</TooltipContent>
-            </Tooltip>
+          {/* Right: Actions Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                data-testid={`patient-card-menu-button-${patient.id}`}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={() => toast.info('Edição em desenvolvimento')}
+                className="cursor-pointer"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar paciente
+              </DropdownMenuItem>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  data-testid={`patient-card-menu-button-${patient.id}`}
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      data-testid={`patient-card-delete-button-${patient.id}`}
-                      onSelect={(e) => e.preventDefault()}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-destructive focus:text-destructive cursor-pointer"
+              <DropdownMenuSeparator />
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                    data-testid={`patient-card-delete-button-${patient.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir paciente
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir <strong>{patient.name}</strong>?
+                      Esta ação não pode ser desfeita e todos os exames e histórico serão removidos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                      Cancelar
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete();
+                      }}
+                      className="bg-destructive hover:bg-destructive/90"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir paciente
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tem certeza que deseja excluir <strong>{patient.name}</strong>?
-                        Esta ação não pode ser desfeita e todos os exames e histórico serão removidos.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                        Cancelar
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete();
-                        }}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 
-      <CardContent className="px-4 pb-4">
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          {/* Ações clínicas */}
-          <div className="flex flex-wrap gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      data-testid={`patient-card-new-exam-button-${patient.id}`}
-                      className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
-                      disabled={busy}
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> Novo Exame
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-64">
-                    {getAllExamTypes().map((type) => (
-                      <DropdownMenuItem
-                        key={type.id}
-                        onClick={() => createNewExam(type.id)}
-                        className="cursor-pointer gap-2 py-2"
-                        data-testid={`patient-card-new-exam-${patient.id}-${type.id}`}
-                      >
-                        <span className="text-lg">{type.icon}</span>
-                        <span className="font-medium">{type.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TooltipTrigger>
-              <TooltipContent>Criar novo exame</TooltipContent>
-            </Tooltip>
-
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid={`patient-card-prescription-button-${patient.id}`}
-                  onClick={() => navigate(`/prescription/new/${patient.id}`)}
-                  className="h-9 bg-green-600 hover:bg-green-700 text-white"
-                  disabled={!canUsePrescription}
-                >
-                  <Pill className="h-4 w-4 mr-2" /> Receita
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {canUsePrescription ? 'Nova receita' : 'Módulo de prescrição não habilitado na licença'}
-              </TooltipContent>
-            </Tooltip>
-
-            {practice === 'human' && hasModule?.('ophthalmo_human') && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid={`patient-card-ophthalmo-button-${patient.id}`}
-                    onClick={() => navigate(`/ophthalmo?patientId=${patient.id}`)}
-                    className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    <Eye className="h-4 w-4 mr-2" /> Oftalmo
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Novo exame oftalmológico</TooltipContent>
-              </Tooltip>
-            )}
-
-            {practice === 'vet' && hasModule?.('lab_vet') && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid={`patient-card-lab-button-${patient.id}`}
-                    onClick={() => navigate(`/lab?patientId=${patient.id}`)}
-                    className="h-9 bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    <FlaskConical className="h-4 w-4 mr-2" /> Lab
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Novo exame laboratorial</TooltipContent>
-              </Tooltip>
-            )}
+      {/* CONTENT: Owner and secondary info */}
+      <CardContent className="pb-4">
+        <div className="text-sm space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground font-medium">{terms.owner_label}:</span>
+            <span className="text-foreground truncate ml-2" data-testid={`patient-card-owner-${patient.id}`}>
+              {patient.owner_name || '--'}
+            </span>
           </div>
 
-          {/* Info extra compacta */}
-          <div className="text-xs text-muted-foreground" data-testid={`patient-card-vitals-${patient.id}`}>
-            {practice === 'vet' && patient.weight ? `Peso: ${patient.weight}kg` : null}
-          </div>
+          {patient.ownerPhone && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground font-medium">Contato:</span>
+              <span className="text-foreground">{patient.ownerPhone}</span>
+            </div>
+          )}
         </div>
       </CardContent>
-      </Card>
-    </TooltipProvider>
+
+      <Separator />
+
+      {/* FOOTER: Primary actions */}
+      <CardFooter className="pt-4 pb-4 flex flex-wrap gap-2">
+        {/* Primary: Iniciar Atendimento */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+              disabled={busy}
+              data-testid={`patient-card-start-care-button-${patient.id}`}
+            >
+              <Stethoscope className="h-4 w-4 mr-2" />
+              Iniciar Atendimento
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            {/* Section 1: Diagnóstico (Exams) */}
+            <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+              Diagnóstico
+            </DropdownMenuLabel>
+            {getAllExamTypes().map((type) => (
+              <DropdownMenuItem
+                key={type.id}
+                onClick={() => createNewExam(type.id)}
+                className="cursor-pointer gap-2 py-2"
+                data-testid={`patient-card-exam-${patient.id}-${type.id}`}
+              >
+                <span className="text-lg">{type.icon}</span>
+                <span className="font-medium">{type.name}</span>
+              </DropdownMenuItem>
+            ))}
+
+            {/* Ophthalmo (if human practice) */}
+            {canUseOphthalmo && (
+              <DropdownMenuItem
+                onClick={() => navigate(`/ophthalmo?patientId=${patient.id}`)}
+                className="cursor-pointer gap-2 py-2"
+                data-testid={`patient-card-ophthalmo-${patient.id}`}
+              >
+                <Eye className="h-4 w-4" />
+                <span className="font-medium">Oftalmologia</span>
+              </DropdownMenuItem>
+            )}
+
+            {/* Lab (if vet practice) */}
+            {canUseLab && (
+              <DropdownMenuItem
+                onClick={() => navigate(`/lab?patientId=${patient.id}`)}
+                className="cursor-pointer gap-2 py-2"
+                data-testid={`patient-card-lab-${patient.id}`}
+              >
+                <FlaskConical className="h-4 w-4" />
+                <span className="font-medium">Exame Laboratorial</span>
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+
+            {/* Section 2: Clínica */}
+            <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+              Clínica
+            </DropdownMenuLabel>
+
+            <DropdownMenuItem
+              onClick={() => navigate(`/prescription/new/${patient.id}`)}
+              disabled={!canUsePrescription}
+              className="cursor-pointer gap-2 py-2"
+              data-testid={`patient-card-prescription-${patient.id}`}
+            >
+              <Pill className="h-4 w-4" />
+              <span className="font-medium">Nova Receita</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => toast.info('Anamnese: funcionalidade em desenvolvimento')}
+              className="cursor-pointer gap-2 py-2"
+            >
+              <ClipboardList className="h-4 w-4" />
+              <span className="font-medium">Anamnese</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => toast.info('Atestado: funcionalidade em desenvolvimento')}
+              className="cursor-pointer gap-2 py-2"
+            >
+              <FileCheck className="h-4 w-4" />
+              <span className="font-medium">Atestado</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* Section 3: Arquivos */}
+            <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+              Arquivos
+            </DropdownMenuLabel>
+
+            <DropdownMenuItem
+              onClick={() => toast.info('Anexar documento: funcionalidade em desenvolvimento')}
+              className="cursor-pointer gap-2 py-2"
+            >
+              <Paperclip className="h-4 w-4" />
+              <span className="font-medium">Anexar Documento</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Secondary: Prontuário/History */}
+        <Button
+          variant="outline"
+          onClick={openHistory}
+          className="shadow-sm"
+          data-testid={`patient-card-history-button-${patient.id}`}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Prontuário
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
