@@ -5,6 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -43,6 +49,7 @@ import { toast } from 'sonner';
 import { useLicense } from '../contexts/LicenseContext';
 import { getAllExamTypes } from '@/lib/exam_types';
 import { db } from '@/services/database';
+import { PatientForm } from '@/components/PatientForm';
 
 const calcAgeLabel = (patient) => {
   try {
@@ -87,6 +94,7 @@ export function PatientCard({ patient, onUpdate }) {
   const { terms, practice, hasModule } = useLicense();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const ageLabel = useMemo(() => calcAgeLabel(patient), [patient]);
 
@@ -129,6 +137,12 @@ export function PatientCard({ patient, onUpdate }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    toast.success('Paciente atualizado com sucesso!');
+    if (onUpdate) onUpdate();
   };
 
   const handleDelete = async () => {
@@ -206,7 +220,7 @@ export function PatientCard({ patient, onUpdate }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() => toast.info('Edição em desenvolvimento')}
+                onClick={() => setEditDialogOpen(true)}
                 className="cursor-pointer"
               >
                 <Edit className="h-4 w-4 mr-2" />
@@ -393,6 +407,19 @@ export function PatientCard({ patient, onUpdate }) {
           Prontuário
         </Button>
       </CardFooter>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Paciente</DialogTitle>
+          </DialogHeader>
+          <PatientForm
+            patient={patient}
+            onSuccess={handleEditSuccess}
+            onCancel={() => setEditDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

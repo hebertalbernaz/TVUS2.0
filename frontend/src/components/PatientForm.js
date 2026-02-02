@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,38 +10,40 @@ import { useLicense } from '@/contexts/LicenseContext';
 export function PatientForm({ patient, onSuccess, onCancel }) {
   const { terms, practice } = useLicense();
   const currentYear = new Date().getFullYear();
-  
-  // Inicializa formData baseado em patient ou valores padrão
-  const initialFormData = useMemo(() => {
-    if (patient) {
-      let year = patient.birth_year || '';
-      if (!year && patient.birth_date) {
-        try { year = new Date(patient.birth_date).getFullYear().toString(); } catch (e) { /* ignore */ }
-      }
-      return {
-        name: patient.name || '',
-        species: patient.species || (practice === 'vet' ? 'dog' : 'human'),
-        breed: patient.breed || '',
-        sex: patient.sex || 'male',
-        size: patient.size || 'medium',
-        birth_year: year ? String(year) : '',
-        weight: patient.weight || '',
-        owner_name: patient.owner_name || '',
-        ownerPhone: patient.ownerPhone || ''
-      };
+
+  const getEmptyFormData = () => ({
+    name: '',
+    species: practice === 'vet' ? 'dog' : 'human',
+    breed: '',
+    sex: 'male',
+    size: 'medium',
+    birth_year: '',
+    weight: '',
+    owner_name: '',
+    ownerPhone: ''
+  });
+
+  const getFormDataFromPatient = (p) => {
+    let year = p.birth_year || '';
+    if (!year && p.birth_date) {
+      try { year = new Date(p.birth_date).getFullYear().toString(); } catch (e) { /* ignore */ }
     }
     return {
-      name: '',
-      species: practice === 'vet' ? 'dog' : 'human',
-      breed: '',
-      sex: 'male',
-      size: 'medium',
-      birth_year: '',
-      weight: '',
-      owner_name: '',
-      ownerPhone: ''
+      name: p.name || '',
+      species: p.species || (practice === 'vet' ? 'dog' : 'human'),
+      breed: p.breed || '',
+      sex: p.sex || 'male',
+      size: p.size || 'medium',
+      birth_year: year ? String(year) : '',
+      weight: p.weight || '',
+      owner_name: p.owner_name || '',
+      ownerPhone: p.ownerPhone || ''
     };
-  }, [patient, practice]);
+  };
+
+  const initialFormData = useMemo(() => {
+    return patient ? getFormDataFromPatient(patient) : getEmptyFormData();
+  }, []);
 
   const [formData, setFormData] = useState(initialFormData);
 
@@ -53,6 +55,20 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
   }, [patient, currentYear]);
 
   const [age, setAge] = useState(initialAge);
+
+  useEffect(() => {
+    if (patient) {
+      setFormData(getFormDataFromPatient(patient));
+      if (patient.birth_year) {
+        setAge((currentYear - parseInt(patient.birth_year)).toString());
+      } else {
+        setAge('');
+      }
+    } else {
+      setFormData(getEmptyFormData());
+      setAge('');
+    }
+  }, [patient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -190,7 +206,9 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit">Salvar</Button>
+        <Button type="submit">
+          {patient ? 'Salvar Alteracoes' : 'Cadastrar Paciente'}
+        </Button>
       </div>
     </form>
   );
