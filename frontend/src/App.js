@@ -22,6 +22,7 @@ import LabVetModule from './modules/lab_vet/LabVetModule';
 import OphthalmoHumanModule from './modules/ophthalmo_human/OphthalmoHumanModule';
 import UltrasoundModule from './modules/ultrasound/UltrasoundModule';
 import FinancialModule from './modules/financial/FinancialModule';
+import ClinicalDocumentEditor from './modules/clinical/ClinicalDocumentEditor';
 
 const PrivateRoute = ({ children }) => {
   const { currentUser } = useAuth();
@@ -154,6 +155,15 @@ function App() {
                 <PrivateRoute>
                   <AppLayout>
                     <FinancialModule />
+                  </AppLayout>
+                </PrivateRoute>
+              } />
+
+              {/* Clinical Documents Routes */}
+              <Route path="/patient/:patientId/document/new/:documentType" element={
+                <PrivateRoute>
+                  <AppLayout>
+                    <ClinicalDocumentEditor />
                   </AppLayout>
                 </PrivateRoute>
               } />

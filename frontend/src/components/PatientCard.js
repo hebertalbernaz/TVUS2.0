@@ -350,7 +350,7 @@ export function PatientCard({ patient, onUpdate }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => toast.info('Anamnese: funcionalidade em desenvolvimento')}
+              onClick={() => navigate(`/patient/${patient.id}/document/new/anamnesis`)}
               className="cursor-pointer gap-2 py-2"
             >
               <ClipboardList className="h-4 w-4" />
@@ -358,7 +358,7 @@ export function PatientCard({ patient, onUpdate }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => toast.info('Atestado: funcionalidade em desenvolvimento')}
+              onClick={() => navigate(`/patient/${patient.id}/document/new/certificate`)}
               className="cursor-pointer gap-2 py-2"
             >
               <FileCheck className="h-4 w-4" />

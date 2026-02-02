@@ -6,12 +6,14 @@ import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
-import { 
-  PatientSchema, SettingsSchema, DrugSchema, PrescriptionSchema, 
-  ExamSchema, OphthalmoSchema, TemplateSchema, ReferenceValueSchema, 
-  ProfileSchema, FinancialSchema, LabExamSchema, AnamnesisSchema        
+import {
+  PatientSchema, SettingsSchema, DrugSchema, PrescriptionSchema,
+  ExamSchema, OphthalmoSchema, TemplateSchema, ReferenceValueSchema,
+  ProfileSchema, FinancialSchema, LabExamSchema, AnamnesisSchema,
+  ClinicalDocumentSchema
 } from './schemas';
 import { initialDrugs, initialSettings, initialTemplates } from '../../config/seeds';
+import { masterSeeder } from '../../services/MasterSeeder';
 import { v4 as uuidv4 } from 'uuid';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === undefined;
@@ -135,9 +137,10 @@ const _create = async () => {
     },
       lab_exams: { schema: LabExamSchema },
       anamnesis: { schema: AnamnesisSchema },
-      
+      clinical_documents: { schema: ClinicalDocumentSchema },
+
       // Ophthalmo with version: 1 needs migration
-      ophthalmo: { 
+      ophthalmo: {
         schema: OphthalmoSchema,
         migrationStrategies: {
             1: (oldDoc) => {
@@ -198,37 +201,12 @@ const seedDatabase = async (db) => {
       console.log('Database: Settings already exist, skipping');
     }
 
-    // DRUGS - Check count and insert missing items
-    const drugsCount = await db.drugs.count().exec();
-    console.log(`Database: Found ${drugsCount} drugs`);
+    // MASTER DATA V2 - Use MasterSeeder for upsert-capable seeding
+    console.log(`Database: Loading Master Data V${masterSeeder.getVersion()}...`);
+    const summary = masterSeeder.getDataSummary();
+    console.log('Database: Master Data Summary:', summary);
 
-    if (drugsCount === 0) {
-      console.log('Database: Seeding drugs...');
-      try {
-        const result = await db.drugs.bulkInsert(initialDrugs);
-        console.log(`Database: ${result.success.length} drugs seeded successfully`);
-      } catch (bulkError) {
-        console.warn('Database: Some drugs may already exist:', bulkError.message);
-      }
-    } else {
-      console.log('Database: Drugs collection not empty, skipping seed');
-    }
-
-    // TEMPLATES - Check count and insert missing items
-    const templatesCount = await db.templates.count().exec();
-    console.log(`Database: Found ${templatesCount} templates`);
-
-    if (templatesCount === 0) {
-      console.log('Database: Seeding templates...');
-      try {
-        const result = await db.templates.bulkInsert(initialTemplates);
-        console.log(`Database: ${result.success.length} templates seeded successfully`);
-      } catch (bulkError) {
-        console.warn('Database: Some templates may already exist:', bulkError.message);
-      }
-    } else {
-      console.log('Database: Templates collection not empty, skipping seed');
-    }
+    await masterSeeder.seedAll(db);
 
     console.log('Database: Seeding check completed');
   } catch (seedError) {

@@ -445,3 +445,23 @@ export const LabExamSchema = {
   },
   required: ['id', 'patient_id', 'exam_type', 'date']
 };
+
+// --- CLINICAL DOCUMENTS (Anamnesis, Certificates, Referrals) ---
+export const ClinicalDocumentSchema = {
+  title: 'clinical document schema',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
+    type: { type: 'string', enum: ['anamnesis', 'certificate', 'referral'] },
+    title: { type: 'string' },
+    content: { type: 'string' },
+    date: { type: 'string', format: 'date-time' },
+    doctor_name: { type: 'string' },
+    created_at: { type: 'string', format: 'date-time' },
+    updated_at: { type: 'string', format: 'date-time' }
+  },
+  required: ['id', 'patient_id', 'type', 'date']
+};

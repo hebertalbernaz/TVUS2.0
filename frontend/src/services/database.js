@@ -77,16 +77,17 @@ class DatabaseService {
   }
 
   /**
-   * Patient unified timeline: Exams + Prescriptions.
-   * Returns array of entries: { collection: 'exams'|'prescriptions', date, data }
+   * Patient unified timeline: Exams + Prescriptions + Lab + Anamnesis + Clinical Documents.
+   * Returns array of entries: { collection: string, date, data }
    */
   async getPatientTimeline(patientId) {
       const db = await getDatabase();
-      const [exams, prescriptions, labExams, anamnesis] = await Promise.all([
+      const [exams, prescriptions, labExams, anamnesis, clinicalDocs] = await Promise.all([
           this._files(db.exams.find({ selector: { patient_id: patientId } })),
           this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
           this._files(db.lab_exams.find({ selector: { patient_id: patientId } })),
-          this._files(db.anamnesis.find({ selector: { patient_id: patientId } }))
+          this._files(db.anamnesis.find({ selector: { patient_id: patientId } })),
+          this._files(db.clinical_documents.find({ selector: { patient_id: patientId } }))
       ]);
 
       const examEntries = (exams || []).map(e => ({
@@ -113,7 +114,13 @@ class DatabaseService {
           data: a
       }));
 
-      const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries];
+      const clinicalDocEntries = (clinicalDocs || []).map(doc => ({
+          collection: 'clinical_documents',
+          date: doc.date || doc.created_at || new Date().toISOString(),
+          data: doc
+      }));
+
+      const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries, ...clinicalDocEntries];
       merged.sort((a, b) => new Date(b.date) - new Date(a.date));
       return merged;
   }
@@ -218,6 +225,53 @@ class DatabaseService {
   async getAnamnesis(patientId) {
       const db = await getDatabase();
       return await this._files(db.anamnesis.find({ selector: { patient_id: patientId } }).sort({ date: 'desc' }));
+  }
+
+  // ================= CLINICAL DOCUMENTS =================
+  async createClinicalDocument(data) {
+      const db = await getDatabase();
+      const nowIso = new Date().toISOString();
+      const document = {
+          id: genId(),
+          patient_id: data.patient_id,
+          type: data.type,
+          title: data.title || '',
+          content: data.content || '',
+          date: data.date || nowIso,
+          doctor_name: data.doctor_name || '',
+          created_at: nowIso,
+          updated_at: nowIso
+      };
+      await db.clinical_documents.insert(document);
+      return document;
+  }
+
+  async getClinicalDocuments(patientId = null) {
+      const db = await getDatabase();
+      const query = patientId ? { selector: { patient_id: patientId } } : {};
+      return await this._files(db.clinical_documents.find(query).sort({ date: 'desc' }));
+  }
+
+  async getClinicalDocument(id) {
+      const db = await getDatabase();
+      return await this._one(db.clinical_documents.findOne(id));
+  }
+
+  async updateClinicalDocument(id, data) {
+      const db = await getDatabase();
+      const doc = await db.clinical_documents.findOne(id).exec();
+      if (doc) {
+          const patch = { ...data, updated_at: new Date().toISOString() };
+          await doc.patch(patch);
+          return doc.toJSON();
+      }
+      throw new Error('Clinical document not found');
+  }
+
+  async deleteClinicalDocument(id) {
+      const db = await getDatabase();
+      const doc = await db.clinical_documents.findOne(id).exec();
+      if (doc) await doc.remove();
   }
 
   async getPrescriptions(patientId = null) {

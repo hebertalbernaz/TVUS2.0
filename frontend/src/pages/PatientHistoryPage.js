@@ -450,6 +450,66 @@ export default function PatientHistoryPage() {
                 );
               }
 
+              if (entry.collection === 'clinical_documents') {
+                const doc = entry.data;
+                const docTypeLabel = {
+                  certificate: 'Atestado',
+                  anamnesis: 'Anamnese (Novo)',
+                  referral: 'Encaminhamento'
+                }[doc.type] || 'Documento';
+
+                return (
+                  <Card
+                    key={`clinical-doc-${doc.id}`}
+                    className="border-l-4 border-l-teal-500/60 shadow-sm hover:shadow transition-all"
+                    data-testid={`timeline-clinical-doc-${doc.id}`}
+                  >
+                    <CardHeader className="pb-3 bg-muted/5 border-b">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-teal-500/10 p-2.5 rounded-full text-teal-700">
+                            <FileCheck className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg text-foreground">{date}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{time}</p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-semibold px-3 py-1 uppercase tracking-wide"
+                          data-testid={`timeline-clinical-doc-badge-${doc.id}`}
+                        >
+                          {docTypeLabel}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">Profissional:</span> {doc.doctor_name || '--'}
+                      </div>
+
+                      {doc.title && (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Título</div>
+                          <div className="font-semibold text-foreground">{doc.title}</div>
+                        </div>
+                      )}
+
+                      {doc.content && (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conteúdo</div>
+                          <div className="whitespace-pre-wrap text-foreground/80 bg-muted/20 p-3 rounded border">
+                            {doc.content.length > 300 ? `${doc.content.substring(0, 300)}...` : doc.content}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              }
+
               if (entry.collection === 'ophthalmo') {
                 const ophth = entry.data;
                 return (
