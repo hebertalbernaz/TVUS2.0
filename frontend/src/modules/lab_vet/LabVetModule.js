@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { 
+import {
   FlaskConical, Plus, Save, Printer, Trash2, Edit, Search,
   FileText, CheckCircle, Clock, AlertTriangle, Dog, Cat,
   ArrowLeft, RefreshCw, Download, X, ChevronRight, Beaker
@@ -18,12 +19,12 @@ import { getDatabase, genId } from '@/core/database/db';
 import { db as dbService } from '@/services/database';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { 
-  PANEL_PRESETS, 
-  getPanelReferences, 
-  calculateFlag, 
+import {
+  PANEL_PRESETS,
+  getPanelReferences,
+  calculateFlag,
   getCategoryLabel,
-  getFlagStyles 
+  getFlagStyles
 } from './lab_references';
 
 // ============================================================================
@@ -257,21 +258,23 @@ function PatientSelector({ isOpen, onClose, onSelect }) {
 // MAIN MODULE COMPONENT
 // ============================================================================
 export default function LabVetModule() {
+  const [searchParams] = useSearchParams();
+
   // State: List & Selection
   const [labExams, setLabExams] = useState([]);
   const [selectedExam, setSelectedExam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
-  
+
   // State: Editor
   const [editMode, setEditMode] = useState(false);
   const [examData, setExamData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // State: Modals
   const [showPatientSelector, setShowPatientSelector] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  
+
   // State: Search
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -280,6 +283,27 @@ export default function LabVetModule() {
     loadLabExams();
     loadSettings();
   }, []);
+
+  // Initialize from URL if patientId is provided
+  useEffect(() => {
+    const initFromUrl = async () => {
+      const patientId = searchParams.get('patientId');
+      if (patientId && settings) {
+        try {
+          const patient = await dbService.getPatient(patientId);
+          if (patient) {
+            handlePatientSelected(patient);
+            toast.info(`Novo exame laboratorial para ${patient.name}`);
+          }
+        } catch (e) {
+          console.error('Error loading patient from URL:', e);
+          toast.error('Paciente não encontrado');
+        }
+      }
+    };
+
+    initFromUrl();
+  }, [searchParams, settings]);
 
   const loadLabExams = async () => {
     try {

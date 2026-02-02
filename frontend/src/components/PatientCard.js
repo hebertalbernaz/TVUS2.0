@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, Trash2, MoreVertical, FlaskConical, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLicense } from '../contexts/LicenseContext';
 import { getAllExamTypes } from '@/lib/exam_types';
@@ -228,6 +228,36 @@ export function PatientCard({ patient, onUpdate }) {
                 {canUsePrescription ? 'Nova receita' : 'Módulo de prescrição não habilitado na licença'}
               </TooltipContent>
             </Tooltip>
+
+            {practice === 'human' && hasModule?.('ophthalmo_human') && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid={`patient-card-ophthalmo-button-${patient.id}`}
+                    onClick={() => navigate(`/ophthalmo?patientId=${patient.id}`)}
+                    className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <Eye className="h-4 w-4 mr-2" /> Oftalmo
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Novo exame oftalmológico</TooltipContent>
+              </Tooltip>
+            )}
+
+            {practice === 'vet' && hasModule?.('lab_vet') && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid={`patient-card-lab-button-${patient.id}`}
+                    onClick={() => navigate(`/lab?patientId=${patient.id}`)}
+                    className="h-9 bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <FlaskConical className="h-4 w-4 mr-2" /> Lab
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Novo exame laboratorial</TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Info extra compacta */}

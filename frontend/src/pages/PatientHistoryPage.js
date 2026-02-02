@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/database';
 import { AnamnesisModal } from '@/components/AnamnesisModal';
-import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList } from 'lucide-react';
+import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList, Eye } from 'lucide-react';
 import { getExamTypeName } from '@/lib/exam_types';
 
 export default function PatientHistoryPage() {
@@ -31,10 +31,35 @@ export default function PatientHistoryPage() {
         const p = await db.getPatient(patientId);
         setPatient(p);
 
-        // Unified timeline query: { collection: 'exams'|'prescriptions', date, data }
+        // Unified timeline query: get all exam types from multiple collections
         const t = await db.getPatientTimeline(patientId);
-        // Defensive: ensure contract contains { collection, date }
-        setTimeline((t || []).filter(x => x?.collection && x?.date));
+
+        // The timeline already includes exams, prescriptions, lab_exams, and anamnesis
+        // but we'll also check for ophthalmo exams explicitly to ensure they're included
+        const { getDatabase } = await import('@/core/database/db');
+        const rxdb = await getDatabase();
+
+        const ophthalmoExams = await rxdb.ophthalmo
+          .find({ selector: { patient_id: patientId } })
+          .exec();
+
+        const ophthalmoEntries = ophthalmoExams.map(doc => ({
+          collection: 'ophthalmo',
+          date: doc.date || doc.created_at || new Date().toISOString(),
+          data: doc.toJSON()
+        }));
+
+        // Combine all timeline entries
+        const allEntries = [...(t || []), ...ophthalmoEntries];
+
+        // Sort by date descending and filter valid entries
+        const validTimeline = allEntries
+          .filter(x => x?.collection && x?.date)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        setTimeline(validTimeline);
+      } catch (error) {
+        console.error('Error loading patient history:', error);
       } finally {
         setLoading(false);
       }
@@ -425,7 +450,104 @@ export default function PatientHistoryPage() {
                 );
               }
 
+              if (entry.collection === 'ophthalmo') {
+                const ophth = entry.data;
+                return (
+                  <Card
+                    key={`ophthalmo-${ophth.id}`}
+                    className="border-l-4 border-l-indigo-500/60 shadow-sm hover:shadow transition-all"
+                    data-testid={`timeline-ophthalmo-${ophth.id}`}
+                  >
+                    <CardHeader className="pb-3 bg-muted/5 border-b">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-indigo-500/10 p-2.5 rounded-full text-indigo-700">
+                            <Eye className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg text-foreground">{date}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{time}</p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-semibold px-3 py-1 uppercase tracking-wide"
+                          data-testid={`timeline-ophthalmo-badge-${ophth.id}`}
+                        >
+                          Oftalmologia
+                        </Badge>
+                      </div>
+                    </CardHeader>
 
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <div className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Médico:</span> {ophth.doctor_name || '--'}
+                        </div>
+                        {ophth.requesting_doctor ? (
+                          <div className="text-muted-foreground">
+                            <span className="font-semibold text-foreground">Solicitante:</span> {ophth.requesting_doctor}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {ophth.chief_complaint ? (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Queixa Principal</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{ophth.chief_complaint}</div>
+                        </div>
+                      ) : null}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {ophth.right_eye && (
+                          <div className="p-3 rounded-md border bg-card">
+                            <div className="text-xs font-bold text-blue-600 mb-2">Olho Direito (OD)</div>
+                            {ophth.right_eye.visual_acuity && (
+                              <div className="text-sm">
+                                <span className="font-semibold">AV:</span> {ophth.right_eye.visual_acuity}
+                              </div>
+                            )}
+                            {ophth.right_eye.iop && (
+                              <div className="text-sm">
+                                <span className="font-semibold">PIO:</span> {ophth.right_eye.iop} mmHg
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {ophth.left_eye && (
+                          <div className="p-3 rounded-md border bg-card">
+                            <div className="text-xs font-bold text-green-600 mb-2">Olho Esquerdo (OS)</div>
+                            {ophth.left_eye.visual_acuity && (
+                              <div className="text-sm">
+                                <span className="font-semibold">AV:</span> {ophth.left_eye.visual_acuity}
+                              </div>
+                            )}
+                            {ophth.left_eye.iop && (
+                              <div className="text-sm">
+                                <span className="font-semibold">PIO:</span> {ophth.left_eye.iop} mmHg
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {ophth.general_diagnosis ? (
+                        <div className="pt-3 border-t text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnóstico</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{ophth.general_diagnosis}</div>
+                        </div>
+                      ) : null}
+
+                      {ophth.treatment_plan ? (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{ophth.treatment_plan}</div>
+                        </div>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                );
+              }
 
               return null;
             })

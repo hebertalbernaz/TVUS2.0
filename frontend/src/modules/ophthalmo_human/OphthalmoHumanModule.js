@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { 
+import {
   Eye, Plus, Save, Printer, Trash2, Search, CheckCircle, Clock,
   ArrowLeft, ChevronRight, Sparkles, FileText, User, Calendar
 } from 'lucide-react';
@@ -463,19 +464,20 @@ function OphthalmoReportView({ exam, settings, onClose }) {
 // MAIN MODULE COMPONENT
 // ============================================================================
 export default function OphthalmoHumanModule() {
+  const [searchParams] = useSearchParams();
   const [exams, setExams] = useState([]);
   const [selectedExam, setSelectedExam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
-  
+
   const [editMode, setEditMode] = useState(false);
   const [examData, setExamData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [showPatientSelector, setShowPatientSelector] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [activeTab, setActiveTab] = useState('right_eye');
-  
+
   const [searchTerm, setSearchTerm] = useState('');
 
   // Visual editors state
@@ -487,6 +489,26 @@ export default function OphthalmoHumanModule() {
     loadExams();
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    const initFromUrl = async () => {
+      const patientId = searchParams.get('patientId');
+      if (patientId && settings) {
+        try {
+          const patient = await dbService.getPatient(patientId);
+          if (patient) {
+            handlePatientSelected(patient);
+            toast.info(`Novo exame oftalmológico para ${patient.name}`);
+          }
+        } catch (e) {
+          console.error('Error loading patient from URL:', e);
+          toast.error('Paciente não encontrado');
+        }
+      }
+    };
+
+    initFromUrl();
+  }, [searchParams, settings]);
 
   const loadExams = async () => {
     try {
