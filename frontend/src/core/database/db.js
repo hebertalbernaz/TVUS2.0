@@ -207,9 +207,9 @@ const _create = async () => {
   }
 
 
-  await seedDatabase(db);
+  const seedResult = await seedDatabase(db);
   console.log('Database: Ready.');
-  return db;
+  return { db, seedResult };
 };
 
 const seedDatabase = async (db) => {
@@ -242,11 +242,13 @@ const seedDatabase = async (db) => {
     const summary = masterSeeder.getDataSummary();
     console.log('Database: Master Data Summary:', summary);
 
-    await masterSeeder.seedAll(db);
+    const seedResult = await masterSeeder.seedAll(db);
 
     console.log('Database: Seeding check completed');
+    return seedResult;
   } catch (seedError) {
     console.error("Database: Seeding error:", seedError);
+    return { success: false, error: seedError };
   }
 };
 

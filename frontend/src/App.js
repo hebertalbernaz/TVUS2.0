@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { Sidebar } from './components/ui/Sidebar';
@@ -40,17 +41,24 @@ const AppLayout = ({ children }) => {
     const initializeDatabase = async () => {
       try {
         console.log('[App] Initializing database...');
-        const db = await getDatabase();
+        const result = await getDatabase();
+        const db = result.db || result;
+        const seedResult = result.seedResult;
 
-        // Verify database is accessible
         await db.settings.findOne('global_settings').exec();
 
-        console.log('[App] ✅ Database initialized successfully');
+        console.log('[App] Database initialized successfully');
         setIsDBReady(true);
+
+        if (seedResult?.success && seedResult?.stats?.totalInserted > 0) {
+          const { stats } = seedResult;
+          toast.success('Banco de Dados Atualizado!', {
+            description: `${stats.drugs.inserted} medicamentos, ${stats.templates.inserted} templates e ${stats.lab_references.inserted} valores de referência adicionados.`
+          });
+        }
       } catch (error) {
-        console.error('[App] ❌ Database initialization failed:', error);
+        console.error('[App] Database initialization failed:', error);
         setInitError(error.message);
-        // Even on error, allow UI to load (soft-fail)
         setIsDBReady(true);
       }
     };
