@@ -35,8 +35,8 @@ const returnSameDoc = (oldDoc) => oldDoc;
 const _create = async () => {
   console.log(`Database: Initializing RxDB tvusvet_db_v9 [Env: ${isDev ? 'DEV' : 'PROD'}]...`);
 
-  const storage = isDev 
-      ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() }) 
+  const storage = isDev
+      ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() })
       : getRxStorageDexie();
 
   // Hash function for Jest/Node.js environment
@@ -50,13 +50,29 @@ const _create = async () => {
     }
   };
 
-  const db = await createRxDatabase({
-    name: "tvusvet_db_v9", // Reset limpo para forçar atualização de seeds
+  let db;
+  try {
+    db = await createRxDatabase({
+      name: "tvusvet_db_v9",
+      storage: storage,
+      ignoreDuplicate: true,
+      hashFunction: hashFunction
+    });
+  } catch (createError) {
+    console.error('Database creation failed:', createError);
 
-    storage: storage,
-    ignoreDuplicate: true,
-    hashFunction: hashFunction
-  });
+    if (isDev && createError.message.includes('different schema')) {
+      console.error(
+        '⚠️ SCHEMA VERSION CONFLICT DETECTED\n' +
+        'Your IndexedDB has a different schema version than the code expects.\n' +
+        'Solutions:\n' +
+        '  1. Clear IndexedDB: DevTools → Application → Storage → IndexedDB → Delete "tvusvet_db_v9"\n' +
+        '  2. Bump schema version in schemas.js and add migration strategy\n' +
+        '  3. Use a different database name (db.js line 54)\n'
+      );
+    }
+    throw createError;
+  }
 
   // Create Collections with migration strategies for ALL versioned schemas
   try {
@@ -158,34 +174,65 @@ const _create = async () => {
 };
 
 const seedDatabase = async (db) => {
-  try {
-      const settingsDoc = await db.settings.findOne({ selector: { id: 'global_settings' } }).exec();
-      if (!settingsDoc) {
-        console.log('Seeding Settings...');
-        await db.settings.insert(initialSettings);
-      }
+  console.log('Database: Checking if seeding is needed...');
 
-      // Se count de drugs for baixo, roda o bulkInsert(initialDrugs) novamente
-      const drugsCount = await db.drugs.count().exec();
-      if (drugsCount < 5) {
-        try {
-          await db.drugs.bulkInsert(initialDrugs);
-        } catch (e) {
-          // ignore duplicates
+  try {
+    // SETTINGS - Insert only if exactly 'global_settings' doesn't exist
+    const settingsDoc = await db.settings.findOne({
+      selector: { id: 'global_settings' }
+    }).exec();
+
+    if (!settingsDoc) {
+      console.log('Database: Seeding settings...');
+      try {
+        await db.settings.insert(initialSettings);
+        console.log('Database: Settings seeded successfully');
+      } catch (insertError) {
+        if (insertError.code === 'CONFLICT' || insertError.code === 409) {
+          console.log('Database: Settings already exist (conflict ignored)');
+        } else {
+          console.warn('Database: Settings insert failed:', insertError.message);
         }
       }
+    } else {
+      console.log('Database: Settings already exist, skipping');
+    }
 
-      // SMART SEED: Templates
-      const templatesCount = await db.templates.count().exec();
-      if (templatesCount < 3) {
-          try {
-            await db.templates.bulkInsert(initialTemplates);
-          } catch (e) {
-            // ignore duplicates
-          }
+    // DRUGS - Check count and insert missing items
+    const drugsCount = await db.drugs.count().exec();
+    console.log(`Database: Found ${drugsCount} drugs`);
+
+    if (drugsCount === 0) {
+      console.log('Database: Seeding drugs...');
+      try {
+        const result = await db.drugs.bulkInsert(initialDrugs);
+        console.log(`Database: ${result.success.length} drugs seeded successfully`);
+      } catch (bulkError) {
+        console.warn('Database: Some drugs may already exist:', bulkError.message);
       }
-  } catch (e) {
-      console.warn("Seed warning:", e);
+    } else {
+      console.log('Database: Drugs collection not empty, skipping seed');
+    }
+
+    // TEMPLATES - Check count and insert missing items
+    const templatesCount = await db.templates.count().exec();
+    console.log(`Database: Found ${templatesCount} templates`);
+
+    if (templatesCount === 0) {
+      console.log('Database: Seeding templates...');
+      try {
+        const result = await db.templates.bulkInsert(initialTemplates);
+        console.log(`Database: ${result.success.length} templates seeded successfully`);
+      } catch (bulkError) {
+        console.warn('Database: Some templates may already exist:', bulkError.message);
+      }
+    } else {
+      console.log('Database: Templates collection not empty, skipping seed');
+    }
+
+    console.log('Database: Seeding check completed');
+  } catch (seedError) {
+    console.error("Database: Seeding error:", seedError);
   }
 };
 
