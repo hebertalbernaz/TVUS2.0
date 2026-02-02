@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, Trash2, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLicense } from '../contexts/LicenseContext';
 import { getAllExamTypes } from '@/lib/exam_types';
@@ -71,6 +72,20 @@ export function PatientCard({ patient, onUpdate }) {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      setBusy(true);
+      await db.deletePatient(patient.id);
+      toast.success('Paciente excluído com sucesso');
+      if (onUpdate) onUpdate();
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao excluir paciente');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <TooltipProvider>
       <Card className="rounded-xl shadow-sm border border-border/60 hover:shadow-md hover:border-primary/30 transition-all duration-300 bg-background overflow-hidden" data-testid={`patient-card-${patient.id}`}>
@@ -108,6 +123,57 @@ export function PatientCard({ patient, onUpdate }) {
               </TooltipTrigger>
               <TooltipContent>Abrir prontuário/histórico</TooltipContent>
             </Tooltip>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  data-testid={`patient-card-menu-button-${patient.id}`}
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem
+                      data-testid={`patient-card-delete-button-${patient.id}`}
+                      onSelect={(e) => e.preventDefault()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir paciente
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir <strong>{patient.name}</strong>?
+                        Esta ação não pode ser desfeita e todos os exames e histórico serão removidos.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                        Cancelar
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete();
+                        }}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>

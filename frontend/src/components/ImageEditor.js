@@ -159,20 +159,21 @@ export function ImageEditor({ imageUrl, isOpen, onClose, onSave }) {
         </div>
         
         <div className="flex justify-center items-center bg-black overflow-hidden cursor-crosshair">
-          <Stage
-            width={800}
-            height={600}
-            ref={stageRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onTouchStart={handleMouseDown}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
-          >
-            <Layer>
-              {imageUrl && <URLImage src={imageUrl} stageWidth={800} stageHeight={600} />}
-              {annotations.map((shape) => {
+          {imageUrl && (
+            <Stage
+              width={800}
+              height={600}
+              ref={stageRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onTouchStart={handleMouseDown}
+              onTouchMove={handleMouseMove}
+              onTouchEnd={handleMouseUp}
+            >
+              <Layer>
+                <URLImage src={imageUrl} stageWidth={800} stageHeight={600} />
+                {annotations.map((shape) => {
                 if (shape.type === 'arrow') {
                   return <Arrow key={shape.id} id={shape.id} points={shape.points} stroke={shape.color} strokeWidth={shape.strokeWidth} fill={shape.color} draggable={tool === 'select'} onClick={() => tool === 'select' && setSelectedId(shape.id)} onTap={() => tool === 'select' && setSelectedId(shape.id)} />;
                 }
@@ -184,9 +185,10 @@ export function ImageEditor({ imageUrl, isOpen, onClose, onSave }) {
                 }
                 return null;
               })}
-              {selectedId && <Transformer ref={transformerRef} boundBoxFunc={(old, newBox) => (newBox.width < 5 || newBox.height < 5) ? old : newBox} />}
-            </Layer>
-          </Stage>
+                {selectedId && <Transformer ref={transformerRef} boundBoxFunc={(old, newBox) => (newBox.width < 5 || newBox.height < 5) ? old : newBox} />}
+              </Layer>
+            </Stage>
+          )}
         </div>
 
         <div className="p-3 bg-zinc-800 border-t border-zinc-700 flex justify-between items-center rounded-b-lg">
