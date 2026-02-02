@@ -350,11 +350,11 @@ export function PatientCard({ patient, onUpdate }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => navigate(`/patient/${patient.id}/document/new/anamnesis`)}
+              onClick={() => navigate(`/patient/${patient.id}/anamnesis/new`)}
               className="cursor-pointer gap-2 py-2"
             >
               <ClipboardList className="h-4 w-4" />
-              <span className="font-medium">Anamnese</span>
+              <span className="font-medium">Anamnese Inteligente</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem

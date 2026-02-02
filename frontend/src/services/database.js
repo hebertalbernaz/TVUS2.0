@@ -201,7 +201,7 @@ class DatabaseService {
    * (Used by timeline; also useful for future screens.)
    */
 
-  // ================= ANAMNESIS (PEP) =================
+  // ================= SMART ANAMNESIS =================
   async createAnamnesis(data) {
       const db = await getDatabase();
       const nowIso = new Date().toISOString();
@@ -210,13 +210,25 @@ class DatabaseService {
           patient_id: data.patient_id,
           date: data.date || nowIso,
           doctor_name: data.doctor_name || '',
-          type: data.type, // 'vet' | 'human'
-          main_complaint: data.main_complaint || '',
-          history: data.history || '',
-          general_data: data.general_data || {},
+          type: data.type,
+          chief_complaint: data.chief_complaint || data.main_complaint || '',
+          history_current_illness: data.history_current_illness || data.history || '',
+          physiological_data: data.physiological_data || data.general_data || {},
+          systems_review: data.systems_review || {},
           physical_exam: data.physical_exam || {},
-          diagnosis: data.diagnosis || '',
-          conduct: data.conduct || ''
+          diagnosis_hypothesis: data.diagnosis_hypothesis || [],
+          treatment_plan: data.treatment_plan || data.conduct || '',
+          additional_exams: data.additional_exams || '',
+          prognosis: data.prognosis || '',
+          notes: data.notes || '',
+          main_complaint: data.main_complaint || data.chief_complaint || '',
+          history: data.history || data.history_current_illness || '',
+          general_data: data.general_data || data.physiological_data || {},
+          diagnosis: data.diagnosis || (data.diagnosis_hypothesis?.[0] || ''),
+          conduct: data.conduct || data.treatment_plan || '',
+          status: data.status || 'draft',
+          created_at: nowIso,
+          updated_at: nowIso
       };
       await db.anamnesis.insert(record);
       return record;
@@ -225,6 +237,36 @@ class DatabaseService {
   async getAnamnesis(patientId) {
       const db = await getDatabase();
       return await this._files(db.anamnesis.find({ selector: { patient_id: patientId } }).sort({ date: 'desc' }));
+  }
+
+  async getAnamnesisById(id) {
+      const db = await getDatabase();
+      return await this._one(db.anamnesis.findOne(id));
+  }
+
+  async getLatestAnamnesis(patientId) {
+      const db = await getDatabase();
+      const results = await this._files(
+          db.anamnesis.find({ selector: { patient_id: patientId } }).sort({ date: 'desc' }).limit(1)
+      );
+      return results?.[0] || null;
+  }
+
+  async updateAnamnesis(id, data) {
+      const db = await getDatabase();
+      const doc = await db.anamnesis.findOne(id).exec();
+      if (doc) {
+          const patch = { ...data, updated_at: new Date().toISOString() };
+          await doc.patch(patch);
+          return doc.toJSON();
+      }
+      throw new Error('Anamnesis not found');
+  }
+
+  async deleteAnamnesis(id) {
+      const db = await getDatabase();
+      const doc = await db.anamnesis.findOne(id).exec();
+      if (doc) await doc.remove();
   }
 
   // ================= CLINICAL DOCUMENTS =================

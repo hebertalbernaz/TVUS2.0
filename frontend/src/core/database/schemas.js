@@ -373,11 +373,10 @@ export const FinancialSchema = {
   required: ['id', 'type', 'amount', 'date']
 };
 
-// --- LAB EXAMS ---
-// --- ANAMNESIS (PEP) ---
+// --- SMART ANAMNESIS (V1 - Structured Medical History) ---
 export const AnamnesisSchema = {
   title: 'anamnesis schema',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -385,21 +384,83 @@ export const AnamnesisSchema = {
     patient_id: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     doctor_name: { type: 'string' },
-
-    // type of record based on scope
     type: { type: 'string', enum: ['vet', 'human'] },
+
+    chief_complaint: { type: 'string' },
+    history_current_illness: { type: 'string' },
+
+    physiological_data: {
+      type: 'object',
+      properties: {
+        feeding: { type: 'string' },
+        feeding_type: { type: 'string' },
+        appetite: { type: 'string' },
+        water_intake: { type: 'string' },
+        vaccine_status: { type: 'string' },
+        deworming_status: { type: 'string' },
+        environment: { type: 'string' },
+        contact_animals: { type: 'string' },
+        reproductive_status: { type: 'string' },
+        last_heat: { type: 'string' },
+        previous_diseases: { type: 'string' },
+        previous_surgeries: { type: 'string' },
+        current_medications: { type: 'string' },
+        allergies: { type: 'string' }
+      }
+    },
+
+    systems_review: {
+      type: 'object',
+      properties: {
+        digestive: { type: 'string' },
+        cardio_resp: { type: 'string' },
+        genitourinary: { type: 'string' },
+        neuro_locomotor: { type: 'string' },
+        tegumentary: { type: 'string' },
+        eyes_ears: { type: 'string' },
+        lymphatic: { type: 'string' }
+      }
+    },
+
+    physical_exam: {
+      type: 'object',
+      properties: {
+        general_state: { type: 'string' },
+        temperature: { type: 'number' },
+        heart_rate: { type: 'number' },
+        respiratory_rate: { type: 'number' },
+        weight: { type: 'number' },
+        hydration: { type: 'string' },
+        mucous_membranes: { type: 'string' },
+        capillary_refill: { type: 'string' },
+        lymph_nodes: { type: 'string' },
+        body_condition_score: { type: 'string' },
+        observations: { type: 'string' }
+      }
+    },
+
+    diagnosis_hypothesis: {
+      type: 'array',
+      items: { type: 'string' }
+    },
+
+    treatment_plan: { type: 'string' },
+    additional_exams: { type: 'string' },
+    prognosis: { type: 'string' },
+    notes: { type: 'string' },
 
     main_complaint: { type: 'string' },
     history: { type: 'string' },
-
-    // Free-form objects (dynamic fields by scope)
     general_data: { type: 'object', additionalProperties: true },
-    physical_exam: { type: 'object', additionalProperties: true },
-
     diagnosis: { type: 'string' },
-    conduct: { type: 'string' }
+    conduct: { type: 'string' },
+
+    status: { type: 'string', enum: ['draft', 'finalized'], default: 'draft' },
+    created_at: { type: 'string', format: 'date-time' },
+    updated_at: { type: 'string', format: 'date-time' }
   },
-  required: ['id', 'patient_id', 'date', 'type']
+  required: ['id', 'patient_id', 'date', 'type'],
+  indexes: ['patient_id']
 };
 
 // --- LAB EXAMS ---

@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/database';
 import { AnamnesisModal } from '@/components/AnamnesisModal';
-import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList, Eye } from 'lucide-react';
+import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList, Eye, FileCheck, Edit } from 'lucide-react';
 import { getExamTypeName } from '@/lib/exam_types';
 
 export default function PatientHistoryPage() {
@@ -162,11 +162,18 @@ export default function PatientHistoryPage() {
         {/* Ações rápidas (PEP) */}
         <div className="mt-4 flex flex-wrap gap-2 justify-end" data-testid="patient-history-actions">
           <Button
-            data-testid="new-anamnesis-button"
-            onClick={() => setShowAnamnesis(true)}
+            data-testid="new-smart-anamnesis-button"
+            onClick={() => navigate(`/patient/${patientId}/anamnesis/new`)}
             className="bg-primary hover:bg-primary/90"
           >
-            <ClipboardList className="h-4 w-4 mr-2" /> Nova Anamnese
+            <ClipboardList className="h-4 w-4 mr-2" /> Anamnese Inteligente
+          </Button>
+          <Button
+            data-testid="new-anamnesis-button"
+            variant="outline"
+            onClick={() => setShowAnamnesis(true)}
+          >
+            <ClipboardList className="h-4 w-4 mr-2" /> Anamnese Rapida
           </Button>
         </div>
       </div>
@@ -386,6 +393,12 @@ export default function PatientHistoryPage() {
 
               if (isAnamnesis) {
                 const a = entry.data;
+                const chiefComplaint = a.chief_complaint || a.main_complaint;
+                const historyIllness = a.history_current_illness || a.history;
+                const diagnosisList = a.diagnosis_hypothesis || [];
+                const treatmentPlan = a.treatment_plan || a.conduct;
+                const isSmartAnamnesis = !!a.chief_complaint || !!a.systems_review;
+
                 return (
                   <Card
                     key={`anamnesis-${a.id}`}
@@ -404,12 +417,22 @@ export default function PatientHistoryPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {isSmartAnamnesis && (
+                            <Badge variant="default" className="text-xs font-semibold px-2 py-0.5 bg-sky-600">
+                              Smart
+                            </Badge>
+                          )}
                           <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 uppercase tracking-wide" data-testid={`timeline-anamnesis-badge-${a.id}`}>
                             Anamnese
                           </Badge>
-                          <Badge variant="outline" className="text-xs" data-testid={`timeline-anamnesis-type-${a.id}`}>
-                            {a.type === 'human' ? 'Humano' : 'Vet'}
-                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => navigate(`/patient/${patientId}/anamnesis/${a.id}/edit`)}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </CardHeader>
@@ -419,30 +442,75 @@ export default function PatientHistoryPage() {
                         <span className="font-semibold text-foreground">Profissional:</span> {a.doctor_name || '--'}
                       </div>
 
-                      {a.main_complaint ? (
+                      {chiefComplaint ? (
                         <div className="text-sm">
                           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Queixa Principal</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{a.main_complaint}</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{chiefComplaint}</div>
                         </div>
                       ) : null}
 
-                      {a.history ? (
+                      {historyIllness ? (
                         <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">História</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{a.history}</div>
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">HMA</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">
+                            {historyIllness.length > 200 ? `${historyIllness.substring(0, 200)}...` : historyIllness}
+                          </div>
                         </div>
                       ) : null}
 
-                      {(a.diagnosis || a.conduct) ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t">
-                          <div>
-                            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnóstico</div>
-                            <div className="whitespace-pre-wrap text-foreground/80 text-sm">{a.diagnosis || '--'}</div>
+                      {diagnosisList.length > 0 ? (
+                        <div className="text-sm pt-3 border-t">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Hipoteses Diagnosticas</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {diagnosisList.map((diag, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {diag}
+                              </Badge>
+                            ))}
                           </div>
-                          <div>
-                            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta</div>
-                            <div className="whitespace-pre-wrap text-foreground/80 text-sm">{a.conduct || '--'}</div>
+                        </div>
+                      ) : (a.diagnosis ? (
+                        <div className="text-sm pt-3 border-t">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnostico</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{a.diagnosis}</div>
+                        </div>
+                      ) : null)}
+
+                      {treatmentPlan ? (
+                        <div className="text-sm">
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta/Tratamento</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">
+                            {treatmentPlan.length > 150 ? `${treatmentPlan.substring(0, 150)}...` : treatmentPlan}
                           </div>
+                        </div>
+                      ) : null}
+
+                      {a.physical_exam?.temperature || a.physical_exam?.heart_rate ? (
+                        <div className="grid grid-cols-4 gap-2 pt-3 border-t">
+                          {a.physical_exam.temperature && (
+                            <div className="text-center p-2 bg-muted/30 rounded">
+                              <div className="text-xs text-muted-foreground">Temp</div>
+                              <div className="font-semibold">{a.physical_exam.temperature}C</div>
+                            </div>
+                          )}
+                          {a.physical_exam.heart_rate && (
+                            <div className="text-center p-2 bg-muted/30 rounded">
+                              <div className="text-xs text-muted-foreground">FC</div>
+                              <div className="font-semibold">{a.physical_exam.heart_rate}bpm</div>
+                            </div>
+                          )}
+                          {a.physical_exam.respiratory_rate && (
+                            <div className="text-center p-2 bg-muted/30 rounded">
+                              <div className="text-xs text-muted-foreground">FR</div>
+                              <div className="font-semibold">{a.physical_exam.respiratory_rate}mpm</div>
+                            </div>
+                          )}
+                          {a.physical_exam.weight && (
+                            <div className="text-center p-2 bg-muted/30 rounded">
+                              <div className="text-xs text-muted-foreground">Peso</div>
+                              <div className="font-semibold">{a.physical_exam.weight}kg</div>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </CardContent>

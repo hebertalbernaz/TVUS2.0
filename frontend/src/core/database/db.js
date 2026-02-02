@@ -136,7 +136,24 @@ const _create = async () => {
         }
     },
       lab_exams: { schema: LabExamSchema },
-      anamnesis: { schema: AnamnesisSchema },
+      anamnesis: {
+        schema: AnamnesisSchema,
+        migrationStrategies: {
+          1: (oldDoc) => ({
+            ...oldDoc,
+            chief_complaint: oldDoc.chief_complaint || oldDoc.main_complaint || '',
+            history_current_illness: oldDoc.history_current_illness || oldDoc.history || '',
+            physiological_data: oldDoc.physiological_data || oldDoc.general_data || {},
+            systems_review: oldDoc.systems_review || {},
+            physical_exam: oldDoc.physical_exam || {},
+            diagnosis_hypothesis: oldDoc.diagnosis_hypothesis || (oldDoc.diagnosis ? [oldDoc.diagnosis] : []),
+            treatment_plan: oldDoc.treatment_plan || oldDoc.conduct || '',
+            status: oldDoc.status || 'finalized',
+            created_at: oldDoc.created_at || oldDoc.date,
+            updated_at: oldDoc.updated_at || new Date().toISOString()
+          })
+        }
+      },
       clinical_documents: { schema: ClinicalDocumentSchema },
 
       // Ophthalmo with version: 1 needs migration

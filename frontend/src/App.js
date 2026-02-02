@@ -23,6 +23,7 @@ import OphthalmoHumanModule from './modules/ophthalmo_human/OphthalmoHumanModule
 import UltrasoundModule from './modules/ultrasound/UltrasoundModule';
 import FinancialModule from './modules/financial/FinancialModule';
 import ClinicalDocumentEditor from './modules/clinical/ClinicalDocumentEditor';
+import AnamnesisPage from './pages/AnamnesisPage';
 
 const PrivateRoute = ({ children }) => {
   const { currentUser } = useAuth();
@@ -165,6 +166,19 @@ function App() {
                   <AppLayout>
                     <ClinicalDocumentEditor />
                   </AppLayout>
+                </PrivateRoute>
+              } />
+
+              {/* Smart Anamnesis Routes */}
+              <Route path="/patient/:patientId/anamnesis/new" element={
+                <PrivateRoute>
+                  <AnamnesisPage />
+                </PrivateRoute>
+              } />
+
+              <Route path="/patient/:patientId/anamnesis/:anamnesisId/edit" element={
+                <PrivateRoute>
+                  <AnamnesisPage />
                 </PrivateRoute>
               } />
 
