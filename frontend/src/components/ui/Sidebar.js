@@ -1,21 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLicense } from '../../contexts/LicenseContext';
-import { 
-  LayoutGrid, 
-  FlaskConical, 
-  Eye, 
-  DollarSign, 
-  Settings, 
+import {
+  LayoutGrid,
+  DollarSign,
+  Settings,
   LogOut,
   Dog,
-  User,
-  Pill
+  User
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
 import { useAuth } from '../../contexts/AuthContext';
-import { DevToolbar } from '../DevToolbar';
 
 export function Sidebar() {
   const { hasModule, practice, setPractice, terms } = useLicense();
@@ -24,36 +20,13 @@ export function Sidebar() {
 
   const isActive = (path) => location.pathname === path;
 
-  // Global Modules
   const modules = [
     {
       id: 'core',
-      name: terms.patient_label + 's', // "Pacientes"
+      name: terms.patient_label + 's',
       icon: LayoutGrid,
       path: '/',
       enabled: hasModule('core')
-    },
-    // Drug Database Manager - Renamed from "Receita Smart"
-    {
-      id: 'drugs_manager',
-      name: 'Banco de Medicamentos',
-      icon: Pill,
-      path: '/prescription',
-      enabled: hasModule('prescription')
-    },
-    {
-      id: 'lab_vet',
-      name: 'Laboratório',
-      icon: FlaskConical,
-      path: '/lab',
-      enabled: hasModule('lab_vet')
-    },
-    {
-      id: 'ophthalmo_human',
-      name: 'Oftalmo Pro',
-      icon: Eye,
-      path: '/ophthalmo',
-      enabled: hasModule('ophthalmo_human')
     },
     {
       id: 'financial',
