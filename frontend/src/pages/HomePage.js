@@ -49,10 +49,10 @@ export default function HomePage() {
     (p.owner_name && p.owner_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Placeholder dinâmico
-  const searchPlaceholder = practice === 'vet' 
-      ? `Buscar ${terms.patient_label.toLowerCase()}, ${terms.owner_label.toLowerCase()} ou ${terms.breed_label.toLowerCase()}...`
-      : `Buscar ${terms.patient_label.toLowerCase()} ou ${terms.owner_label.toLowerCase()}...`;
+  // Placeholder dinâmico (defensive: use fallbacks if terms not loaded)
+  const searchPlaceholder = practice === 'vet'
+      ? `Buscar ${(terms?.patient_label || 'paciente').toLowerCase()}, ${(terms?.owner_label || 'proprietário').toLowerCase()} ou ${(terms?.breed_label || 'raça').toLowerCase()}...`
+      : `Buscar ${(terms?.patient_label || 'paciente').toLowerCase()} ou ${(terms?.owner_label || 'proprietário').toLowerCase()}...`;
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300 relative overflow-hidden" data-testid="home-page" data-scope={activeScope}>
@@ -108,13 +108,13 @@ export default function HomePage() {
                 />
             </div>
             
-            <Button 
+            <Button
                 data-testid="new-patient-button"
-                onClick={() => {setEditingPatient(null); setShowNewPatient(true);}} 
-                size="lg" 
+                onClick={() => {setEditingPatient(null); setShowNewPatient(true);}}
+                size="lg"
                 className="h-12 px-8 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
             >
-                <Plus className="mr-2 h-5 w-5" /> Novo {terms.patient_label}
+                <Plus className="mr-2 h-5 w-5" /> Novo {terms?.patient_label || 'Paciente'}
             </Button>
         </div>
 
@@ -154,7 +154,7 @@ export default function HomePage() {
                 <Users className="h-8 w-8 text-muted-foreground/50" />
             </div>
             <h3 className="text-lg font-semibold text-foreground">
-                {searchTerm ? `Nenhum ${terms.patient_label.toLowerCase()} encontrado` : `Lista vazia`}
+                {searchTerm ? `Nenhum ${(terms?.patient_label || 'paciente').toLowerCase()} encontrado` : `Lista vazia`}
             </h3>
 
 
@@ -168,7 +168,7 @@ export default function HomePage() {
                     variant="outline"
                     className="mt-4 border-primary/20 text-primary hover:bg-primary/5"
                 >
-                    Cadastrar {terms.patient_label}
+                    Cadastrar {terms?.patient_label || 'Paciente'}
                 </Button>
             )}
           </Card>
@@ -180,7 +180,7 @@ export default function HomePage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl text-primary font-bold">
-                {editingPatient ? `Editar ${terms.patient_label}` : `Novo ${terms.patient_label}`}
+                {editingPatient ? `Editar ${terms?.patient_label || 'Paciente'}` : `Novo ${terms?.patient_label || 'Paciente'}`}
             </DialogTitle>
             <DialogDescription>
               Preencha os dados abaixo.

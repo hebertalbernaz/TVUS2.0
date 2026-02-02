@@ -68,6 +68,8 @@ class DatabaseService {
    * Returns all patients OR filtered by scope.
    * @param {Object} [filters]
    * @param {'VET'|'HUMAN'} [filters.scope]
+   *
+   * SOFT-FAIL: Returns empty array on error to prevent UI crashes
    */
   async getPatients(filters = {}) {
       try {
@@ -78,58 +80,67 @@ class DatabaseService {
         console.log(`[DB] getPatients: Found ${patients.length} patients with filters:`, filters);
         return patients;
       } catch (error) {
-        console.error('[DB] getPatients FAILED:', error);
-        throw error;
+        console.error('[DB] getPatients FAILED (soft-fail: returning empty array):', error);
+        // SOFT-FAIL: Return empty array instead of throwing
+        // This prevents UI crashes when database is initializing or corrupted
+        return [];
       }
   }
 
   /**
    * Patient unified timeline: Exams + Prescriptions + Lab + Anamnesis + Clinical Documents.
    * Returns array of entries: { collection: string, date, data }
+   *
+   * SOFT-FAIL: Returns empty array on error to prevent UI crashes
    */
   async getPatientTimeline(patientId) {
-      const db = await getDatabase();
-      const [exams, prescriptions, labExams, anamnesis, clinicalDocs] = await Promise.all([
-          this._files(db.exams.find({ selector: { patient_id: patientId } })),
-          this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
-          this._files(db.lab_exams.find({ selector: { patient_id: patientId } })),
-          this._files(db.anamnesis.find({ selector: { patient_id: patientId } })),
-          this._files(db.clinical_documents.find({ selector: { patient_id: patientId } }))
-      ]);
+      try {
+        const db = await getDatabase();
+        const [exams, prescriptions, labExams, anamnesis, clinicalDocs] = await Promise.all([
+            this._files(db.exams.find({ selector: { patient_id: patientId } })),
+            this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
+            this._files(db.lab_exams.find({ selector: { patient_id: patientId } })),
+            this._files(db.anamnesis.find({ selector: { patient_id: patientId } })),
+            this._files(db.clinical_documents.find({ selector: { patient_id: patientId } }))
+        ]);
 
-      const examEntries = (exams || []).map(e => ({
-          collection: 'exams',
-          date: e.date || e.exam_date || e.examDate || new Date().toISOString(),
-          data: e
-      }));
+        const examEntries = (exams || []).map(e => ({
+            collection: 'exams',
+            date: e.date || e.exam_date || e.examDate || new Date().toISOString(),
+            data: e
+        }));
 
-      const rxEntries = (prescriptions || []).map(r => ({
-          collection: 'prescriptions',
-          date: r.date || new Date().toISOString(),
-          data: r
-      }));
+        const rxEntries = (prescriptions || []).map(r => ({
+            collection: 'prescriptions',
+            date: r.date || new Date().toISOString(),
+            data: r
+        }));
 
-      const labEntries = (labExams || []).map(l => ({
-          collection: 'lab_exams',
-          date: l.date || l.created_at || new Date().toISOString(),
-          data: l
-      }));
+        const labEntries = (labExams || []).map(l => ({
+            collection: 'lab_exams',
+            date: l.date || l.created_at || new Date().toISOString(),
+            data: l
+        }));
 
-      const anamnesisEntries = (anamnesis || []).map(a => ({
-          collection: 'anamnesis',
-          date: a.date || new Date().toISOString(),
-          data: a
-      }));
+        const anamnesisEntries = (anamnesis || []).map(a => ({
+            collection: 'anamnesis',
+            date: a.date || new Date().toISOString(),
+            data: a
+        }));
 
-      const clinicalDocEntries = (clinicalDocs || []).map(doc => ({
-          collection: 'clinical_documents',
-          date: doc.date || doc.created_at || new Date().toISOString(),
-          data: doc
-      }));
+        const clinicalDocEntries = (clinicalDocs || []).map(doc => ({
+            collection: 'clinical_documents',
+            date: doc.date || doc.created_at || new Date().toISOString(),
+            data: doc
+        }));
 
-      const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries, ...clinicalDocEntries];
-      merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-      return merged;
+        const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries, ...clinicalDocEntries];
+        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return merged;
+      } catch (error) {
+        console.error('[DB] getPatientTimeline FAILED (soft-fail: returning empty array):', error);
+        return [];
+      }
   }
   
   async getPatient(id) { 
@@ -197,10 +208,15 @@ class DatabaseService {
       return ne; 
   }
   
-  async getExams(pid = null) { 
-      const db = await getDatabase();
-      const query = pid ? { selector: { patient_id: pid } } : {};
-      return await this._files(db.exams.find(query).sort({ date: 'desc' }));
+  async getExams(pid = null) {
+      try {
+        const db = await getDatabase();
+        const query = pid ? { selector: { patient_id: pid } } : {};
+        return await this._files(db.exams.find(query).sort({ date: 'desc' }));
+      } catch (error) {
+        console.error('[DB] getExams FAILED (soft-fail: returning empty array):', error);
+        return [];
+      }
   }
 
   /**

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@/components/ui/sonner'; 
+import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { Sidebar } from './components/ui/Sidebar';
+import { getDatabase } from './core/database/db';
 
 // Pages & Modules
 import LoginPage from './pages/LoginPage';
@@ -32,6 +33,65 @@ const PrivateRoute = ({ children }) => {
 
 // Layout Wrapper for Private Routes
 const AppLayout = ({ children }) => {
+  const [isDBReady, setIsDBReady] = useState(false);
+  const [initError, setInitError] = useState(null);
+
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        console.log('[App] Initializing database...');
+        const db = await getDatabase();
+
+        // Verify database is accessible
+        await db.settings.findOne('global_settings').exec();
+
+        console.log('[App] ✅ Database initialized successfully');
+        setIsDBReady(true);
+      } catch (error) {
+        console.error('[App] ❌ Database initialization failed:', error);
+        setInitError(error.message);
+        // Even on error, allow UI to load (soft-fail)
+        setIsDBReady(true);
+      }
+    };
+
+    initializeDatabase();
+  }, []);
+
+  // Loading screen while database initializes
+  if (!isDBReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="text-lg font-medium">Iniciando Sistema...</div>
+          <div className="text-sm text-muted-foreground">Carregando banco de dados</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error screen with option to continue anyway
+  if (initError) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar />
+        <main className="flex-1 ml-64 transition-all duration-300 ease-in-out">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center space-y-4 p-8 max-w-md">
+              <div className="text-red-500 text-4xl">⚠️</div>
+              <div className="text-lg font-medium">Erro na Inicialização</div>
+              <div className="text-sm text-muted-foreground">{initError}</div>
+              <div className="text-xs text-muted-foreground mt-4">
+                O sistema continuará, mas pode ter funcionalidade limitada.
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
