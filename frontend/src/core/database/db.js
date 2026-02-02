@@ -99,12 +99,13 @@ const _create = async () => {
             2: returnSameDoc
         }
     },
-      exams: { 
+      exams: {
         schema: ExamSchema,
         migrationStrategies: {
             1: returnSameDoc,
             2: returnSameDoc,
-            3: returnSameDoc
+            3: returnSameDoc,
+            4: returnSameDoc // v4: Added maxLength to patient_id
         }
     },
     
@@ -118,7 +119,12 @@ const _create = async () => {
         })
       }
     },
-      prescriptions: { schema: PrescriptionSchema },
+      prescriptions: {
+        schema: PrescriptionSchema,
+        migrationStrategies: {
+            1: returnSameDoc // v1: Added maxLength to patient_id
+        }
+      },
       templates: { schema: TemplateSchema },
       reference_values: { schema: ReferenceValueSchema },
       profiles: { schema: ProfileSchema },
@@ -132,10 +138,16 @@ const _create = async () => {
               payment_method: 'cash',
               due_date: oldDoc.date ?? null,
               paid_at: oldDoc.date ?? null
-            })
+            }),
+            2: returnSameDoc // v2: Added maxLength to patient_id
         }
     },
-      lab_exams: { schema: LabExamSchema },
+      lab_exams: {
+        schema: LabExamSchema,
+        migrationStrategies: {
+            1: returnSameDoc // v1: Added maxLength to patient_id
+        }
+      },
       anamnesis: {
         schema: AnamnesisSchema,
         migrationStrategies: {
@@ -151,10 +163,16 @@ const _create = async () => {
             status: oldDoc.status || 'finalized',
             created_at: oldDoc.created_at || oldDoc.date,
             updated_at: oldDoc.updated_at || new Date().toISOString()
-          })
+          }),
+          2: returnSameDoc // v2: Added maxLength to patient_id for index compliance
         }
       },
-      clinical_documents: { schema: ClinicalDocumentSchema },
+      clinical_documents: {
+        schema: ClinicalDocumentSchema,
+        migrationStrategies: {
+            1: returnSameDoc // v1: Added maxLength to patient_id
+        }
+      },
 
       // Ophthalmo with version: 1 needs migration
       ophthalmo: {
@@ -169,7 +187,8 @@ const _create = async () => {
                     general_diagnosis: oldDoc.diagnosis || '',
                     created_at: oldDoc.created_at || new Date().toISOString()
                 };
-            }
+            },
+            2: returnSameDoc // v2: Added maxLength to patient_id
         }
     }
   });

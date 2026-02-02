@@ -68,15 +68,15 @@ export const PatientSchema = {
   required: ['id', 'name']
 };
 
-// --- EXAMS (FINAL V3) ---
+// --- EXAMS (FINAL V4 - Added maxLength to patient_id) ---
 export const ExamSchema = {
   title: 'exam schema',
-  version: 3,
+  version: 4,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
     exam_type: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     exam_weight: { type: 'number' },
@@ -199,15 +199,15 @@ export const DrugSchema = {
   required: ['id', 'name']
 };
 
-// --- PRESCRIPTIONS ---
+// --- PRESCRIPTIONS (V1 - Added maxLength to patient_id) ---
 export const PrescriptionSchema = {
   title: 'prescription schema',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
     doctor_name: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     items: { type: 'array', items: { type: 'object' } },
@@ -269,15 +269,15 @@ const EyeDataProperties = {
   conduct: { type: 'string' }
 };
 
-// --- OPHTHALMO (Professional Version V1) ---
+// --- OPHTHALMO (Professional Version V2 - Added maxLength to patient_id) ---
 export const OphthalmoSchema = {
   title: 'ophthalmo exam schema',
-  version: 1,
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
     patient_name: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     doctor_name: { type: 'string' },
@@ -316,11 +316,12 @@ export const OphthalmoSchema = {
   required: ['id', 'patient_id']
 };
 
-// --- FINANCIAL ---
+// --- FINANCIAL (V2 - Added maxLength to patient_id) ---
 export const FinancialSchema = {
   title: 'financial schema',
+  // v2: Added maxLength to patient_id for RxDB compliance
   // v1: professional cashflow fields (status, payment_method, due_date, paid_at)
-  version: 1,
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -346,7 +347,7 @@ export const FinancialSchema = {
     description: { type: 'string' },
 
     // Optional link to patient
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
 
     // Cashflow state
     status: { type: 'string', enum: ['pending', 'paid', 'cancelled'], default: 'paid' },
@@ -373,15 +374,15 @@ export const FinancialSchema = {
   required: ['id', 'type', 'amount', 'date']
 };
 
-// --- SMART ANAMNESIS (V1 - Structured Medical History) ---
+// --- SMART ANAMNESIS (V2 - Fixed maxLength for indexed field) ---
 export const AnamnesisSchema = {
   title: 'anamnesis schema',
-  version: 1,
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
     date: { type: 'string', format: 'date-time' },
     doctor_name: { type: 'string' },
     type: { type: 'string', enum: ['vet', 'human'] },
@@ -463,15 +464,15 @@ export const AnamnesisSchema = {
   indexes: ['patient_id']
 };
 
-// --- LAB EXAMS ---
+// --- LAB EXAMS (V1 - Added maxLength to patient_id) ---
 export const LabExamSchema = {
   title: 'lab exam schema',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
     patient_name: { type: 'string' },
     patient_species: { type: 'string' },
     owner_name: { type: 'string' },
@@ -507,15 +508,15 @@ export const LabExamSchema = {
   required: ['id', 'patient_id', 'exam_type', 'date']
 };
 
-// --- CLINICAL DOCUMENTS (Anamnesis, Certificates, Referrals) ---
+// --- CLINICAL DOCUMENTS (V1 - Added maxLength to patient_id) ---
 export const ClinicalDocumentSchema = {
   title: 'clinical document schema',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string' },
+    patient_id: { type: 'string', maxLength: 100 },
     type: { type: 'string', enum: ['anamnesis', 'certificate', 'referral'] },
     title: { type: 'string' },
     content: { type: 'string' },
