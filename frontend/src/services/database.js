@@ -69,11 +69,18 @@ class DatabaseService {
    * @param {Object} [filters]
    * @param {'VET'|'HUMAN'} [filters.scope]
    */
-  async getPatients(filters = {}) { 
-      const db = await getDatabase();
-      const selector = {};
-      if (filters.scope) selector.scope = filters.scope;
-      return await this._files(db.patients.find({ selector }).sort({ name: 'asc' }));
+  async getPatients(filters = {}) {
+      try {
+        const db = await getDatabase();
+        const selector = {};
+        if (filters.scope) selector.scope = filters.scope;
+        const patients = await this._files(db.patients.find({ selector }).sort({ name: 'asc' }));
+        console.log(`[DB] getPatients: Found ${patients.length} patients with filters:`, filters);
+        return patients;
+      } catch (error) {
+        console.error('[DB] getPatients FAILED:', error);
+        throw error;
+      }
   }
 
   /**

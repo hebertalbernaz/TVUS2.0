@@ -27,11 +27,17 @@ export default function HomePage() {
 
   const loadPatients = useCallback(async () => {
     try {
-      // Filter by scope to prevent cross-contamination
+      console.log(`[HomePage] Loading patients with scope: ${activeScope}`);
       const scopedPatients = await db.getPatients({ scope: activeScope });
+      console.log(`[HomePage] Loaded ${scopedPatients.length} patients`);
       setPatients(scopedPatients);
     } catch (error) {
-      console.error('loadPatients failed:', error);
+      console.error('[HomePage] loadPatients FAILED:', error);
+      console.error('[HomePage] Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
     }
   }, [activeScope]);
 

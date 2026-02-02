@@ -223,6 +223,64 @@ export function DevToolbar() {
     }
   };
 
+  /**
+   * NUCLEAR OPTION: Completely destroy and recreate the database
+   * Use this when schema conflicts or corrupted data prevents normal operation
+   */
+  const handleResetDatabase = async () => {
+    if (!window.confirm(
+      '⚠️ NUCLEAR OPTION ⚠️\n\n' +
+      'This will COMPLETELY DESTROY the entire database and reload the page.\n' +
+      'ALL DATA WILL BE LOST (patients, exams, financial, everything).\n\n' +
+      'This should only be used if:\n' +
+      '- Database is corrupted or not loading\n' +
+      '- Schema version conflicts cannot be resolved\n' +
+      '- Data appears stuck or disconnected\n\n' +
+      'Are you ABSOLUTELY SURE you want to proceed?'
+    )) {
+      return;
+    }
+
+    // Double confirmation
+    const userTyped = window.prompt(
+      'Type "RESET DATABASE" (all caps) to confirm destruction:'
+    );
+
+    if (userTyped !== 'RESET DATABASE') {
+      toast.error('Database reset cancelled');
+      return;
+    }
+
+    try {
+      toast.info('Destroying database...');
+
+      const db = await getDatabase();
+      await db.destroy();
+
+      delete window._tvusvet_db_promise;
+
+      if (window.indexedDB) {
+        await new Promise((resolve) => {
+          const deleteRequest = window.indexedDB.deleteDatabase('tvusvet_db_v9');
+          deleteRequest.onsuccess = resolve;
+          deleteRequest.onerror = resolve;
+        });
+      }
+
+      toast.success('Database destroyed. Reloading page...');
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Database reset error:', error);
+      toast.error('Error resetting database: ' + error.message);
+
+      toast.info('Manual reset required: Open DevTools → Application → Storage → IndexedDB → Delete "tvusvet_db_v9", then reload');
+    }
+  };
+
   // Load stats on first render
   React.useEffect(() => {
     loadDBStats();
@@ -313,6 +371,21 @@ export function DevToolbar() {
       >
         <Trash2 className="h-3 w-3 mr-1" /> Clear Test Data
       </Button>
+
+      {/* NUCLEAR OPTION: Reset Database */}
+      <div className="pt-2 border-t border-red-200 dark:border-red-800">
+        <Button
+          onClick={handleResetDatabase}
+          variant="destructive"
+          size="sm"
+          className="w-full h-7 text-[10px] bg-red-600 hover:bg-red-700"
+        >
+          <AlertCircle className="h-3 w-3 mr-1" /> RESET DATABASE (Nuclear)
+        </Button>
+        <div className="text-[8px] text-red-600 dark:text-red-400 text-center mt-1">
+          Use only if DB is corrupted or not loading
+        </div>
+      </div>
 
       {/* Info */}
       <div className="text-[9px] text-muted-foreground text-center">

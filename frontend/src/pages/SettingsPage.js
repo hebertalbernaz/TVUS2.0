@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, FileText, Database, UserCog, Shield, Pill, BookOpen } from 'lucide-react';
+import { X, FileText, Database, UserCog, Shield, Pill, BookOpen, Wrench } from 'lucide-react';
 import { db } from '@/services/database';
 import { TemplatesManager } from '@/components/TemplatesManager';
 import { ReferenceValuesManager } from '@/components/ReferenceValuesManager';
 import { ProfilesManager } from '@/components/ProfilesManager';
 import { DrugsManager } from '@/components/DrugsManager';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { DevToolbar } from '@/components/DevToolbar';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null);
@@ -93,7 +94,7 @@ export default function SettingsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 h-12 bg-muted/50 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 p-1 rounded-lg">
             <TabsTrigger value="profiles" className="gap-2">
               <UserCog className="h-4 w-4" /> Perfis Profissionais
             </TabsTrigger>
@@ -102,6 +103,9 @@ export default function SettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="backup" className="gap-2">
               <Shield className="h-4 w-4" /> Backup
+            </TabsTrigger>
+            <TabsTrigger value="devtools" className="gap-2">
+              <Wrench className="h-4 w-4" /> Dev Tools
             </TabsTrigger>
           </TabsList>
 
@@ -167,6 +171,25 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground mt-2">
                       Use o Export no aplicativo Desktop para backup completo.
                     </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="devtools">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wrench className="h-5 w-5 text-primary" />
+                    Ferramentas de Desenvolvimento
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Utilitarios para popular, testar e gerenciar o banco de dados durante desenvolvimento.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-w-md mx-auto">
+                    <DevToolbar />
                   </div>
                 </CardContent>
               </Card>
