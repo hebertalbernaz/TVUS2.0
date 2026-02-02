@@ -20,10 +20,13 @@ export function Sidebar() {
 
   const isActive = (path) => location.pathname === path;
 
+  // Defensive: Provide fallback if terms not loaded yet
+  const patientLabel = terms?.patient_label || 'Paciente';
+
   const modules = [
     {
       id: 'core',
-      name: terms.patient_label + 's',
+      name: patientLabel + 's',
       icon: LayoutGrid,
       path: '/',
       enabled: hasModule('core')

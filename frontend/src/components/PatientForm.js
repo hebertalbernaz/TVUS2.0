@@ -11,6 +11,17 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
   const { terms, practice } = useLicense();
   const currentYear = new Date().getFullYear();
 
+  // Defensive: Provide fallback labels if terms not loaded yet
+  const labels = {
+    patient: terms?.patient_label || 'Paciente',
+    owner: terms?.owner_label || 'Proprietário',
+    species: terms?.species_label || 'Espécie',
+    breed: terms?.breed_label || 'Raça',
+    sex: terms?.sex_label || 'Sexo',
+    age: terms?.age_label || 'Idade',
+    weight: terms?.weight_label || 'Peso'
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     species: practice === 'vet' ? 'dog' : 'human',
@@ -107,6 +118,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
         ownerPhone: formData.ownerPhone?.trim() || ''
       };
 
+      // CRITICAL: Only add weight if it has a valid numeric value
       if (formData.weight && formData.weight.trim() !== '') {
         const weightValue = parseFloat(formData.weight);
         if (!isNaN(weightValue) && weightValue > 0) {
@@ -114,6 +126,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
         }
       }
 
+      // CRITICAL: Only add birth_year if it's a valid 4-digit year string
       if (formData.birth_year && formData.birth_year.trim() !== '') {
         const yearValue = formData.birth_year.trim();
         if (yearValue.length === 4 && !isNaN(yearValue)) {
@@ -125,29 +138,46 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
         dataToSave.birth_date = patient.birth_date;
       }
 
+      console.log('[PatientForm] Saving patient with data:', dataToSave);
+
       if (patient?.id) {
         await db.updatePatient(patient.id, dataToSave);
         toast.success('Paciente atualizado com sucesso!');
       } else {
         const newPatient = await db.createPatient(dataToSave);
         toast.success('Paciente cadastrado com sucesso!');
-        console.log('Patient created:', newPatient);
+        console.log('[PatientForm] Patient created successfully:', newPatient.id);
       }
 
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.error('Erro ao salvar paciente (RxDB):', error);
+      console.error('[PatientForm] ❌ SAVE FAILED:', error);
+      console.error('[PatientForm] Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        parameters: error.parameters,
+        rxdb: error.rxdb,
+        stack: error.stack
+      });
 
       let errorMessage = 'Erro ao salvar paciente. Verifique os campos.';
 
       if (error.message) {
-        errorMessage = error.message;
+        // Check for specific RxDB validation errors
+        if (error.message.includes('schema') || error.message.includes('validation')) {
+          errorMessage = `Erro de validação: ${error.message}`;
+        } else if (error.message.includes('required')) {
+          errorMessage = 'Campos obrigatórios não preenchidos.';
+        } else {
+          errorMessage = error.message;
+        }
       }
 
-      if (error.code === 'SCHEMA_ERROR' || error.message?.includes('schema')) {
-        errorMessage = 'Erro de validação: verifique os campos obrigatórios.';
+      if (error.code === 'SCHEMA_ERROR' || error.code === 'VD2') {
+        errorMessage = 'Erro de validação: dados incompatíveis com o esquema do banco. Tente usar window.resetDB() no console.';
       }
 
       toast.error(errorMessage);
@@ -185,25 +215,25 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">
-            Nome do {terms.patient_label} <span className="text-red-500">*</span>
+            Nome do {labels.patient} <span className="text-red-500">*</span>
           </Label>
           <Input
             id="name"
             required
             value={formData.name}
             onChange={e => setFormData({ ...formData, name: e.target.value })}
-            placeholder={`Digite o nome do ${terms.patient_label.toLowerCase()}`}
+            placeholder={`Digite o nome do ${labels.patient.toLowerCase()}`}
             disabled={isSubmitting}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="owner_name">{terms.owner_label}</Label>
+          <Label htmlFor="owner_name">{labels.owner}</Label>
           <Input
             id="owner_name"
             value={formData.owner_name}
             onChange={e => setFormData({ ...formData, owner_name: e.target.value })}
-            placeholder={`Nome do ${terms.owner_label.toLowerCase()}`}
+            placeholder={`Nome do ${labels.owner.toLowerCase()}`}
             disabled={isSubmitting}
           />
         </div>
@@ -225,7 +255,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
       {practice === 'vet' && (
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="species">{terms.species_label}</Label>
+            <Label htmlFor="species">{labels.species}</Label>
             <Select
               value={formData.species}
               onValueChange={val => setFormData({ ...formData, species: val })}
@@ -243,7 +273,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="breed">{terms.breed_label}</Label>
+            <Label htmlFor="breed">{labels.breed}</Label>
             <Input
               id="breed"
               value={formData.breed}
@@ -275,7 +305,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
 
       <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="sex">{terms.sex_label}</Label>
+          <Label htmlFor="sex">{labels.sex}</Label>
           <Select
             value={formData.sex}
             onValueChange={val => setFormData({ ...formData, sex: val })}
@@ -297,7 +327,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
 
         <div className="space-y-2">
           <Label htmlFor="age_calc" className="text-blue-600 font-semibold">
-            {terms.age_label} (calc)
+            {labels.age} (calc)
           </Label>
           <Input
             id="age_calc"
@@ -326,7 +356,7 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="weight">{terms.weight_label}</Label>
+          <Label htmlFor="weight">{labels.weight}</Label>
           <Input
             id="weight"
             type="number"

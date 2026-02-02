@@ -243,3 +243,75 @@ export const getDatabase = () => {
 };
 
 export const genId = () => uuidv4();
+
+/**
+ * EMERGENCY RESET FUNCTION
+ * Exposed globally for critical recovery scenarios
+ * Usage: Open browser console and type: window.resetDB()
+ */
+if (typeof window !== 'undefined') {
+  window.resetDB = async () => {
+    console.warn('🚨 EMERGENCY DATABASE RESET INITIATED');
+
+    if (!window.confirm(
+      '⚠️ EMERGENCY DATABASE RESET ⚠️\n\n' +
+      'This will COMPLETELY DESTROY the database and reload the page.\n' +
+      'ALL DATA WILL BE LOST (patients, exams, financial records, everything).\n\n' +
+      'This should only be used for:\n' +
+      '- Corrupted database\n' +
+      '- Schema version conflicts\n' +
+      '- Data stuck or not loading\n\n' +
+      'Type OK to proceed with destruction.'
+    )) {
+      console.log('Reset cancelled by user');
+      return;
+    }
+
+    try {
+      console.log('Destroying database...');
+
+      // Get and destroy RxDB instance
+      const db = await getDatabase();
+      await db.destroy();
+      console.log('RxDB instance destroyed');
+
+      // Clear promise cache
+      delete window._tvusvet_db_promise;
+
+      // Delete IndexedDB database
+      if (window.indexedDB) {
+        await new Promise((resolve, reject) => {
+          const deleteRequest = window.indexedDB.deleteDatabase('tvusvet_db_v9');
+          deleteRequest.onsuccess = () => {
+            console.log('IndexedDB deleted successfully');
+            resolve();
+          };
+          deleteRequest.onerror = (err) => {
+            console.error('IndexedDB deletion error:', err);
+            resolve(); // Continue anyway
+          };
+        });
+      }
+
+      console.log('✅ Database completely destroyed. Reloading page...');
+      alert('Database destroyed successfully. Page will reload now.');
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Emergency reset failed:', error);
+      alert(
+        'Emergency reset failed: ' + error.message + '\n\n' +
+        'Manual reset required:\n' +
+        '1. Open DevTools (F12)\n' +
+        '2. Go to Application → Storage → IndexedDB\n' +
+        '3. Delete "tvusvet_db_v9"\n' +
+        '4. Reload page'
+      );
+    }
+  };
+
+  console.log('💡 Emergency reset available: window.resetDB()');
+}
