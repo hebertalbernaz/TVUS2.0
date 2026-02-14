@@ -1,7 +1,9 @@
 # TVUSVET - PRD (Product Requirements Document)
 
 ## Problema Original
-Refatoração do `ClinicalDocumentEditor.js` no sistema TVUSVET (Sistema Médico/Veterinário). Transformar um Textarea simples em uma ferramenta de produtividade clínica.
+1. Refatoração do `ClinicalDocumentEditor.js` - Transformar textarea simples em ferramenta de produtividade
+2. Bug fix crítico no PatientForm.js - Perda de comunicação com banco de dados
+3. Reorganização do SettingsPage.js - Layout com tabs verticais
 
 ## Arquitetura
 - **Frontend**: React + Tailwind CSS + shadcn/ui + RxDB (local-first database)
@@ -14,44 +16,65 @@ Refatoração do `ClinicalDocumentEditor.js` no sistema TVUSVET (Sistema Médico
 2. **Médico Humano** - Cria atestados, laudos, encaminhamentos para pacientes humanos
 
 ## Requisitos Core (Estáticos)
+- Criação e edição de pacientes (VET/HUMAN)
 - Injeção de templates/macros por categoria (Vet/Humano)
 - Editor visual simulando folha A4
 - Header dinâmico com dados vitais do paciente
-- Tratamento de anamnese com pré-carregamento
-- Funcionalidade de salvar/cancelar documentos clínicos
+- Configurações organizadas por categorias
+- Módulos: Ultrassom, Cardio, Lab, Oftalmologia, Receituário, Financeiro
 
-## O Que Foi Implementado (14/02/2026)
-### ClinicalDocumentEditor.js - Refatoração Completa
-- [x] **Templates Veterinários** (7 modelos): Atestado de Saúde Animal, Atestado de Óbito Animal, Encaminhamento Cirúrgico, Anamnese Veterinária Padrão, Laudo Clínico, Autorização Cirúrgica, Declaração de Vacinação
-- [x] **Templates Humanos** (7 modelos): Atestado Médico, Declaração de Óbito, Encaminhamento Especialista, Anamnese Clínica, Laudo Médico, Solicitação de Exames, Relatório de Acompanhamento
-- [x] **DropdownMenu com submenus** (Medicina Veterinária / Medicina Humana)
-- [x] **Diálogo de confirmação** ao inserir template quando editor já tem conteúdo (Substituir / Adicionar ao Final)
-- [x] **Editor A4** com fundo branco, sombra, padding proporcional, min-height 297mm
-- [x] **Fonte serifada** Libre Baskerville para conteúdo profissional
-- [x] **Header de dados vitais** do paciente (espécie, raça, idade, peso, sexo)
-- [x] **Pré-carregamento de anamnese** estruturada para documentType === 'anamnesis'
-- [x] **Botões Salvar/Cancelar** mantidos e funcionais
-- [x] **Contador de caracteres** visível
+## O Que Foi Implementado
+
+### Sessão 1 (14/02/2026) - ClinicalDocumentEditor Refatoração
+- [x] 14 templates profissionais (7 Vet + 7 Humano)
+- [x] DropdownMenu com submenus categorizados
+- [x] Diálogo de confirmação Substituir/Adicionar
+- [x] Editor A4 com fonte serifada Libre Baskerville
+- [x] Header de dados vitais do paciente
+- [x] Pré-carregamento de anamnese estruturada
+
+### Sessão 2 (14/02/2026) - Bug Fix + Settings Reorganização
+
+#### Bug Fix: getDatabase() retornava {db, seedResult} em vez do RxDB puro
+- **Causa raiz**: `_create()` em `db.js` retornava `{ db, seedResult }` mas `getDatabase()` não desempacotava, fazendo com que `db.patients`, `db.settings`, etc fossem `undefined`
+- **Impacto**: TODAS as operações de banco falhavam silenciosamente (create, read, update, delete de pacientes, settings, etc.)
+- **Fix**: Modificado `getDatabase()` para `.then(result => result.db)` e criado `getLastSeedResult()` para o App.js acessar o seed result separadamente
+- **Arquivos alterados**: `db.js`, `App.js`
+
+#### SettingsPage Reorganização
+- [x] Layout de tabs verticais (sidebar esquerdo + painel de conteúdo)
+- [x] **Geral**: Tema, Dados da Clínica (resumo com link para Perfis)
+- [x] **Clínica & Anamnese**: TemplatesManager
+- [x] **Receituário**: DrugsManager (medicamentos)
+- [x] **Diagnóstico por Imagem**: ReferenceValuesManager + Templates de Laudo
+- [x] **Especialidades**: Oftalmologia e Laboratório
+- [x] **Financeiro**: Configurações financeiras
+- [x] **Perfis Profissionais**: ProfilesManager
+- [x] **Backup**: Em manutenção
+- [x] **Dev Tools**: DevToolbar
 
 ## Testes
-- Frontend: 100% passed
-- Integração: 100% passed
-- 14 testes passaram incluindo template system, vitals display, A4 styling, e funcionalidade de documentos
+- Sessão 1: 100% (14/14 testes) - ClinicalDocumentEditor
+- Sessão 2: 95% (13/13 testes) - Bug fix + Settings
+  - Issue menor: RxDB CONFLICT warning no LicenseContext (pré-existente, LOW priority)
 
 ## Backlog Priorizado
 ### P0 (Crítico)
 - Nenhum pendente
 
 ### P1 (Alta prioridade)
-- Botão "Imprimir Rascunho" (adiado por escolha do usuário)
+- Botão "Imprimir Rascunho" no ClinicalDocumentEditor
 - Edição de documentos clínicos já salvos
+- Fix do RxDB CONFLICT warning no LicenseContext
 
 ### P2 (Médio)
 - Templates customizáveis pelo usuário
 - Auto-save de rascunhos
-- Histórico de versões do documento
+- Configurações financeiras detalhadas (moeda, serviços padrão)
+- Configurações específicas de especialidades (Oftalmo, Lab)
 
 ## Próximas Tarefas
-1. Implementar botão "Imprimir Rascunho" quando solicitado
-2. Permitir edição de documentos clínicos existentes
-3. Adicionar templates personalizáveis pelo usuário
+1. Implementar botão "Imprimir Rascunho"
+2. Edição de documentos clínicos existentes
+3. Templates personalizáveis
+4. Resolver CONFLICT warning no LicenseContext
