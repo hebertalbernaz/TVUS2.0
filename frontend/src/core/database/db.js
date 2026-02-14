@@ -252,16 +252,25 @@ const seedDatabase = async (db) => {
   }
 };
 
+// Cache for seed result (used by App.js for toast notification)
+let _lastSeedResult = null;
+
 export const getDatabase = () => {
   if (window._tvusvet_db_promise) {
       return window._tvusvet_db_promise;
   }
-  window._tvusvet_db_promise = _create().catch(err => {
+  // _create returns { db, seedResult }; unwrap so consumers always get the raw RxDB instance
+  window._tvusvet_db_promise = _create().then(result => {
+      _lastSeedResult = result.seedResult;
+      return result.db;
+  }).catch(err => {
       console.error("DB Init Failed:", err);
       throw err;
   });
   return window._tvusvet_db_promise;
 };
+
+export const getLastSeedResult = () => _lastSeedResult;
 
 export const genId = () => uuidv4();
 

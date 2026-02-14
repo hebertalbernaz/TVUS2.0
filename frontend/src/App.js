@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { Sidebar } from './components/ui/Sidebar';
-import { getDatabase } from './core/database/db';
+import { getDatabase, getLastSeedResult } from './core/database/db';
 
 // Pages & Modules
 import LoginPage from './pages/LoginPage';
