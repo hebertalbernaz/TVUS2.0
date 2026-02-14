@@ -41,9 +41,8 @@ const AppLayout = ({ children }) => {
     const initializeDatabase = async () => {
       try {
         console.log('[App] Initializing database...');
-        const result = await getDatabase();
-        const db = result.db || result;
-        const seedResult = result.seedResult;
+        const db = await getDatabase();
+        const seedResult = getLastSeedResult();
 
         await db.settings.findOne('global_settings').exec();
 
