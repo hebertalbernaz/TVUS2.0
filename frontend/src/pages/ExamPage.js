@@ -31,6 +31,10 @@ import '../print.css'; // CSS Atualizado
 import { EyeFundusEditor } from '@/components/ophthalmo/EyeFundusEditor';
 import { CampimetryGrid } from '@/components/ophthalmo/CampimetryGrid';
 
+// Editores Especializados de Diagnóstico por Imagem
+import { RadiologyEditor } from '@/components/Editors/RadiologyEditor';
+import { CTScanEditor } from '@/components/Editors/CTScanEditor';
+
 export default function ExamPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
