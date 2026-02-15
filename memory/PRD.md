@@ -1,72 +1,59 @@
-# TVUSVET - PRD (Product Requirements Document)
+# TVUSVET (NexaClinq) - PRD
 
 ## Problema Original
-Sistema Médico/Veterinário que precisa de polimento nas funcionalidades clínicas.
+Polimento do MVP do TVUSVET. Profissionalizar os módulos de Diagnóstico por Imagem: Radiologia (Raio-X) e Tomografia (CT Scan). Ambos precisam atender Veterinária e Medicina Humana via `useLicense().practice`, adaptando regiões anatômicas e termos.
 
 ## Arquitetura
-- **Frontend**: React + Tailwind CSS + shadcn/ui + RxDB (local-first database)
-- **Backend**: FastAPI (Python) + MongoDB
-- **Roteamento**: HashRouter (/#/)
-- **Banco local**: RxDB com IndexedDB
+- **Frontend**: React + Tailwind + shadcn/ui (CRA via craco)
+- **Backend**: FastAPI (Python)
+- **Database**: RxDB local (browser-based) + MongoDB remoto
+- **Routing**: HashRouter
+- **Prática**: VET / HUMAN via LicenseContext
 
-## User Personas
-1. **Médico Veterinário** - Atestados, laudos, encaminhamentos para animais
-2. **Médico Humano** - Atestados, laudos, encaminhamentos para pacientes
+## O que foi implementado (2026-02-15)
 
-## O Que Foi Implementado
+### Arquivos Criados/Modificados
+1. **`/app/frontend/src/config/dictionaries/imaging_terms.js`** (NOVO)
+   - Constantes centralizadas para Diagnóstico por Imagem
+   - `RADIOLOGY_REGIONS` (vet/human), `RADIOLOGY_PROJECTIONS` (vet/human)
+   - `CT_REGIONS` (vet/human), `CT_CONTRAST_OPTIONS`
+   - `RADIOLOGY_NORMAL_TEMPLATES` (vet/human) - Templates completos para todas as regiões
+   - `CT_NORMAL_TEMPLATES` (vet/human) - Templates completos para todas as regiões
+   - `HU_SCALE`, `classifyHU()` - Referência Hounsfield
 
-### Sessão 1 (14/02/2026) - ClinicalDocumentEditor Refatoração
-- [x] 14 templates profissionais (7 Vet + 7 Humano)
-- [x] DropdownMenu, diálogo Substituir/Adicionar
-- [x] Editor A4, fonte Libre Baskerville, header vitals
+2. **`/app/frontend/src/components/Editors/RadiologyEditor.js`** (REESCRITO)
+   - Formulário estruturado: Região + Projeções + Achados + Conclusão
+   - VHS Calculator (vet thorax only)
+   - Botão "Laudo Normal" carrega template baseado na região e prática
+   - Salva JSON estruturado `{ type, practice, region, projections, findings, conclusion, vhs }`
+   - Adapta terminologia VET/HUMAN automaticamente via `useLicense()`
+   - Botões Salvar/Cancelar/Imprimir consistentes com ClinicalDocumentEditor
+   - Todos data-testids implementados
 
-### Sessão 2 (14/02/2026) - Bug Fix + Settings
-- [x] Fix getDatabase() retornando {db, seedResult} em vez de db puro
-- [x] SettingsPage com tabs verticais (9 categorias)
+3. **`/app/frontend/src/components/Editors/CTScanEditor.js`** (REESCRITO)
+   - Formulário estruturado: Região + Contraste + Espessura + Achados + Conclusão
+   - Técnica auto-gerada baseada no protocolo
+   - Referência HU integrada
+   - Botão "Laudo Normal" inteligente
+   - Salva JSON estruturado `{ type, practice, region, contrast, sliceThickness, technique, findings, conclusion }`
+   - Adapta regiões VET/HUMAN via `useLicense()`
+   - Todos data-testids implementados
 
-### Sessão 3 (15/02/2026) - Templates + Impressão + Edição + CONFLICT Fix
+## Personas
+- Médico Veterinário (laudos de imagem animal)
+- Médico Radiologista (laudos de imagem humana)
 
-#### Tarefa 1: Filtragem Templates por Contexto
-- [x] Templates filtrados pelo `practice` do `useLicense()` hook
-- [x] VET mode: apenas 7 templates veterinários com header "MEDICINA VETERINARIA"
-- [x] HUMAN mode: apenas 7 templates humanos com header "MEDICINA HUMANA"
-- [x] Reage em tempo real ao Dev Switcher (troca VET/MD)
-- [x] Badge "Veterinaria"/"Humana" visível no editor
+## Backlog
+- **P0**: Nenhum pendente
+- **P1**: Integrar RadiologyEditor/CTScanEditor no fluxo do ExamPage.js (substituir OrganEditor genérico para tipos radiography/tomography)
+- **P1**: Suporte a edição (carregar JSON salvo de volta nos campos)
+- **P2**: Export DOCX com formato estruturado para laudos de imagem
+- **P2**: Templates customizáveis pelo usuário
+- **P3**: Auto-preenchimento baseado em IA
 
-#### Tarefa 2: Impressão
-- [x] Botão "Imprimir" no toolbar (ao lado de Salvar)
-- [x] `window.print()` ao clicar
-- [x] CSS `@media print` em App.css: oculta sidebar, header, botões
-- [x] Área A4 ocupa 100% do papel com margens adequadas
-- [x] Força fundo branco e texto preto
-- [x] Classes `no-print` em todos elementos não-imprimíveis
-
-#### Tarefa 3: Modo de Edição
-- [x] Botão Editar (ícone lápis) no card de documentos clínicos no PatientHistoryPage
-- [x] Navegação com `{ state: { document: doc } }` via React Router
-- [x] Editor detecta `location.state.document` e popula formulário
-- [x] Título muda para "Editar [tipo]" com badge "Editando"
-- [x] `handleSave` usa `updateClinicalDocument` para edição, `createClinicalDocument` para novo
-- [x] Botão inferior muda para "Atualizar Documento"
-
-#### Tarefa 4: LicenseContext CONFLICT Fix
-- [x] Trocado `settings.patch()` por `settings.incrementalPatch()` em 2 locais
-- [x] Adicionado cleanup com `cancelled` flag no useEffect
-- [x] ZERO CONFLICT errors confirmado nos testes
-
-## Testes
-- Sessão 1: 100% (14/14)
-- Sessão 2: 95% (13/13)
-- Sessão 3: 80% automatizado + 100% manual via screenshots (todas features verificadas)
-
-## Backlog Priorizado
-### P0 - Nenhum pendente
-
-### P1
-- Templates customizáveis pelo usuário
-- Auto-save de rascunhos
-
-### P2
-- Assinatura digital nos documentos
-- Histórico de versões do documento
-- PDF export direto (além de window.print)
+## Status dos Testes
+- Frontend compila sem erros: PASS
+- Homepage carrega: PASS
+- Dev Switcher VET/MD: PASS
+- Todas data-testids presentes: PASS
+- Todas exports de imaging_terms: PASS
