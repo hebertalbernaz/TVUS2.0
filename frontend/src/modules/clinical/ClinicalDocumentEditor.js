@@ -720,7 +720,7 @@ export default function ClinicalDocumentEditor() {
     } else {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line
   }, [patientId, documentType]);
 
   const handleSave = async () => {
