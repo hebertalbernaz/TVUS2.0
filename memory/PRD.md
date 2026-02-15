@@ -1,80 +1,72 @@
 # TVUSVET - PRD (Product Requirements Document)
 
 ## Problema Original
-1. Refatoração do `ClinicalDocumentEditor.js` - Transformar textarea simples em ferramenta de produtividade
-2. Bug fix crítico no PatientForm.js - Perda de comunicação com banco de dados
-3. Reorganização do SettingsPage.js - Layout com tabs verticais
+Sistema Médico/Veterinário que precisa de polimento nas funcionalidades clínicas.
 
 ## Arquitetura
 - **Frontend**: React + Tailwind CSS + shadcn/ui + RxDB (local-first database)
-- **Backend**: FastAPI (Python) + MongoDB (usado para autenticação)
+- **Backend**: FastAPI (Python) + MongoDB
 - **Roteamento**: HashRouter (/#/)
-- **Banco de dados local**: RxDB com coleções para pacientes, exames, receitas, anamnese, documentos clínicos
+- **Banco local**: RxDB com IndexedDB
 
 ## User Personas
-1. **Médico Veterinário** - Cria atestados, laudos, encaminhamentos para animais
-2. **Médico Humano** - Cria atestados, laudos, encaminhamentos para pacientes humanos
-
-## Requisitos Core (Estáticos)
-- Criação e edição de pacientes (VET/HUMAN)
-- Injeção de templates/macros por categoria (Vet/Humano)
-- Editor visual simulando folha A4
-- Header dinâmico com dados vitais do paciente
-- Configurações organizadas por categorias
-- Módulos: Ultrassom, Cardio, Lab, Oftalmologia, Receituário, Financeiro
+1. **Médico Veterinário** - Atestados, laudos, encaminhamentos para animais
+2. **Médico Humano** - Atestados, laudos, encaminhamentos para pacientes
 
 ## O Que Foi Implementado
 
 ### Sessão 1 (14/02/2026) - ClinicalDocumentEditor Refatoração
 - [x] 14 templates profissionais (7 Vet + 7 Humano)
-- [x] DropdownMenu com submenus categorizados
-- [x] Diálogo de confirmação Substituir/Adicionar
-- [x] Editor A4 com fonte serifada Libre Baskerville
-- [x] Header de dados vitais do paciente
-- [x] Pré-carregamento de anamnese estruturada
+- [x] DropdownMenu, diálogo Substituir/Adicionar
+- [x] Editor A4, fonte Libre Baskerville, header vitals
 
-### Sessão 2 (14/02/2026) - Bug Fix + Settings Reorganização
+### Sessão 2 (14/02/2026) - Bug Fix + Settings
+- [x] Fix getDatabase() retornando {db, seedResult} em vez de db puro
+- [x] SettingsPage com tabs verticais (9 categorias)
 
-#### Bug Fix: getDatabase() retornava {db, seedResult} em vez do RxDB puro
-- **Causa raiz**: `_create()` em `db.js` retornava `{ db, seedResult }` mas `getDatabase()` não desempacotava, fazendo com que `db.patients`, `db.settings`, etc fossem `undefined`
-- **Impacto**: TODAS as operações de banco falhavam silenciosamente (create, read, update, delete de pacientes, settings, etc.)
-- **Fix**: Modificado `getDatabase()` para `.then(result => result.db)` e criado `getLastSeedResult()` para o App.js acessar o seed result separadamente
-- **Arquivos alterados**: `db.js`, `App.js`
+### Sessão 3 (15/02/2026) - Templates + Impressão + Edição + CONFLICT Fix
 
-#### SettingsPage Reorganização
-- [x] Layout de tabs verticais (sidebar esquerdo + painel de conteúdo)
-- [x] **Geral**: Tema, Dados da Clínica (resumo com link para Perfis)
-- [x] **Clínica & Anamnese**: TemplatesManager
-- [x] **Receituário**: DrugsManager (medicamentos)
-- [x] **Diagnóstico por Imagem**: ReferenceValuesManager + Templates de Laudo
-- [x] **Especialidades**: Oftalmologia e Laboratório
-- [x] **Financeiro**: Configurações financeiras
-- [x] **Perfis Profissionais**: ProfilesManager
-- [x] **Backup**: Em manutenção
-- [x] **Dev Tools**: DevToolbar
+#### Tarefa 1: Filtragem Templates por Contexto
+- [x] Templates filtrados pelo `practice` do `useLicense()` hook
+- [x] VET mode: apenas 7 templates veterinários com header "MEDICINA VETERINARIA"
+- [x] HUMAN mode: apenas 7 templates humanos com header "MEDICINA HUMANA"
+- [x] Reage em tempo real ao Dev Switcher (troca VET/MD)
+- [x] Badge "Veterinaria"/"Humana" visível no editor
+
+#### Tarefa 2: Impressão
+- [x] Botão "Imprimir" no toolbar (ao lado de Salvar)
+- [x] `window.print()` ao clicar
+- [x] CSS `@media print` em App.css: oculta sidebar, header, botões
+- [x] Área A4 ocupa 100% do papel com margens adequadas
+- [x] Força fundo branco e texto preto
+- [x] Classes `no-print` em todos elementos não-imprimíveis
+
+#### Tarefa 3: Modo de Edição
+- [x] Botão Editar (ícone lápis) no card de documentos clínicos no PatientHistoryPage
+- [x] Navegação com `{ state: { document: doc } }` via React Router
+- [x] Editor detecta `location.state.document` e popula formulário
+- [x] Título muda para "Editar [tipo]" com badge "Editando"
+- [x] `handleSave` usa `updateClinicalDocument` para edição, `createClinicalDocument` para novo
+- [x] Botão inferior muda para "Atualizar Documento"
+
+#### Tarefa 4: LicenseContext CONFLICT Fix
+- [x] Trocado `settings.patch()` por `settings.incrementalPatch()` em 2 locais
+- [x] Adicionado cleanup com `cancelled` flag no useEffect
+- [x] ZERO CONFLICT errors confirmado nos testes
 
 ## Testes
-- Sessão 1: 100% (14/14 testes) - ClinicalDocumentEditor
-- Sessão 2: 95% (13/13 testes) - Bug fix + Settings
-  - Issue menor: RxDB CONFLICT warning no LicenseContext (pré-existente, LOW priority)
+- Sessão 1: 100% (14/14)
+- Sessão 2: 95% (13/13)
+- Sessão 3: 80% automatizado + 100% manual via screenshots (todas features verificadas)
 
 ## Backlog Priorizado
-### P0 (Crítico)
-- Nenhum pendente
+### P0 - Nenhum pendente
 
-### P1 (Alta prioridade)
-- Botão "Imprimir Rascunho" no ClinicalDocumentEditor
-- Edição de documentos clínicos já salvos
-- Fix do RxDB CONFLICT warning no LicenseContext
-
-### P2 (Médio)
+### P1
 - Templates customizáveis pelo usuário
 - Auto-save de rascunhos
-- Configurações financeiras detalhadas (moeda, serviços padrão)
-- Configurações específicas de especialidades (Oftalmo, Lab)
 
-## Próximas Tarefas
-1. Implementar botão "Imprimir Rascunho"
-2. Edição de documentos clínicos existentes
-3. Templates personalizáveis
-4. Resolver CONFLICT warning no LicenseContext
+### P2
+- Assinatura digital nos documentos
+- Histórico de versões do documento
+- PDF export direto (além de window.print)
