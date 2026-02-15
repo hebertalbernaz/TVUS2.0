@@ -143,6 +143,35 @@ export default function ExamPage() {
     }
   };
 
+  // --- SAVE HANDLER FOR SPECIALIZED EDITORS (Radiology / CT) ---
+  const handleSpecializedSave = async (editorPayload) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const payload = {
+        organs_data: editorPayload.organs_data || [],
+        report_content: editorPayload.report_content || '',
+        conclusion: editorPayload.conclusion || '',
+        date: examDateTime ? new Date(examDateTime).toISOString() : new Date().toISOString(),
+        status: 'draft',
+      };
+      if (examWeight && !isNaN(parseFloat(examWeight))) payload.exam_weight = parseFloat(examWeight);
+      if (referringVet && referringVet.trim() !== '') payload.referring_vet = referringVet;
+
+      // Also update local organsData state so print preview stays in sync
+      if (editorPayload.organs_data) setOrgansData(editorPayload.organs_data);
+
+      await db.updateExam(examId, payload);
+      toast.success('Laudo salvo!');
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      const msg = error?.parameters?.errors?.[0]?.message || error.message;
+      toast.error(`Erro ao salvar: ${msg}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleOpenHistory = () => {
       if (!patient) return;
       const baseUrl = window.location.href.split('#')[0];
