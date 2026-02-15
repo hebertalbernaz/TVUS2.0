@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +21,10 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { db } from '@/services/database';
+import { useLicense } from '@/contexts/LicenseContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -39,10 +37,11 @@ import {
   User,
   Weight,
   Calendar,
-  Heart
+  Heart,
+  Printer
 } from 'lucide-react';
 
-// ─── TEMPLATES VETERINÁRIOS ───
+// ─── TEMPLATES VETERINARIOS ───
 const VET_TEMPLATES = [
   {
     id: 'vet_health_cert',
@@ -545,7 +544,7 @@ HIPOTESE DIAGNOSTICA
 `
 };
 
-// ─── HELPER: calc age label ───
+// ─── HELPER: calc age ───
 function calcAge(patient) {
   if (!patient) return null;
   const now = new Date();
@@ -576,7 +575,7 @@ function SpeciesIcon({ species, className }) {
   return <User className={className} />;
 }
 
-// ─── PATIENT VITALS HEADER ───
+// ─── PATIENT VITALS HEADER (no-print) ───
 function PatientVitalsHeader({ patient }) {
   if (!patient) return null;
   const isHuman = patient.scope === 'HUMAN';
@@ -585,12 +584,11 @@ function PatientVitalsHeader({ patient }) {
   return (
     <div
       data-testid="patient-vitals-header"
-      className="flex items-center gap-4 px-5 py-3 rounded-lg border bg-muted/40 mb-4"
+      className="no-print flex items-center gap-4 px-5 py-3 rounded-lg border bg-muted/40 mb-4"
     >
       <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary shrink-0">
         {isHuman ? <User className="h-5 w-5" /> : <SpeciesIcon species={patient.species} className="h-5 w-5" />}
       </div>
-
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-foreground truncate" data-testid="vitals-patient-name">
           {patient.name}
@@ -626,12 +624,17 @@ function PatientVitalsHeader({ patient }) {
 // ─── MAIN COMPONENT ───
 export default function ClinicalDocumentEditor() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { patientId, documentType } = useParams();
+  const { practice } = useLicense();
 
   const [patient, setPatient] = useState(null);
-  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Edit mode: check if we got an existing document via router state
+  const editingDoc = location.state?.document || null;
+  const isEditMode = !!editingDoc;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -646,6 +649,11 @@ export default function ClinicalDocumentEditor() {
     templateLabel: ''
   });
 
+  // ─── REACTIVE TEMPLATE LIST based on practice context ───
+  const activeTemplates = practice === 'human' ? HUMAN_TEMPLATES : VET_TEMPLATES;
+  const templateIcon = practice === 'human' ? <User className="h-4 w-4" /> : <Dog className="h-4 w-4" />;
+  const templateAreaLabel = practice === 'human' ? 'Medicina Humana' : 'Medicina Veterinaria';
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -655,12 +663,19 @@ export default function ClinicalDocumentEditor() {
         ]);
 
         setPatient(p);
-        setSettings(s);
-
         const doctorName = s?.veterinarian_name || '';
         const isHuman = p?.scope === 'HUMAN';
 
-        if (documentType === 'certificate') {
+        // ── EDIT MODE: populate from existing document ──
+        if (isEditMode) {
+          setFormData({
+            title: editingDoc.title || '',
+            content: editingDoc.content || '',
+            doctor_name: editingDoc.doctor_name || doctorName
+          });
+        }
+        // ── NEW MODE: auto-populate based on documentType ──
+        else if (documentType === 'certificate') {
           setFormData({
             title: isHuman ? 'Atestado Medico' : 'Atestado de Saude Animal',
             content: isHuman
@@ -705,6 +720,7 @@ export default function ClinicalDocumentEditor() {
     } else {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId, documentType]);
 
   const handleSave = async () => {
@@ -716,15 +732,26 @@ export default function ClinicalDocumentEditor() {
     try {
       setSaving(true);
 
-      await db.createClinicalDocument({
-        patient_id: patientId,
-        type: documentType,
-        title: formData.title,
-        content: formData.content,
-        doctor_name: formData.doctor_name
-      });
+      if (isEditMode && editingDoc.id) {
+        // ── UPDATE existing document ──
+        await db.updateClinicalDocument(editingDoc.id, {
+          title: formData.title,
+          content: formData.content,
+          doctor_name: formData.doctor_name
+        });
+        toast.success('Documento atualizado com sucesso');
+      } else {
+        // ── CREATE new document ──
+        await db.createClinicalDocument({
+          patient_id: patientId,
+          type: documentType,
+          title: formData.title,
+          content: formData.content,
+          doctor_name: formData.doctor_name
+        });
+        toast.success('Documento salvo com sucesso');
+      }
 
-      toast.success('Documento salvo com sucesso');
       navigate(`/history/${patientId}`);
     } catch (error) {
       console.error('Error saving document:', error);
@@ -738,11 +765,9 @@ export default function ClinicalDocumentEditor() {
     const generatedContent = template.content(patient, formData.doctor_name);
 
     if (!formData.content.trim()) {
-      // Content is empty, just insert directly
       setFormData(prev => ({ ...prev, content: generatedContent }));
       toast.success(`Modelo "${template.label}" inserido`);
     } else {
-      // Content exists, ask the user
       setTemplateDialog({
         open: true,
         templateContent: generatedContent,
@@ -766,6 +791,10 @@ export default function ClinicalDocumentEditor() {
     toast.success('Modelo adicionado ao final');
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="p-8 text-center text-muted-foreground" data-testid="loading-state">
@@ -774,38 +803,7 @@ export default function ClinicalDocumentEditor() {
     );
   }
 
-  // TESTING BYPASS: Use mock patient if no real patient found
   if (!patient) {
-    console.log('[ClinicalDocumentEditor] No patient found, using test patient for development');
-    const mockPatient = {
-      id: 'test-patient-id',
-      name: 'Rex Test Patient',
-      species: 'dog',
-      breed: 'Golden Retriever',
-      weight: 25,
-      birth_year: '2020',
-      sex: 'M',
-      scope: 'VET',
-      owner_name: 'Test Owner'
-    };
-    
-    // Set the mock patient to enable testing
-    if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
-      console.log('[ClinicalDocumentEditor] Development mode - using mock patient');
-      setPatient(mockPatient);
-      setFormData({
-        title: documentType === 'anamnesis' ? 'Anamnese Clinica' : 'Atestado de Saude Animal',
-        content: documentType === 'anamnesis' ? 'ANAMNESE TEST CONTENT' : 'ATESTADO TEST CONTENT',
-        doctor_name: 'Dr. Test'
-      });
-      setLoading(false);
-      return (
-        <div className="p-8 text-center text-muted-foreground" data-testid="loading-state">
-          Carregando dados do paciente de teste...
-        </div>
-      );
-    }
-    
     return (
       <div className="p-8 text-center" data-testid="patient-not-found">
         <p className="text-destructive mb-4">Paciente nao encontrado</p>
@@ -824,8 +822,8 @@ export default function ClinicalDocumentEditor() {
     <div className="min-h-screen bg-background p-4 md:p-6" data-testid="clinical-document-editor">
       <div className="max-w-4xl mx-auto">
 
-        {/* ─── TOP BAR ─── */}
-        <div className="mb-5 flex items-center justify-between gap-3">
+        {/* ─── TOP BAR (no-print) ─── */}
+        <div className="no-print mb-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -837,10 +835,13 @@ export default function ClinicalDocumentEditor() {
             </Button>
             <div>
               <h1 className="text-xl font-bold text-foreground" data-testid="page-title">
-                Novo {documentTypeLabel}
+                {isEditMode ? `Editar ${documentTypeLabel}` : `Novo ${documentTypeLabel}`}
               </h1>
               <p className="text-sm text-muted-foreground">
                 Paciente: {patient.name}
+                {isEditMode && (
+                  <Badge variant="outline" className="ml-2 text-xs">Editando</Badge>
+                )}
               </p>
             </div>
           </div>
@@ -854,6 +855,14 @@ export default function ClinicalDocumentEditor() {
             >
               Cancelar
             </Button>
+            <Button
+              variant="outline"
+              onClick={handlePrint}
+              data-testid="print-button"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
+            </Button>
             <Button onClick={handleSave} disabled={saving} data-testid="save-button">
               <Save className="h-4 w-4 mr-2" />
               {saving ? 'Salvando...' : 'Salvar'}
@@ -861,11 +870,11 @@ export default function ClinicalDocumentEditor() {
           </div>
         </div>
 
-        {/* ─── PATIENT VITALS ─── */}
+        {/* ─── PATIENT VITALS (no-print) ─── */}
         <PatientVitalsHeader patient={patient} />
 
-        {/* ─── DOCUMENT META ─── */}
-        <Card className="mb-4 border-dashed" data-testid="document-meta-card">
+        {/* ─── DOCUMENT META (no-print) ─── */}
+        <Card className="no-print mb-4 border-dashed" data-testid="document-meta-card">
           <CardContent className="pt-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -892,55 +901,31 @@ export default function ClinicalDocumentEditor() {
           </CardContent>
         </Card>
 
-        {/* ─── TEMPLATE SELECTOR ─── */}
-        <div className="flex items-center gap-3 mb-4">
+        {/* ─── TEMPLATE SELECTOR (no-print) ─── */}
+        <div className="no-print flex items-center gap-3 mb-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2" data-testid="insert-template-button">
-                <FileText className="h-4 w-4" />
+                {templateIcon}
                 Inserir Modelo
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuLabel className="text-xs uppercase tracking-wider">Modelos Disponíveis</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs uppercase tracking-wider flex items-center gap-2">
+                {templateIcon}
+                {templateAreaLabel}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger data-testid="vet-templates-submenu">
-                  <Dog className="h-4 w-4 mr-2" />
-                  Medicina Veterinaria
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-64">
-                  {VET_TEMPLATES.map((tpl) => (
-                    <DropdownMenuItem
-                      key={tpl.id}
-                      onClick={() => handleSelectTemplate(tpl)}
-                      data-testid={`template-${tpl.id}`}
-                    >
-                      {tpl.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger data-testid="human-templates-submenu">
-                  <User className="h-4 w-4 mr-2" />
-                  Medicina Humana
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-64">
-                  {HUMAN_TEMPLATES.map((tpl) => (
-                    <DropdownMenuItem
-                      key={tpl.id}
-                      onClick={() => handleSelectTemplate(tpl)}
-                      data-testid={`template-${tpl.id}`}
-                    >
-                      {tpl.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+              {activeTemplates.map((tpl) => (
+                <DropdownMenuItem
+                  key={tpl.id}
+                  onClick={() => handleSelectTemplate(tpl)}
+                  data-testid={`template-${tpl.id}`}
+                >
+                  {tpl.label}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -949,17 +934,16 @@ export default function ClinicalDocumentEditor() {
           <span className="text-xs text-muted-foreground" data-testid="char-count">
             {formData.content.length} caracteres
           </span>
+
+          <Badge variant="outline" className="text-xs ml-auto" data-testid="practice-badge">
+            {practice === 'human' ? 'Humana' : 'Veterinaria'}
+          </Badge>
         </div>
 
-        {/* ─── A4 PAPER EDITOR ─── */}
+        {/* ─── A4 PAPER EDITOR (printable area) ─── */}
         <div
-          className="bg-white rounded-sm border border-border/60 mx-auto"
-          style={{
-            boxShadow: '0 2px 16px 0 rgba(0,0,0,0.08), 0 1px 4px 0 rgba(0,0,0,0.04)',
-            maxWidth: '210mm',
-            minHeight: '297mm',
-            padding: '20mm 18mm'
-          }}
+          id="clinical-print-area"
+          className="bg-white rounded-sm border border-border/60 mx-auto clinical-a4-paper"
           data-testid="a4-paper-container"
         >
           <Textarea
@@ -980,8 +964,8 @@ export default function ClinicalDocumentEditor() {
           />
         </div>
 
-        {/* ─── BOTTOM ACTIONS ─── */}
-        <div className="flex justify-end gap-2 pt-6 pb-8">
+        {/* ─── BOTTOM ACTIONS (no-print) ─── */}
+        <div className="no-print flex justify-end gap-2 pt-6 pb-8">
           <Button
             variant="outline"
             onClick={() => navigate(`/history/${patientId}`)}
@@ -990,21 +974,29 @@ export default function ClinicalDocumentEditor() {
           >
             Cancelar
           </Button>
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            data-testid="print-button-bottom"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
+          </Button>
           <Button onClick={handleSave} disabled={saving} data-testid="save-button-bottom">
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Salvando...' : 'Salvar Documento'}
+            {saving ? 'Salvando...' : isEditMode ? 'Atualizar Documento' : 'Salvar Documento'}
           </Button>
         </div>
       </div>
 
-      {/* ─── TEMPLATE INSERT DIALOG ─── */}
+      {/* ─── TEMPLATE INSERT DIALOG (no-print) ─── */}
       <Dialog
         open={templateDialog.open}
         onOpenChange={(open) => {
           if (!open) setTemplateDialog({ open: false, templateContent: '', templateLabel: '' });
         }}
       >
-        <DialogContent data-testid="template-insert-dialog">
+        <DialogContent className="no-print" data-testid="template-insert-dialog">
           <DialogHeader>
             <DialogTitle>Inserir Modelo</DialogTitle>
             <DialogDescription>
