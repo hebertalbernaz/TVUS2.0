@@ -621,26 +621,44 @@ export default function ExamPage() {
                     </ResizablePanel>
                     <ResizableHandle />
                     
-                    {/* CENTRO: Editor */}
-                    <ResizablePanel defaultSize={55} className="bg-background flex flex-col">
-                        <OrganEditor organ={currentOrgan} templates={activeTemplates} onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)} />
-                    </ResizablePanel>
-                    <ResizableHandle />
-
-                    {/* DIREITA: Roteiro */}
-                    <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className="border-l bg-muted/10 flex flex-col">
-                        <div className="p-3 border-b bg-muted/5"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Roteiro</span></div>
-                        <ScrollArea className="flex-1">
-                            <div className="flex flex-col p-2 gap-1">
-                                {organsData.map((organ, idx) => (
-                                    <button key={idx} onClick={() => setCurrentOrganIndex(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground")}>
-                                        <span className="truncate pr-4">{translate(organ.organ_name, reportLanguage)}</span>
-                                        {organ.report_text && <Check className="h-3.5 w-3.5 text-green-600 absolute right-2" />}
-                                    </button>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </ResizablePanel>
+                    {/* CENTRO + DIREITA: Editor Especializado ou Genérico */}
+                    {exam.exam_type === 'radiography' ? (
+                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="radiology-editor-panel">
+                            <RadiologyEditor
+                                exam={exam}
+                                onSave={handleSpecializedSave}
+                                isSaving={isSaving}
+                            />
+                        </ResizablePanel>
+                    ) : exam.exam_type === 'tomography' ? (
+                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="ct-editor-panel">
+                            <CTScanEditor
+                                exam={exam}
+                                onSave={handleSpecializedSave}
+                                isSaving={isSaving}
+                            />
+                        </ResizablePanel>
+                    ) : (
+                        <>
+                            <ResizablePanel defaultSize={55} className="bg-background flex flex-col">
+                                <OrganEditor organ={currentOrgan} templates={activeTemplates} onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)} />
+                            </ResizablePanel>
+                            <ResizableHandle />
+                            <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className="border-l bg-muted/10 flex flex-col">
+                                <div className="p-3 border-b bg-muted/5"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Roteiro</span></div>
+                                <ScrollArea className="flex-1">
+                                    <div className="flex flex-col p-2 gap-1">
+                                        {organsData.map((organ, idx) => (
+                                            <button key={idx} onClick={() => setCurrentOrganIndex(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground")}>
+                                                <span className="truncate pr-4">{translate(organ.organ_name, reportLanguage)}</span>
+                                                {organ.report_text && <Check className="h-3.5 w-3.5 text-green-600 absolute right-2" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            </ResizablePanel>
+                        </>
+                    )}
                 </ResizablePanelGroup>
             </div>
         </div>
