@@ -1,43 +1,48 @@
 # TVUSVET (NexaClinq) - PRD
 
 ## Problema Original
-Polimento do MVP do TVUSVET. Profissionalizar os módulos de Diagnóstico por Imagem: Radiologia (Raio-X) e Tomografia (CT Scan). Ambos precisam atender Veterinária e Medicina Humana via `useLicense().practice`, adaptando regiões anatômicas e termos.
+Polimento do MVP do TVUSVET. Profissionalizar os módulos de Diagnóstico por Imagem: Radiologia (Raio-X) e Tomografia (CT Scan). Ambos precisam atender Veterinária e Medicina Humana via `useLicense().practice`.
 
 ## Arquitetura
 - **Frontend**: React + Tailwind + shadcn/ui (CRA via craco)
 - **Backend**: FastAPI (Python)
-- **Database**: RxDB local (browser-based) + MongoDB remoto
+- **Database**: RxDB local (IndexedDB) + MongoDB remoto
 - **Routing**: HashRouter
 - **Prática**: VET / HUMAN via LicenseContext
 
-## O que foi implementado (2026-02-15)
-
+## Iteração 1 (2026-02-15) - Refatoração dos Editores
 ### Arquivos Criados/Modificados
-1. **`/app/frontend/src/config/dictionaries/imaging_terms.js`** (NOVO)
-   - Constantes centralizadas para Diagnóstico por Imagem
-   - `RADIOLOGY_REGIONS` (vet/human), `RADIOLOGY_PROJECTIONS` (vet/human)
-   - `CT_REGIONS` (vet/human), `CT_CONTRAST_OPTIONS`
-   - `RADIOLOGY_NORMAL_TEMPLATES` (vet/human) - Templates completos para todas as regiões
-   - `CT_NORMAL_TEMPLATES` (vet/human) - Templates completos para todas as regiões
-   - `HU_SCALE`, `classifyHU()` - Referência Hounsfield
+1. **`imaging_terms.js`** (NOVO) — Constantes centralizadas
+2. **`RadiologyEditor.js`** (REESCRITO) — Formulário estruturado
+3. **`CTScanEditor.js`** (REESCRITO) — Formulário estruturado
 
-2. **`/app/frontend/src/components/Editors/RadiologyEditor.js`** (REESCRITO)
-   - Formulário estruturado: Região + Projeções + Achados + Conclusão
-   - VHS Calculator (vet thorax only)
-   - Botão "Laudo Normal" carrega template baseado na região e prática
-   - Salva JSON estruturado `{ type, practice, region, projections, findings, conclusion, vhs }`
-   - Adapta terminologia VET/HUMAN automaticamente via `useLicense()`
-   - Botões Salvar/Cancelar/Imprimir consistentes com ClinicalDocumentEditor
-   - Todos data-testids implementados
+## Iteração 2 (2026-02-15) - Integração + Copiar + Hydration
+### Arquivos Modificados
+1. **`ExamPage.js`** — Integração dos editores especializados
+   - Import de RadiologyEditor e CTScanEditor
+   - Lógica condicional: `exam_type === 'radiography'` → RadiologyEditor
+   - Lógica condicional: `exam_type === 'tomography'` → CTScanEditor
+   - Fallback para OrganEditor genérico (todos outros tipos)
+   - `handleSpecializedSave()` — salva dados estruturados no banco
+   - Os editores ocupam 75% do painel (imagens ficam à esquerda)
 
-3. **`/app/frontend/src/components/Editors/CTScanEditor.js`** (REESCRITO)
-   - Formulário estruturado: Região + Contraste + Espessura + Achados + Conclusão
-   - Técnica auto-gerada baseada no protocolo
-   - Referência HU integrada
-   - Botão "Laudo Normal" inteligente
-   - Salva JSON estruturado `{ type, practice, region, contrast, sliceThickness, technique, findings, conclusion }`
-   - Adapta regiões VET/HUMAN via `useLicense()`
-   - Todos data-testids implementados
+2. **`RadiologyEditor.js`** — Novas funcionalidades:
+   - Botão "Copiar Laudo" (`navigator.clipboard.writeText`)
+   - Hydration via `hydrateFromExam()`:
+     - Prioridade 1: `organs_data[0].measurements._structured`
+     - Prioridade 2: `exam.content` (JSON string)
+     - Prioridade 3: Legacy plain text → vai para campo Achados
+   - Salva em: `organs_data[0].measurements._structured`
+
+3. **`CTScanEditor.js`** — Mesmas funcionalidades:
+   - Botão "Copiar Laudo"
+   - Hydration com fallback inteligente
+   - Salva em: `organs_data[0].measurements._structured`
+
+### Compatibilidade
+- **Backward**: Ultrassom, ECG, Ecocardiograma continuam com OrganEditor + Roteiro
+- **Schema**: Sem alteração no ExamSchema (v4) — dados estruturados salvos em `measurements` (additionalProperties: true)
+- **Print/DOCX**: `report_content` e `conclusion` preenchidos para compatibilidade com fluxos de impressão e export DOCX
 
 ## Personas
 - Médico Veterinário (laudos de imagem animal)
@@ -45,15 +50,15 @@ Polimento do MVP do TVUSVET. Profissionalizar os módulos de Diagnóstico por Im
 
 ## Backlog
 - **P0**: Nenhum pendente
-- **P1**: Integrar RadiologyEditor/CTScanEditor no fluxo do ExamPage.js (substituir OrganEditor genérico para tipos radiography/tomography)
-- **P1**: Suporte a edição (carregar JSON salvo de volta nos campos)
-- **P2**: Export DOCX com formato estruturado para laudos de imagem
-- **P2**: Templates customizáveis pelo usuário
+- **P1**: Template customizáveis pelo usuário (Configurações)
+- **P2**: Export DOCX adaptado para laudos estruturados de imagem
+- **P2**: Preview de impressão adaptado para laudos de Radiologia/TC
 - **P3**: Auto-preenchimento baseado em IA
 
 ## Status dos Testes
 - Frontend compila sem erros: PASS
-- Homepage carrega: PASS
-- Dev Switcher VET/MD: PASS
-- Todas data-testids presentes: PASS
-- Todas exports de imaging_terms: PASS
+- ExamPage imports corretos: PASS
+- Routing condicional implementado: PASS
+- Botão Copiar Laudo implementado: PASS
+- Hydration implementada: PASS
+- Dados estruturados em _structured: PASS
