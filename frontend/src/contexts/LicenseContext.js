@@ -25,19 +25,23 @@ export const LicenseProvider = ({ children }) => {
 
   // Carrega configurações do banco local ou claims
   useEffect(() => {
+    let cancelled = false;
+
     const initLicense = async () => {
       try {
         const db = await getDatabase();
         
         // 1. Tenta pegar do Claims (Autenticado - Futuro SaaS Remoto)
         if (currentUser && claims) {
-            if (claims.practice) setPractice(claims.practice);
-            if (claims.modules) setLicenses([...claims.modules]); // Clone array!
+            if (!cancelled) {
+              if (claims.practice) setPractice(claims.practice);
+              if (claims.modules) setLicenses([...claims.modules]);
+            }
             
-            // Sync to local settings
+            // Sync to local settings using incrementalPatch to avoid CONFLICT
             const settings = await db.settings.findOne({ selector: { id: 'global_settings' } }).exec();
             if (settings) {
-                await settings.patch({ 
+                await settings.incrementalPatch({ 
                     practice_type: claims.practice || 'vet',
                     active_modules: [...(claims.modules || [])]
                 });
@@ -46,26 +50,28 @@ export const LicenseProvider = ({ children }) => {
         // 2. Fallback: Banco Local (Offline/Anon/Dev)
         else {
             const settings = await db.settings.findOne({ selector: { id: 'global_settings' } }).exec();
-            if (settings) {
+            if (settings && !cancelled) {
                 const settingsData = settings.toJSON();
                 setPractice(settingsData.practice_type || 'vet');
-                // IMPORTANT: Clone the array to avoid frozen object issues
                 setLicenses([...(settingsData.active_modules || ['core'])]);
-            } else {
+            } else if (!cancelled) {
                 setPractice('vet');
                 setLicenses(['core']);
             }
         }
       } catch (e) {
         console.error("License Init Error:", e);
-        setPractice('vet');
-        setLicenses(['core']);
+        if (!cancelled) {
+          setPractice('vet');
+          setLicenses(['core']);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     initLicense();
+    return () => { cancelled = true; };
   }, [currentUser, claims]);
 
   // Carrega termos baseados na prática
