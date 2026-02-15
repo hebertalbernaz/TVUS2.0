@@ -21,7 +21,9 @@ import {
   Printer,
   X,
   Info,
+  Copy,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLicense } from '@/contexts/LicenseContext';
 import {
   CT_REGIONS,
@@ -31,24 +33,52 @@ import {
   classifyHU,
 } from '@/config/dictionaries/imaging_terms';
 
+// ─── Hydration helper: extract structured data from exam ───
+function hydrateFromExam(exam) {
+  // 1st: structured data inside organs_data measurements
+  const structured = exam?.organs_data?.[0]?.measurements?._structured;
+  if (structured && typeof structured === 'object' && structured.type === 'ct_scan') {
+    return structured;
+  }
+  // 2nd: try measurements.protocol (old format from previous CTScanEditor)
+  const protocol = exam?.measurements?.protocol || exam?.organs_data?.[0]?.measurements?.protocol;
+  if (protocol) {
+    return {
+      region: protocol.region || 'cranio',
+      contrast: protocol.contrast ? 'multifasico' : 'sem_contraste',
+      sliceThickness: protocol.slice_thickness || protocol.sliceThickness || '2.0',
+      findings: exam?.report_content || '',
+      conclusion: exam?.conclusion || '',
+    };
+  }
+  // 3rd: try content field
+  if (exam?.content) {
+    const c = exam.content;
+    if (typeof c === 'object' && c.region) return c;
+    if (typeof c === 'string') {
+      try {
+        const parsed = JSON.parse(c);
+        if (parsed.region) return parsed;
+      } catch { /* ignore */ }
+    }
+  }
+  // 4th: legacy plain text
+  if (exam?.report_content || exam?.organs_data?.[0]?.report_text) {
+    return {
+      findings: exam.report_content || exam.organs_data?.[0]?.report_text || '',
+      conclusion: exam.conclusion || '',
+    };
+  }
+  return null;
+}
+
 export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
   const { practice } = useLicense();
 
-  // Options for current practice
   const regions = CT_REGIONS[practice] || CT_REGIONS.vet;
   const normalTemplates = CT_NORMAL_TEMPLATES[practice] || CT_NORMAL_TEMPLATES.vet;
 
-  // ─── Parse saved structured content ───
-  const parseSaved = useCallback(() => {
-    const c = exam?.content;
-    if (c && typeof c === 'object' && c.region) return c;
-    if (c && typeof c === 'string') {
-      try { return JSON.parse(c); } catch { /* ignore */ }
-    }
-    return null;
-  }, [exam]);
-
-  const saved = parseSaved();
+  const saved = hydrateFromExam(exam);
 
   // ─── State: Protocol ───
   const [region, setRegion] = useState(saved?.region || regions[0]?.value || 'cranio');
@@ -56,17 +86,16 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
   const [sliceThickness, setSliceThickness] = useState(saved?.sliceThickness || '2.0');
 
   // ─── State: Report ───
-  const [findings, setFindings] = useState(saved?.findings || exam?.report_content || '');
-  const [conclusion, setConclusion] = useState(saved?.conclusion || exam?.conclusion || '');
+  const [findings, setFindings] = useState(saved?.findings || '');
+  const [conclusion, setConclusion] = useState(saved?.conclusion || '');
 
-  // ─── State: HU Calculator ───
+  // ─── State: HU ───
   const [huInput, setHuInput] = useState('');
 
-  // ─── Generate technique header text ───
-  const getTechniqueText = () => {
+  // ─── Technique text ───
+  const getTechniqueText = useCallback(() => {
     const regionName = regions.find((r) => r.value === region)?.label || region;
     let text = `Exame realizado através de cortes tomográficos axiais da região de ${regionName}, com reconstruções multiplanares (MPR). Espessura de corte: ${sliceThickness}mm.`;
-
     const contrastOpt = CT_CONTRAST_OPTIONS.find((o) => o.value === contrast);
     if (contrast === 'sem_contraste') {
       text += ' Estudo realizado sem administração de meio de contraste endovenoso.';
@@ -74,9 +103,8 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
       text += ` Foi administrado meio de contraste iodado endovenoso, com aquisição na ${contrastOpt?.label || contrast}.`;
     }
     return text;
-  };
+  }, [region, contrast, sliceThickness, regions]);
 
-  // ─── Load Normal Template ───
   const loadNormalTemplate = () => {
     const tpl = normalTemplates[region];
     if (tpl) {
@@ -85,7 +113,31 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
     }
   };
 
-  // ─── Handle Save – structured JSON ───
+  // ─── Build full report text for copy ───
+  const buildFullReportText = useCallback(() => {
+    const regionName = regions.find((r) => r.value === region)?.label || region;
+    const contrastLabel = CT_CONTRAST_OPTIONS.find((o) => o.value === contrast)?.label || contrast;
+
+    let text = `RELATÓRIO TOMOGRÁFICO\n`;
+    text += `Região: ${regionName}\n`;
+    text += `Contraste: ${contrastLabel}\n`;
+    text += `\n─── TÉCNICA ───\n${getTechniqueText()}\n`;
+    text += `\n─── ACHADOS ───\n${findings || '(sem achados)'}\n`;
+    text += `\n─── CONCLUSÃO ───\n${conclusion || '(sem conclusão)'}`;
+    return text;
+  }, [region, contrast, findings, conclusion, getTechniqueText, regions]);
+
+  // ─── Copy to clipboard ───
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(buildFullReportText());
+      toast.success('Laudo copiado para a área de transferência!');
+    } catch {
+      toast.error('Erro ao copiar. Verifique as permissões do navegador.');
+    }
+  };
+
+  // ─── Save ───
   const handleSave = () => {
     const structuredContent = {
       type: 'ct_scan',
@@ -98,26 +150,29 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
       conclusion,
     };
 
-    const regionLabel = regions.find((r) => r.value === region)?.label || region;
+    const ctData = [
+      {
+        organ_name: `TC (${(regions.find((r) => r.value === region)?.label || region).toUpperCase()})`,
+        report_text: findings,
+        measurements: {
+          _structured: structuredContent,
+          protocol: { region, contrast, sliceThickness },
+        },
+        visual_data: null,
+      },
+    ];
 
     onSave({
-      organs_data: [],
+      organs_data: ctData,
       report_content: findings,
       conclusion,
-      content: structuredContent,
-      measurements: {
-        protocol: { region, contrast, sliceThickness },
-      },
     });
   };
 
   const regionLabel = regions.find((r) => r.value === region)?.label || region;
 
   return (
-    <div
-      className="h-full flex flex-col bg-background p-4 md:p-6 overflow-y-auto"
-      data-testid="ct-scan-editor"
-    >
+    <div className="h-full flex flex-col bg-background p-4 md:p-6 overflow-y-auto" data-testid="ct-scan-editor">
       {/* ─── HEADER ─── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-3">
@@ -125,10 +180,7 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
             <Layers className="h-6 w-6" />
           </div>
           <div>
-            <h2
-              className="text-xl font-bold text-foreground"
-              data-testid="ct-scan-title"
-            >
+            <h2 className="text-xl font-bold text-foreground" data-testid="ct-scan-title">
               Tomografia Computadorizada
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -151,32 +203,19 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
             <CheckCircle2 className="h-4 w-4 mr-1.5" />
             Laudo Normal
           </Button>
+          <Button variant="outline" size="sm" onClick={handleCopyReport} data-testid="ct-copy-btn">
+            <Copy className="h-4 w-4 mr-1.5" />
+            Copiar Laudo
+          </Button>
           {onCancel && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onCancel}
-              data-testid="ct-cancel-btn"
-            >
-              <X className="h-4 w-4 mr-1.5" />
-              Cancelar
+            <Button variant="outline" size="sm" onClick={onCancel} data-testid="ct-cancel-btn">
+              <X className="h-4 w-4 mr-1.5" /> Cancelar
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            data-testid="ct-print-btn"
-          >
-            <Printer className="h-4 w-4 mr-1.5" />
-            Imprimir
+          <Button variant="outline" size="sm" onClick={() => window.print()} data-testid="ct-print-btn">
+            <Printer className="h-4 w-4 mr-1.5" /> Imprimir
           </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-            data-testid="ct-save-btn"
-          >
+          <Button size="sm" onClick={handleSave} disabled={isSaving} data-testid="ct-save-btn">
             <Save className="h-4 w-4 mr-1.5" />
             {isSaving ? 'Salvando...' : 'Salvar Laudo'}
           </Button>
@@ -185,9 +224,8 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
 
       {/* ─── MAIN CONTENT ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0">
-        {/* ─── COLUNA ESQUERDA: Protocolo ─── */}
+        {/* ─── LEFT: Protocol ─── */}
         <div className="space-y-4">
-          {/* Protocolo de Aquisição */}
           <Card data-testid="ct-protocol-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -196,23 +234,14 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Região Estudada
-                </Label>
-                <Select
-                  value={region}
-                  onValueChange={setRegion}
-                >
+                <Label className="text-xs text-muted-foreground">Região Estudada</Label>
+                <Select value={region} onValueChange={setRegion}>
                   <SelectTrigger data-testid="ct-region-trigger">
                     <SelectValue placeholder="Selecione a região" />
                   </SelectTrigger>
                   <SelectContent>
                     {regions.map((r) => (
-                      <SelectItem
-                        key={r.value}
-                        value={r.value}
-                        data-testid={`ct-region-option-${r.value}`}
-                      >
+                      <SelectItem key={r.value} value={r.value} data-testid={`ct-region-option-${r.value}`}>
                         {r.label}
                       </SelectItem>
                     ))}
@@ -221,23 +250,14 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Contraste
-                </Label>
-                <Select
-                  value={contrast}
-                  onValueChange={setContrast}
-                >
+                <Label className="text-xs text-muted-foreground">Contraste</Label>
+                <Select value={contrast} onValueChange={setContrast}>
                   <SelectTrigger data-testid="ct-contrast-trigger">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {CT_CONTRAST_OPTIONS.map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        data-testid={`ct-contrast-option-${opt.value}`}
-                      >
+                      <SelectItem key={opt.value} value={opt.value} data-testid={`ct-contrast-option-${opt.value}`}>
                         {opt.label}
                       </SelectItem>
                     ))}
@@ -246,9 +266,7 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Espessura de Corte (mm)
-                </Label>
+                <Label className="text-xs text-muted-foreground">Espessura de Corte (mm)</Label>
                 <Input
                   type="number"
                   value={sliceThickness}
@@ -260,15 +278,10 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
             </CardContent>
           </Card>
 
-          {/* Referência Hounsfield */}
-          <Card
-            className="bg-card border-border"
-            data-testid="hu-calculator-card"
-          >
+          <Card className="bg-card border-border" data-testid="hu-calculator-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Info className="h-3 w-3" />
-                Densidade (HU)
+                <Info className="h-3 w-3" /> Densidade (HU)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -281,25 +294,16 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
                   type="number"
                   data-testid="hu-input"
                 />
-                <span
-                  className="text-sm font-bold text-amber-600 dark:text-amber-400"
-                  data-testid="hu-classification"
-                >
+                <span className="text-sm font-bold text-amber-600 dark:text-amber-400" data-testid="hu-classification">
                   {classifyHU(huInput)}
                 </span>
               </div>
               <Separator />
               <div className="text-[10px] space-y-1 text-muted-foreground">
                 {HU_SCALE.map((h) => (
-                  <div
-                    key={h.label}
-                    className="flex justify-between items-center border-b border-border/50 pb-0.5"
-                  >
+                  <div key={h.label} className="flex justify-between items-center border-b border-border/50 pb-0.5">
                     <span>{h.label}</span>
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full ${h.color}`}
-                      style={{ backgroundColor: 'currentColor' }}
-                    />
+                    <div className={`w-2.5 h-2.5 rounded-full ${h.color}`} style={{ backgroundColor: 'currentColor' }} />
                   </div>
                 ))}
               </div>
@@ -307,34 +311,20 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
           </Card>
         </div>
 
-        {/* ─── COLUNAS CENTRAL E DIREITA: Corpo do Laudo ─── */}
+        {/* ─── CENTER + RIGHT: Report ─── */}
         <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
-          {/* Técnica (auto-gerada) */}
-          <div
-            className="text-xs p-3 bg-muted/30 border border-border rounded-lg text-muted-foreground italic"
-            data-testid="ct-technique-preview"
-          >
-            <span className="font-bold not-italic text-foreground">
-              Técnica:{' '}
-            </span>
+          <div className="text-xs p-3 bg-muted/30 border border-border rounded-lg text-muted-foreground italic" data-testid="ct-technique-preview">
+            <span className="font-bold not-italic text-foreground">Técnica: </span>
             {getTechniqueText()}
           </div>
 
-          {/* Achados */}
-          <Card
-            className="flex-1 flex flex-col min-h-[200px]"
-            data-testid="ct-findings-card"
-          >
+          <Card className="flex-1 flex flex-col min-h-[200px]" data-testid="ct-findings-card">
             <CardHeader className="pb-2 flex flex-row justify-between items-center">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <FileText className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
                 Achados Tomográficos
               </CardTitle>
-              <Badge
-                variant="secondary"
-                className="text-[10px]"
-                data-testid="ct-findings-region-badge"
-              >
+              <Badge variant="secondary" className="text-[10px]" data-testid="ct-findings-region-badge">
                 {regionLabel}
               </Badge>
             </CardHeader>
@@ -349,7 +339,6 @@ export function CTScanEditor({ exam, onSave, isSaving, onCancel }) {
             </CardContent>
           </Card>
 
-          {/* Conclusão */}
           <Card data-testid="ct-conclusion-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">

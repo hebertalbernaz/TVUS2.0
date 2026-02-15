@@ -20,8 +20,9 @@ import {
   FileText,
   Printer,
   X,
-  RotateCcw,
+  Copy,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLicense } from '@/contexts/LicenseContext';
 import {
   RADIOLOGY_REGIONS,
@@ -29,52 +30,66 @@ import {
   RADIOLOGY_NORMAL_TEMPLATES,
 } from '@/config/dictionaries/imaging_terms';
 
+// ─── Hydration helper: extract structured data from exam ───
+function hydrateFromExam(exam, practice) {
+  // 1st priority: structured data inside organs_data measurements
+  const structured = exam?.organs_data?.[0]?.measurements?._structured;
+  if (structured && typeof structured === 'object' && structured.type === 'radiology') {
+    return structured;
+  }
+  // 2nd: try content field (string JSON)
+  if (exam?.content) {
+    const c = exam.content;
+    if (typeof c === 'object' && c.region) return c;
+    if (typeof c === 'string') {
+      try {
+        const parsed = JSON.parse(c);
+        if (parsed.region) return parsed;
+      } catch { /* ignore */ }
+    }
+  }
+  // 3rd: legacy plain text – put report_content into findings
+  if (exam?.report_content || exam?.organs_data?.[0]?.report_text) {
+    return {
+      findings: exam.report_content || exam.organs_data?.[0]?.report_text || '',
+      conclusion: exam.conclusion || '',
+    };
+  }
+  return null;
+}
+
 export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
   const { practice } = useLicense();
 
-  // Regions & projections for current practice
   const regions = RADIOLOGY_REGIONS[practice] || RADIOLOGY_REGIONS.vet;
   const projections = RADIOLOGY_PROJECTIONS[practice] || RADIOLOGY_PROJECTIONS.vet;
   const normalTemplates = RADIOLOGY_NORMAL_TEMPLATES[practice] || RADIOLOGY_NORMAL_TEMPLATES.vet;
 
-  // ─── Parse saved structured content ───
-  const parseSaved = useCallback(() => {
-    const c = exam?.content;
-    if (c && typeof c === 'object' && c.region) return c;
-    if (c && typeof c === 'string') {
-      try { return JSON.parse(c); } catch { /* ignore */ }
-    }
-    return null;
-  }, [exam]);
-
-  const saved = parseSaved();
+  const saved = hydrateFromExam(exam, practice);
 
   // ─── State ───
   const [region, setRegion] = useState(saved?.region || regions[0]?.value || 'torax');
   const [selectedProjections, setSelectedProjections] = useState(saved?.projections || []);
-  const [findings, setFindings] = useState(saved?.findings || exam?.report_content || '');
-  const [conclusion, setConclusion] = useState(saved?.conclusion || exam?.conclusion || '');
+  const [findings, setFindings] = useState(saved?.findings || '');
+  const [conclusion, setConclusion] = useState(saved?.conclusion || '');
 
-  // VHS (Vertebral Heart Scale) – only relevant for VET thorax
+  // VHS
   const [vhsData, setVhsData] = useState(
     saved?.vhs || { longAxis: '', shortAxis: '', totalVhs: 0 }
   );
 
-  // Recalculate VHS
   useEffect(() => {
     const l = parseFloat(vhsData.longAxis) || 0;
     const s = parseFloat(vhsData.shortAxis) || 0;
     setVhsData((prev) => ({ ...prev, totalVhs: (l + s).toFixed(1) }));
   }, [vhsData.longAxis, vhsData.shortAxis]);
 
-  // ─── Toggle projection ───
   const toggleProjection = (val) => {
     setSelectedProjections((prev) =>
       prev.includes(val) ? prev.filter((p) => p !== val) : [...prev, val]
     );
   };
 
-  // ─── Load Normal Template ───
   const loadNormalTemplate = () => {
     const tpl = normalTemplates[region];
     if (tpl) {
@@ -83,7 +98,36 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
     }
   };
 
-  // ─── Handle Save – structured JSON ───
+  // ─── Build full report text for copy / DOCX ───
+  const buildFullReportText = useCallback(() => {
+    const regionName = regions.find((r) => r.value === region)?.label || region;
+    const projLabels = selectedProjections
+      .map((pv) => projections.find((p) => p.value === pv)?.label || pv)
+      .join(', ');
+
+    let text = `RELATÓRIO RADIOGRÁFICO\n`;
+    text += `Região: ${regionName}\n`;
+    if (projLabels) text += `Projeções: ${projLabels}\n`;
+    text += `\n─── ACHADOS ───\n${findings || '(sem achados)'}\n`;
+    text += `\n─── CONCLUSÃO ───\n${conclusion || '(sem conclusão)'}`;
+
+    if (practice === 'vet' && region === 'torax' && vhsData.totalVhs > 0) {
+      text += `\n\nVHS: ${vhsData.totalVhs}v`;
+    }
+    return text;
+  }, [region, selectedProjections, findings, conclusion, vhsData, practice, regions, projections]);
+
+  // ─── Copy to clipboard ───
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(buildFullReportText());
+      toast.success('Laudo copiado para a área de transferência!');
+    } catch {
+      toast.error('Erro ao copiar. Verifique as permissões do navegador.');
+    }
+  };
+
+  // ─── Save ───
   const handleSave = () => {
     const structuredContent = {
       type: 'radiology',
@@ -95,12 +139,16 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
       vhs: practice === 'vet' && region === 'torax' ? vhsData : null,
     };
 
-    // Build organs_data for compatibility with ExamPage
+    const regionName = regions.find((r) => r.value === region)?.label || region;
+
     const radioData = [
       {
-        organ_name: `Raio-X (${(regions.find((r) => r.value === region)?.label || region).toUpperCase()})`,
+        organ_name: `Raio-X (${regionName.toUpperCase()})`,
         report_text: findings,
-        measurements: practice === 'vet' && region === 'torax' ? { vhs: vhsData.totalVhs, ...vhsData } : {},
+        measurements: {
+          _structured: structuredContent,
+          ...(practice === 'vet' && region === 'torax' ? { vhs: vhsData.totalVhs, ...vhsData } : {}),
+        },
         visual_data: null,
       },
     ];
@@ -109,14 +157,10 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
       organs_data: radioData,
       report_content: findings,
       conclusion,
-      content: structuredContent,
     });
   };
 
-  // Region label helper
   const regionLabel = regions.find((r) => r.value === region)?.label || region;
-
-  // Show VHS for vet + thorax
   const showVHS = practice === 'vet' && region === 'torax';
 
   return (
@@ -131,10 +175,7 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
             <Bone className="h-6 w-6" />
           </div>
           <div>
-            <h2
-              className="text-xl font-bold text-foreground"
-              data-testid="radiology-title"
-            >
+            <h2 className="text-xl font-bold text-foreground" data-testid="radiology-title">
               Radiologia Digital
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -157,32 +198,24 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
             <CheckCircle2 className="h-4 w-4 mr-1.5" />
             Laudo Normal
           </Button>
-          {onCancel && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onCancel}
-              data-testid="radiology-cancel-btn"
-            >
-              <X className="h-4 w-4 mr-1.5" />
-              Cancelar
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.print()}
-            data-testid="radiology-print-btn"
+            onClick={handleCopyReport}
+            data-testid="radiology-copy-btn"
           >
-            <Printer className="h-4 w-4 mr-1.5" />
-            Imprimir
+            <Copy className="h-4 w-4 mr-1.5" />
+            Copiar Laudo
           </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-            data-testid="radiology-save-btn"
-          >
+          {onCancel && (
+            <Button variant="outline" size="sm" onClick={onCancel} data-testid="radiology-cancel-btn">
+              <X className="h-4 w-4 mr-1.5" /> Cancelar
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => window.print()} data-testid="radiology-print-btn">
+            <Printer className="h-4 w-4 mr-1.5" /> Imprimir
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={isSaving} data-testid="radiology-save-btn">
             <Save className="h-4 w-4 mr-1.5" />
             {isSaving ? 'Salvando...' : 'Salvar'}
           </Button>
@@ -191,9 +224,8 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
 
       {/* ─── MAIN CONTENT ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1 min-h-0">
-        {/* ─── COLUNA ESQUERDA: Cabeçalho do Exame ─── */}
+        {/* ─── LEFT: Exam Header ─── */}
         <div className="space-y-4">
-          {/* Região */}
           <Card data-testid="radiology-region-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -201,21 +233,13 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Select
-                value={region}
-                onValueChange={setRegion}
-                data-testid="radiology-region-select"
-              >
+              <Select value={region} onValueChange={setRegion}>
                 <SelectTrigger data-testid="radiology-region-trigger">
                   <SelectValue placeholder="Selecione a região" />
                 </SelectTrigger>
                 <SelectContent>
                   {regions.map((r) => (
-                    <SelectItem
-                      key={r.value}
-                      value={r.value}
-                      data-testid={`region-option-${r.value}`}
-                    >
+                    <SelectItem key={r.value} value={r.value} data-testid={`region-option-${r.value}`}>
                       {r.label}
                     </SelectItem>
                   ))}
@@ -224,7 +248,6 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
             </CardContent>
           </Card>
 
-          {/* Projeções */}
           <Card data-testid="radiology-projections-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -253,22 +276,15 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
                 })}
               </div>
               {selectedProjections.length > 0 && (
-                <p
-                  className="text-[10px] text-muted-foreground mt-2"
-                  data-testid="projections-summary"
-                >
+                <p className="text-[10px] text-muted-foreground mt-2" data-testid="projections-summary">
                   Selecionadas: {selectedProjections.join(', ')}
                 </p>
               )}
             </CardContent>
           </Card>
 
-          {/* VHS Calculator – Vet Thorax only */}
           {showVHS && (
-            <Card
-              className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20"
-              data-testid="vhs-calculator-card"
-            >
+            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20" data-testid="vhs-calculator-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
                   Cálculo VHS (Cães/Gatos)
@@ -277,29 +293,21 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">
-                      Eixo Longo (v)
-                    </Label>
+                    <Label className="text-xs text-muted-foreground">Eixo Longo (v)</Label>
                     <Input
                       type="number"
                       value={vhsData.longAxis}
-                      onChange={(e) =>
-                        setVhsData({ ...vhsData, longAxis: e.target.value })
-                      }
+                      onChange={(e) => setVhsData({ ...vhsData, longAxis: e.target.value })}
                       placeholder="Ex: 5.2"
                       data-testid="vhs-long-axis-input"
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">
-                      Eixo Curto (v)
-                    </Label>
+                    <Label className="text-xs text-muted-foreground">Eixo Curto (v)</Label>
                     <Input
                       type="number"
                       value={vhsData.shortAxis}
-                      onChange={(e) =>
-                        setVhsData({ ...vhsData, shortAxis: e.target.value })
-                      }
+                      onChange={(e) => setVhsData({ ...vhsData, shortAxis: e.target.value })}
                       placeholder="Ex: 4.5"
                       data-testid="vhs-short-axis-input"
                     />
@@ -307,14 +315,10 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Total VHS:
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">Total VHS:</span>
                   <span
                     className={`text-2xl font-bold ${
-                      vhsData.totalVhs > 10.5
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-blue-700 dark:text-blue-400'
+                      vhsData.totalVhs > 10.5 ? 'text-red-600 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'
                     }`}
                     data-testid="vhs-total-value"
                   >
@@ -329,23 +333,15 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
           )}
         </div>
 
-        {/* ─── COLUNAS CENTRAL E DIREITA: Corpo do Laudo ─── */}
+        {/* ─── CENTER + RIGHT: Report Body ─── */}
         <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
-          {/* Achados */}
-          <Card
-            className="flex-1 flex flex-col min-h-[200px]"
-            data-testid="radiology-findings-card"
-          >
+          <Card className="flex-1 flex flex-col min-h-[200px]" data-testid="radiology-findings-card">
             <CardHeader className="pb-2 flex flex-row justify-between items-center">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <FileText className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5" />
                 Achados Radiográficos
               </CardTitle>
-              <Badge
-                variant="secondary"
-                className="text-[10px]"
-                data-testid="findings-region-badge"
-              >
+              <Badge variant="secondary" className="text-[10px]" data-testid="findings-region-badge">
                 {regionLabel}
               </Badge>
             </CardHeader>
@@ -360,7 +356,6 @@ export function RadiologyEditor({ exam, onSave, isSaving, onCancel }) {
             </CardContent>
           </Card>
 
-          {/* Conclusão */}
           <Card data-testid="radiology-conclusion-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
