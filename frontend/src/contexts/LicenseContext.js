@@ -132,8 +132,8 @@ export const LicenseProvider = ({ children }) => {
               // Update local React state with NEW array
               setLicenses(newModulesArray);
 
-              // Persist to RxDB using patch with completely NEW object
-              await settings.patch({ 
+              // Persist to RxDB using incrementalPatch (avoids CONFLICT)
+              await settings.incrementalPatch({ 
                   practice_type: newType,
                   active_modules: newModulesArray
               });
