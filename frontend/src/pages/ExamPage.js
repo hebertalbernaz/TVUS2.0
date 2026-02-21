@@ -642,6 +642,22 @@ export default function ExamPage() {
                                 isSaving={isSaving}
                             />
                         </ResizablePanel>
+                    ) : exam.exam_type === 'echocardiogram' ? (
+                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="echo-editor-panel">
+                            <EchocardiogramEditor
+                                exam={exam}
+                                onSave={handleSpecializedSave}
+                                isSaving={isSaving}
+                            />
+                        </ResizablePanel>
+                    ) : exam.exam_type === 'ecg' ? (
+                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="ecg-editor-panel">
+                            <ElectrocardiogramEditor
+                                exam={exam}
+                                onSave={handleSpecializedSave}
+                                isSaving={isSaving}
+                            />
+                        </ResizablePanel>
                     ) : (
                         <>
                             <ResizablePanel defaultSize={55} className="bg-background flex flex-col">
