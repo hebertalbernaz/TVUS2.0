@@ -35,6 +35,10 @@ import { CampimetryGrid } from '@/components/ophthalmo/CampimetryGrid';
 import { RadiologyEditor } from '@/components/Editors/RadiologyEditor';
 import { CTScanEditor } from '@/components/Editors/CTScanEditor';
 
+// Editores Especializados de Cardiologia
+import { EchocardiogramEditor } from '@/components/Editors/EchocardiogramEditor';
+import { ElectrocardiogramEditor } from '@/components/Editors/ElectrocardiogramEditor';
+
 export default function ExamPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
