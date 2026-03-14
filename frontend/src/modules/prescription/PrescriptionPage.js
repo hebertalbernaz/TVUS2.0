@@ -18,6 +18,7 @@ import { getDatabase, genId } from '@/core/database/db';
 import { useLicense } from '@/contexts/LicenseContext';
 import { DrugSelector } from '@/components/DrugSelector';
 import { toast } from 'sonner';
+import '../../print.css';
 
 export default function PrescriptionPage() {
   const { patientId } = useParams();
