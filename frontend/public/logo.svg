@@ -1,20 +1,15 @@
-<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Gradiente roxo para azul -->
+<svg width="400" height="120" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#9333EA;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2563EB;stop-opacity:1" />
+    <linearGradient id="ncGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(221,83%,53%)" />
+      <stop offset="100%" stop-color="hsl(250,65%,55%)" />
     </linearGradient>
   </defs>
-  
-  <!-- Ícone de ultrassom veterinário -->
-  <circle cx="25" cy="30" r="18" stroke="url(#gradient)" stroke-width="2" fill="none"/>
-  <path d="M 18 30 Q 25 25, 32 30" stroke="url(#gradient)" stroke-width="2" fill="none"/>
-  <path d="M 18 35 Q 25 30, 32 35" stroke="url(#gradient)" stroke-width="2" fill="none"/>
-  <path d="M 20 24 L 20 20" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M 30 24 L 30 20" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round"/>
-  
-  <!-- Texto TVUSVET -->
-  <text x="50" y="26" font-family="'Manrope', sans-serif" font-size="16" font-weight="700" fill="url(#gradient)">TVUSVET</text>
-  <text x="50" y="42" font-family="'Manrope', sans-serif" font-size="10" font-weight="400" fill="#6B7280">Laudos Veterinários</text>
+  <!-- Stethoscope icon (simplified) -->
+  <circle cx="50" cy="60" r="30" stroke="url(#ncGrad)" stroke-width="4" fill="none"/>
+  <path d="M35 35 Q35 15, 55 15" stroke="url(#ncGrad)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M65 35 Q65 15, 45 15" stroke="url(#ncGrad)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="50" cy="80" r="6" fill="url(#ncGrad)"/>
+  <!-- NexaClinq text -->
+  <text x="100" y="72" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="700" fill="url(#ncGrad)" letter-spacing="-1">NexaClinq</text>
 </svg>

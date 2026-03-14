@@ -88,3 +88,23 @@
 
 /* Esconde o relatório de impressão na tela normal */
 #printable-report { display: none; }
+
+/* ── Marca d'água NexaClinq ── */
+.bg-watermark {
+  position: relative;
+}
+.bg-watermark::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 45% auto;
+  opacity: 0.035;
+}
+.bg-watermark > * {
+  position: relative;
+  z-index: 1;
+}

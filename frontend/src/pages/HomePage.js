@@ -120,7 +120,16 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto" data-testid="dashboard-page">
+    <div className="p-6 max-w-6xl mx-auto bg-watermark min-h-screen" data-testid="dashboard-page">
+      {/* Watermark logo */}
+      <img
+        src={`${process.env.PUBLIC_URL}/logo.svg`}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none select-none fixed inset-0 m-auto"
+        style={{ width: '45%', maxWidth: 520, opacity: 0.035, zIndex: 0 }}
+        data-testid="dashboard-watermark"
+      />
       {/* ═══ GREETING ═══ */}
       <header className="mb-8" data-testid="dashboard-greeting">
         <h1 className="text-2xl font-bold text-foreground">
@@ -159,28 +168,28 @@ export default function HomePage() {
           </>
         ) : (
           <>
-            <Card className="p-4" data-testid="metric-total-patients">
+            <Card className="p-4 bg-card" data-testid="metric-total-patients">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Users className="h-4 w-4" /> Total de {terms?.patient_label || 'Paciente'}s
               </div>
               <div className="text-2xl font-bold text-foreground">{metrics.totalPatients}</div>
             </Card>
 
-            <Card className="p-4" data-testid="metric-month-income">
+            <Card className="p-4 bg-card" data-testid="metric-month-income">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <ArrowUpCircle className="h-4 w-4 text-green-600" /> Receitas do Mês
               </div>
               <div className="text-2xl font-bold text-green-600">{formatCurrency(metrics.monthIncome)}</div>
             </Card>
 
-            <Card className="p-4" data-testid="metric-month-expense">
+            <Card className="p-4 bg-card" data-testid="metric-month-expense">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <ArrowDownCircle className="h-4 w-4 text-red-600" /> Despesas do Mês
               </div>
               <div className="text-2xl font-bold text-red-600">{formatCurrency(metrics.monthExpense)}</div>
             </Card>
 
-            <Card className="p-4" data-testid="metric-balance">
+            <Card className="p-4 bg-card" data-testid="metric-balance">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Scale className="h-4 w-4 text-primary" /> Saldo Líquido
               </div>
@@ -193,7 +202,7 @@ export default function HomePage() {
       </div>
 
       {/* ═══ RECENT PATIENTS ═══ */}
-      <Card data-testid="dashboard-recent-patients">
+      <Card className="bg-card" data-testid="dashboard-recent-patients">
         <CardHeader className="border-b py-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
