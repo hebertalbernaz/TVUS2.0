@@ -596,7 +596,7 @@ class DatabaseService {
           paid_at: paidAtIso,
 
           description: data.description || '',
-          patient_id: data.patient_id || null
+          patient_id: data.patient_id || ''
       };
       await db.financial.insert(transaction);
       return transaction;
