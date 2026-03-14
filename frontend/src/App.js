@@ -10,7 +10,8 @@ import { getDatabase, getLastSeedResult } from './core/database/db';
 
 // Pages & Modules
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage'; // Core Module (Patient List)
+import HomePage from './pages/HomePage'; // Dashboard
+import PatientsPage from './pages/PatientsPage'; // Patient List
 import ExamPage from './pages/ExamPage'; // Core Module (Ultrasound)
 import PatientHistoryPage from './pages/PatientHistoryPage';
 import SettingsPage from './pages/SettingsPage';
@@ -124,6 +125,14 @@ function App() {
                 <PrivateRoute>
                   <AppLayout>
                     <HomePage />
+                  </AppLayout>
+                </PrivateRoute>
+              } />
+
+              <Route path="/patients" element={
+                <PrivateRoute>
+                  <AppLayout>
+                    <PatientsPage />
                   </AppLayout>
                 </PrivateRoute>
               } />

@@ -1,203 +1,304 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, Settings, Plus, Users, LayoutGrid } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  UserPlus,
+  FileText,
+  Pill,
+  DollarSign,
+  Users,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Scale,
+  ChevronRight,
+  Stethoscope,
+} from 'lucide-react';
 import { db } from '@/services/database';
-import { PatientCard } from '@/components/PatientCard';
-import { PatientForm } from '@/components/PatientForm';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { ProfileSelector } from '@/components/ProfileSelector';
 import { useLicense } from '@/contexts/LicenseContext';
-import logoImg from '../logo-tvusvet.png';
 
+const formatCurrency = (v) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
 
 export default function HomePage() {
-  const { terms, practice } = useLicense(); // 🟢 Contexto
-  const [patients, setPatients] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showNewPatient, setShowNewPatient] = useState(false);
-  const [editingPatient, setEditingPatient] = useState(null);
+  const { terms, practice } = useLicense();
   const navigate = useNavigate();
 
-  // Segregation mapping: practice (vet/human) -> scope (VET/HUMAN)
+  const [loading, setLoading] = useState(true);
+  const [patients, setPatients] = useState([]);
+  const [metrics, setMetrics] = useState({ totalPatients: 0, monthIncome: 0, monthExpense: 0, balance: 0 });
+
   const activeScope = practice === 'human' ? 'HUMAN' : 'VET';
 
-  const loadPatients = useCallback(async () => {
+  const now = useMemo(() => new Date(), []);
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+
+  const loadDashboard = useCallback(async () => {
     try {
-      console.log(`[HomePage] Loading patients with scope: ${activeScope}`);
-      const scopedPatients = await db.getPatients({ scope: activeScope });
-      console.log(`[HomePage] Loaded ${scopedPatients.length} patients`);
-      setPatients(scopedPatients);
-    } catch (error) {
-      console.error('[HomePage] loadPatients FAILED:', error);
-      console.error('[HomePage] Error details:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
+      setLoading(true);
+      const [allPatients, balanceData] = await Promise.all([
+        db.getPatients({ scope: activeScope }),
+        db.getBalance({ month, year }),
+      ]);
+
+      // Sort by latest created (assuming IDs are roughly chronological or there's a created_at)
+      const sorted = [...allPatients].sort((a, b) => {
+        const da = a.created_at || a.id;
+        const db2 = b.created_at || b.id;
+        return db2 > da ? 1 : -1;
       });
+
+      setPatients(sorted.slice(0, 5));
+      setMetrics({
+        totalPatients: allPatients.length,
+        monthIncome: balanceData.totalIncome || 0,
+        monthExpense: balanceData.totalExpense || 0,
+        balance: balanceData.balance || 0,
+      });
+    } catch (e) {
+      console.error('[Dashboard] loadDashboard FAILED:', e);
+    } finally {
+      setLoading(false);
     }
-  }, [activeScope]);
+  }, [activeScope, month, year]);
 
-  useEffect(() => { loadPatients(); }, [loadPatients]);
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
 
-  const filteredPatients = patients.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.breed && p.breed.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (p.owner_name && p.owner_name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const greeting = getGreeting();
+  const contextLabel = practice === 'vet' ? 'Veterinário(a)' : 'Doutor(a)';
+  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-  // Placeholder dinâmico (defensive: use fallbacks if terms not loaded)
-  const searchPlaceholder = practice === 'vet'
-      ? `Buscar ${(terms?.patient_label || 'paciente').toLowerCase()}, ${(terms?.owner_label || 'proprietário').toLowerCase()} ou ${(terms?.breed_label || 'raça').toLowerCase()}...`
-      : `Buscar ${(terms?.patient_label || 'paciente').toLowerCase()} ou ${(terms?.owner_label || 'proprietário').toLowerCase()}...`;
+  const quickActions = [
+    {
+      id: 'new-patient',
+      label: `Novo ${terms?.patient_label || 'Paciente'}`,
+      icon: UserPlus,
+      path: '/patients',
+      color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50',
+    },
+    {
+      id: 'clinical',
+      label: 'Atendimento',
+      icon: Stethoscope,
+      path: '/patients',
+      color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/50',
+    },
+    {
+      id: 'prescription',
+      label: 'Receituário',
+      icon: Pill,
+      path: '/prescription',
+      color: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/50',
+    },
+    {
+      id: 'financial',
+      label: 'Financeiro',
+      icon: DollarSign,
+      path: '/financial',
+      color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/50',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300 relative overflow-hidden" data-testid="home-page" data-scope={activeScope}>
-      
-      {/* 1. MARCA D'ÁGUA NO FUNDO */}
-      <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none select-none opacity-[0.03] dark:opacity-[0.05]">
-          <img src={logoImg} alt="" className="w-[80%] max-w-[600px] grayscale" />
+    <div className="p-6 max-w-6xl mx-auto" data-testid="dashboard-page">
+      {/* ═══ GREETING ═══ */}
+      <header className="mb-8" data-testid="dashboard-greeting">
+        <h1 className="text-2xl font-bold text-foreground">
+          {greeting}, {contextLabel}!
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Central de Comando &bull; {monthLabel}
+        </p>
+      </header>
+
+      {/* ═══ QUICK ACTIONS ═══ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" data-testid="dashboard-quick-actions">
+        {quickActions.map((action) => (
+          <button
+            key={action.id}
+            data-testid={`quick-action-${action.id}`}
+            onClick={() => navigate(action.path)}
+            className={`group flex flex-col items-center gap-3 p-5 rounded-xl border transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] ${action.color}`}
+          >
+            <action.icon className="h-7 w-7" />
+            <span className="text-sm font-semibold">{action.label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* CONTEÚDO PRINCIPAL */}
-      <div className="relative z-10 container mx-auto max-w-7xl p-6">
-        
-        {/* CABEÇALHO */}
-        <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div className="flex items-center gap-3 self-start md:self-auto">
-               <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                  <LayoutGrid className="h-6 w-6" />
-               </div>
-               <div>
-                  <h1 className="text-xl font-bold tracking-tight leading-none text-foreground">NexaClinq</h1>
-                  <p className="text-xs text-muted-foreground font-medium">Gestão & Inteligência Clínica</p>
-               </div>
-            </div>
+      {/* ═══ METRICS ═══ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" data-testid="dashboard-metrics">
+        {loading ? (
+          <>
+            {[1,2,3,4].map(i => (
+              <Card key={i} className="p-4">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-20" />
+              </Card>
+            ))}
+          </>
+        ) : (
+          <>
+            <Card className="p-4" data-testid="metric-total-patients">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <Users className="h-4 w-4" /> Total de {terms?.patient_label || 'Paciente'}s
+              </div>
+              <div className="text-2xl font-bold text-foreground">{metrics.totalPatients}</div>
+            </Card>
 
-            <div className="flex items-center gap-2 bg-card p-1.5 rounded-lg border shadow-sm w-full md:w-auto justify-between md:justify-end">
-                <ProfileSelector onProfileChange={() => window.location.reload()} />
-                <div className="h-6 w-px bg-border mx-1"></div>
-                <div className="flex items-center gap-1">
-                    <ThemeToggle />
-                    <Button 
-                        onClick={() => navigate('/settings')} 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                        title="Configurações"
-                    >
-                        <Settings className="h-5 w-5" />
-                    </Button>
-                </div>
-            </div>
-        </header>
+            <Card className="p-4" data-testid="metric-month-income">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <ArrowUpCircle className="h-4 w-4 text-green-600" /> Receitas do Mês
+              </div>
+              <div className="text-2xl font-bold text-green-600">{formatCurrency(metrics.monthIncome)}</div>
+            </Card>
 
-        {/* BUSCA E AÇÃO */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 items-stretch">
-            <div className="relative flex-1 group">
-                <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <Input
-                    data-testid="patient-search-input"
-                    placeholder={searchPlaceholder}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 h-12 text-lg shadow-sm border-muted bg-card/80 backdrop-blur-sm hover:bg-card focus-visible:ring-primary/30 transition-all"
-                />
-            </div>
-            
-            <Button
-                data-testid="new-patient-button"
-                onClick={() => {setEditingPatient(null); setShowNewPatient(true);}}
-                size="lg"
-                className="h-12 px-8 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-            >
-                <Plus className="mr-2 h-5 w-5" /> Novo {terms?.patient_label || 'Paciente'}
-            </Button>
-        </div>
+            <Card className="p-4" data-testid="metric-month-expense">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <ArrowDownCircle className="h-4 w-4 text-red-600" /> Despesas do Mês
+              </div>
+              <div className="text-2xl font-bold text-red-600">{formatCurrency(metrics.monthExpense)}</div>
+            </Card>
 
-
-        {/* Ação rápida: Histórico do Paciente (restaurado) */}
-        <div className="flex justify-end mb-6">
-          <Button
-            data-testid="open-patient-history-button"
-            variant="outline"
-            className="border-primary/20 text-primary hover:bg-primary/5"
-            onClick={() => {
-              // Abre a tela de histórico (o paciente específico é acessado pelo card)
-              const baseUrl = window.location.href.split('#')[0];
-              const historyUrl = `${baseUrl}#/history`;
-              window.open(
-                historyUrl,
-                'Histórico',
-                'width=700,height=900,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
-              );
-            }}
-          >
-            Abrir Histórico
-          </Button>
-        </div>
-
-        {/* LISTA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-10">
-          {filteredPatients.map(patient => (
-            <PatientCard key={patient.id} patient={patient} onUpdate={loadPatients} />
-          ))}
-        </div>
-
-        {/* ESTADO VAZIO */}
-        {filteredPatients.length === 0 && (
-          <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed border-2 border-muted bg-card/50 mt-8 backdrop-blur-sm">
-            <div className="bg-muted p-4 rounded-full mb-4">
-                <Users className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">
-                {searchTerm ? `Nenhum ${(terms?.patient_label || 'paciente').toLowerCase()} encontrado` : `Lista vazia`}
-            </h3>
-
-
-            <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
-                {searchTerm ? 'Verifique a grafia ou tente outro termo.' : 'Comece cadastrando agora.'}
-            </p>
-            {!searchTerm && (
-                <Button
-                    data-testid="empty-state-create-patient-button"
-                    onClick={() => { setEditingPatient(null); setShowNewPatient(true); }}
-                    variant="outline"
-                    className="mt-4 border-primary/20 text-primary hover:bg-primary/5"
-                >
-                    Cadastrar {terms?.patient_label || 'Paciente'}
-                </Button>
-            )}
-          </Card>
+            <Card className="p-4" data-testid="metric-balance">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <Scale className="h-4 w-4 text-primary" /> Saldo Líquido
+              </div>
+              <div className={`text-2xl font-bold ${metrics.balance >= 0 ? 'text-primary' : 'text-amber-500'}`}>
+                {formatCurrency(metrics.balance)}
+              </div>
+            </Card>
+          </>
         )}
       </div>
 
-      {/* MODAL */}
-      <Dialog open={showNewPatient} onOpenChange={setShowNewPatient}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-primary font-bold">
-                {editingPatient ? `Editar ${terms?.patient_label || 'Paciente'}` : `Novo ${terms?.patient_label || 'Paciente'}`}
-            </DialogTitle>
-            <DialogDescription>
-              Preencha os dados abaixo.
-            </DialogDescription>
-          </DialogHeader>
-          <PatientForm 
-            patient={editingPatient}
-            onSuccess={() => {
-              setShowNewPatient(false);
-              setEditingPatient(null);
-              // reload patients with a slight delay to avoid RxDB replication timing
-              setTimeout(() => loadPatients(), 150);
-            }} 
-            onCancel={() => { setShowNewPatient(false); setEditingPatient(null); }} 
-          />
-        </DialogContent>
-      </Dialog>
+      {/* ═══ RECENT PATIENTS ═══ */}
+      <Card data-testid="dashboard-recent-patients">
+        <CardHeader className="border-b py-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              {terms?.patient_label || 'Paciente'}s Recentes
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/patients')}
+              data-testid="dashboard-see-all-patients"
+            >
+              Ver Todos <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-6 space-y-3">
+              {[1,2,3].map(i => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-32 mb-1" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : patients.length === 0 ? (
+            <div className="p-12 text-center" data-testid="dashboard-no-patients">
+              <Users className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground">Nenhum {(terms?.patient_label || 'paciente').toLowerCase()} cadastrado.</p>
+              <Button
+                variant="outline"
+                className="mt-3"
+                onClick={() => navigate('/patients')}
+                data-testid="dashboard-create-first-patient"
+              >
+                <UserPlus className="h-4 w-4 mr-2" /> Cadastrar Primeiro
+              </Button>
+            </div>
+          ) : (
+            <Table data-testid="dashboard-patients-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  {practice === 'vet' && <TableHead className="w-[100px]">Espécie</TableHead>}
+                  {practice === 'vet' && <TableHead className="w-[100px]">Peso</TableHead>}
+                  {practice === 'human' && <TableHead className="w-[100px]">Idade</TableHead>}
+                  <TableHead className="w-[130px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {patients.map((p) => (
+                  <TableRow key={p.id} data-testid={`recent-patient-${p.id}`}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                          {p.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm text-foreground">{p.name}</div>
+                          {practice === 'vet' && p.owner_name && (
+                            <div className="text-xs text-muted-foreground">{terms?.owner_label || 'Tutor'}: {p.owner_name}</div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    {practice === 'vet' && (
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] font-normal">
+                          {p.species === 'dog' ? 'Canino' : p.species === 'cat' ? 'Felino' : p.species || '--'}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {practice === 'vet' && (
+                      <TableCell className="text-sm text-muted-foreground">
+                        {p.weight ? `${p.weight} kg` : '--'}
+                      </TableCell>
+                    )}
+                    {practice === 'human' && (
+                      <TableCell className="text-sm text-muted-foreground">
+                        {p.birth_year ? `${new Date().getFullYear() - parseInt(p.birth_year)} anos` : '--'}
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(`/history/${p.id}`)}
+                        data-testid={`patient-history-btn-${p.id}`}
+                        className="text-xs"
+                      >
+                        <FileText className="h-3 w-3 mr-1" /> Prontuário
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

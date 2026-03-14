@@ -7,7 +7,13 @@ import {
   Settings,
   LogOut,
   Dog,
-  User
+  User,
+  Home,
+  Stethoscope,
+  FileText,
+  Activity,
+  FlaskConical,
+  Eye
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
@@ -20,16 +26,50 @@ export function Sidebar() {
 
   const isActive = (path) => location.pathname === path;
 
-  // Defensive: Provide fallback if terms not loaded yet
   const patientLabel = terms?.patient_label || 'Paciente';
 
   const modules = [
     {
+      id: 'home',
+      name: 'Dashboard',
+      icon: Home,
+      path: '/',
+      enabled: true
+    },
+    {
       id: 'core',
       name: patientLabel + 's',
       icon: LayoutGrid,
-      path: '/',
+      path: '/patients',
       enabled: hasModule('core')
+    },
+    {
+      id: 'prescription',
+      name: 'Receita Smart',
+      icon: FileText,
+      path: '/prescription',
+      enabled: hasModule('prescription')
+    },
+    {
+      id: 'cardio',
+      name: terms?.cardio_title || 'Cardiologia',
+      icon: Activity,
+      path: '/cardio',
+      enabled: hasModule('cardio')
+    },
+    {
+      id: 'lab_vet',
+      name: 'Laboratório',
+      icon: FlaskConical,
+      path: '/lab',
+      enabled: hasModule('lab_vet')
+    },
+    {
+      id: 'ophthalmo_human',
+      name: 'Oftalmo Pro',
+      icon: Eye,
+      path: '/ophthalmo',
+      enabled: hasModule('ophthalmo_human')
     },
     {
       id: 'financial',
@@ -42,15 +82,17 @@ export function Sidebar() {
 
   return (
     <div className="h-screen w-64 bg-card border-r flex flex-col fixed left-0 top-0 z-50">
-      {/* Header */}
-      <div className="p-6 flex items-center gap-2 border-b">
-        <div className="h-8 w-8 bg-primary/20 rounded flex items-center justify-center text-primary">
-           <LayoutGrid className="h-5 w-5" />
+      {/* Header - NexaClinq Brand */}
+      <div className="p-5 flex items-center gap-3 border-b">
+        <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground shadow-sm">
+          <Stethoscope className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="font-bold text-lg leading-none">NexaClinq</h1>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-            Gestão & Inteligência Clínica
+          <h1 className="font-bold text-xl leading-none tracking-tight text-primary" data-testid="sidebar-brand-name">
+            NexaClinq
+          </h1>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
+            {practice === 'vet' ? 'Gestão Veterinária' : 'Gestão Clínica'}
           </span>
         </div>
       </div>
@@ -61,8 +103,8 @@ export function Sidebar() {
           <Link key={module.id} to={module.path}>
             <div className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-              isActive(module.path) 
-                ? "bg-primary/10 text-primary" 
+              isActive(module.path)
+                ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}>
               <module.icon className="h-4 w-4" />
@@ -77,17 +119,17 @@ export function Sidebar() {
         <div className="mb-4 p-2 bg-background rounded border text-xs">
           <p className="font-semibold mb-2 text-muted-foreground">Dev Switcher:</p>
           <div className="flex gap-1">
-            <Button 
-              size="sm" 
-              variant={practice === 'vet' ? 'default' : 'outline'} 
+            <Button
+              size="sm"
+              variant={practice === 'vet' ? 'default' : 'outline'}
               className="h-7 flex-1 text-[10px]"
               onClick={() => setPractice('vet')}
             >
               <Dog className="h-3 w-3 mr-1" /> VET
             </Button>
-            <Button 
-              size="sm" 
-              variant={practice === 'human' ? 'default' : 'outline'} 
+            <Button
+              size="sm"
+              variant={practice === 'human' ? 'default' : 'outline'}
               className="h-7 flex-1 text-[10px]"
               onClick={() => setPractice('human')}
             >
