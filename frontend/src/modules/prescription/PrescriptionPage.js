@@ -89,17 +89,21 @@ export default function PrescriptionPage() {
       });
 
       // Also save as clinical_documents for unified timeline
-      await rxdb.clinical_documents.insert({
-        id: genId(),
-        patient_id: patientId,
-        type: 'prescription',
-        title: terms.prescription_header || 'Receituário',
-        content: fullText,
-        doctor_name: settings.veterinarian_name || '',
-        date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      try {
+        await rxdb.clinical_documents.insert({
+          id: genId(),
+          patient_id: patientId,
+          type: 'prescription',
+          title: terms.prescription_header || 'Receituário',
+          content: fullText,
+          doctor_name: settings.veterinarian_name || '',
+          date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      } catch (docErr) {
+        console.warn('Aviso: Não foi possível salvar no timeline clínico:', docErr);
+      }
 
       toast.success('Receita salva no histórico!');
       navigate(`/history/${patientId}`);

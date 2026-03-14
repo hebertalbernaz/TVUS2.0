@@ -508,16 +508,16 @@ export const LabExamSchema = {
   required: ['id', 'patient_id', 'exam_type', 'date']
 };
 
-// --- CLINICAL DOCUMENTS (V1 - Added maxLength to patient_id) ---
+// --- CLINICAL DOCUMENTS (V2 - Added 'prescription' to type enum) ---
 export const ClinicalDocumentSchema = {
   title: 'clinical document schema',
-  version: 1,
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
     patient_id: { type: 'string', maxLength: 100 },
-    type: { type: 'string', enum: ['anamnesis', 'certificate', 'referral'] },
+    type: { type: 'string', enum: ['anamnesis', 'certificate', 'referral', 'prescription'] },
     title: { type: 'string' },
     content: { type: 'string' },
     date: { type: 'string', format: 'date-time' },

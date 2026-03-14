@@ -170,7 +170,8 @@ const _create = async () => {
       clinical_documents: {
         schema: ClinicalDocumentSchema,
         migrationStrategies: {
-            1: returnSameDoc // v1: Added maxLength to patient_id
+            1: returnSameDoc, // v1: Added maxLength to patient_id
+            2: returnSameDoc  // v2: Added 'prescription' to type enum
         }
       },
 
