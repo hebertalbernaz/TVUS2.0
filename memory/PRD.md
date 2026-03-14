@@ -1,7 +1,11 @@
 # NexaClinq - PRD (Product Requirements Document)
 
 ## Original Problem Statement
-Módulo de Receituário (Prescription) - Transformar o receituário de um simples campo de texto em uma ferramenta inteligente que consulta um banco de medicamentos, sugere dosagens baseadas no peso do paciente e gera uma receita estruturada. O sistema deve atender Veterinária e Humana (`useLicense().practice`).
+### Phase 1: Módulo de Receituário (Prescription)
+Transformar o receituário em ferramenta inteligente com banco de medicamentos, cálculo de doses pelo peso e receita estruturada (Vet + Humana).
+
+### Phase 2: Módulo Financeiro (Cash Flow)
+Fluxo de Caixa simples, rápido e visual para registrar pagamentos de consultas/exames e pequenas despesas. 3 KPI cards, formulário de nova transação com toggle receita/despesa, tabela com histórico formatado em BRL.
 
 ## Architecture
 - **Frontend**: React + RxDB (IndexedDB) + Tailwind + shadcn/ui
@@ -13,56 +17,52 @@ Módulo de Receituário (Prescription) - Transformar o receituário de um simple
 ## User Personas
 1. **Veterinarian (VET)**: Manages animal patients with weight-based dose calculations (mg/kg)
 2. **Doctor (HUMAN/MD)**: Manages human patients with standard dose prescriptions
+3. **Receptionist**: Registers payments and small expenses
 
-## Core Requirements
-- Drug database (local in-memory) with Vet and Human medications
-- Drug search filtered by practice context (vet/human)
-- Dose calculator based on patient weight (mg/kg × weight)
-- Volume/quantity auto-calculation from concentration
-- Duration field (days, weeks, months, continuous use)
-- Prescription paper preview with numbered drug list
-- Print with generous top margin for pre-printed stationery
-- Save to patient history (prescriptions + clinical_documents collections)
-- Footer with doctor name and CRM/CRMV for signature
+## What's Been Implemented
 
-## What's Been Implemented (2026-03-14)
+### Phase 1: Prescription Module (2026-03-14)
+1. **`drugs_db.js`**: 16 medications (8 vet + 8 human) with structured data
+2. **`DrugSelector.js`**: Calculator panel with search, auto-dose, duration, formatted output
+3. **`PrescriptionPage.js`**: Prescription builder with paper preview, print, save to history
+4. **Schema**: ClinicalDocumentSchema v2 with 'prescription' type
+5. **Print**: Imported print.css, fixed #printable-report visibility, generous top margin
 
-### Prescription Module (Complete)
-1. **`drugs_db.js`** - 16 medications (8 vet + 8 human) with structured data: id, name, practice, concentration, baseDose, doseUnit, route, frequency
-2. **`DrugSelector.js`** - Full calculator panel: search from local DB, auto-fill base dose, weight-based calculation, volume/quantity suggestion, duration field, formatted output
-3. **`PrescriptionPage.js`** - Complete prescription builder: drug list management, paper preview, print (window.print), save to prescriptions + clinical_documents
-4. **Schema update** - ClinicalDocumentSchema v2 with 'prescription' type in enum + migration
-5. **Print CSS** - Imported print.css, fixed #printable-report screen visibility
-
-### Verified Working Flows
-- Patient creation → Prescription navigation via "Iniciar Atendimento" → "Nova Receita"
-- Drug search (e.g., "Melo" → Meloxicam 2mg)
-- Dose calculator: 0.1mg/kg × 10kg = 1mg → 0.50 comprimido(s)
-- Add multiple drugs with duration
-- Save redirects to patient history with both DOCUMENTO and RECEITA entries
-- Print layout with generous top margin and signature footer
+### Phase 2: Financial Module (2026-03-14)
+1. **`FinancialModule.js`**: Complete refactor with:
+   - 3 KPI cards: Receitas Totais (green), Despesas Totais (red), Saldo Líquido
+   - Single "Nova Transação" button with Dialog
+   - Visual toggle income/expense (green/red buttons)
+   - Form: Tipo, Categoria, Valor (R$), Método de Pagamento, Data, Descrição
+   - Proper shadcn `<Table>` with columns: Data, Descrição, Categoria, Método, Valor
+   - Conditional formatting: green for income, red for expense
+   - Delete button per row with confirmation
+   - Month filter
+2. **Bug fix**: `database.js` - `patient_id: null` → `patient_id: ''` for RxDB schema compliance
+3. **Testing**: 100% pass rate - all features verified E2E
 
 ## Prioritized Backlog
 
 ### P0 (Completed)
-- [x] Drug database with vet + human drugs
-- [x] Drug selector with calculator
-- [x] Prescription page with paper preview
-- [x] Save to history
-- [x] Print functionality
+- [x] Drug database + selector + calculator
+- [x] Prescription page with print/save
+- [x] Financial KPI dashboard
+- [x] Transaction CRUD (create/read/delete)
+- [x] Month filter + BRL formatting
 
 ### P1 (Next)
-- [ ] Edit existing prescriptions from history
+- [ ] Edit existing transactions (was in old version, simplified out)
+- [ ] Status management (pending/paid/cancelled) for accounts receivable
 - [ ] Controlled substance special handling (receita especial)
 - [ ] Drug interaction warnings
 
 ### P2 (Future)
-- [ ] Custom drug additions from within the prescription flow
+- [ ] Financial reports/export (CSV/PDF)
 - [ ] Template prescriptions (common protocols)
-- [ ] Prescription PDF export (in addition to window.print)
-- [ ] Multi-language support for drug names
+- [ ] Prescription PDF export
+- [ ] Patient-linked transactions (vincular consulta ao paciente)
 
 ## Next Tasks
+- Restore edit transaction capability if user requests
+- Add pending/forecast status tracking back if needed
 - Polish prescription rendering in PatientHistoryPage timeline
-- Add "Imprimir" button directly from history view
-- Consider adding drug interaction database
