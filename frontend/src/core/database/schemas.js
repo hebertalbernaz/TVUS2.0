@@ -527,3 +527,22 @@ export const ClinicalDocumentSchema = {
   },
   required: ['id', 'patient_id', 'type', 'date']
 };
+
+// --- APPOINTMENTS (V0) ---
+export const AppointmentSchema = {
+  title: 'appointment schema',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id:          { type: 'string', maxLength: 100 },
+    patientName: { type: 'string' },
+    patientId:   { type: 'string', maxLength: 100 },
+    date:        { type: 'string' },   // YYYY-MM-DD
+    time:        { type: 'string' },   // HH:MM
+    type:        { type: 'string' },   // Consulta, Retorno, Exame, Cirurgia
+    status:      { type: 'string', enum: ['Agendado','Confirmado','Cancelado','Concluído'] },
+    notes:       { type: 'string' }
+  },
+  required: ['id', 'patientName', 'date', 'time', 'status']
+};

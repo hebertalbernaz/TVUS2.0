@@ -10,7 +10,7 @@ import {
   PatientSchema, SettingsSchema, DrugSchema, PrescriptionSchema,
   ExamSchema, OphthalmoSchema, TemplateSchema, ReferenceValueSchema,
   ProfileSchema, FinancialSchema, LabExamSchema, AnamnesisSchema,
-  ClinicalDocumentSchema
+  ClinicalDocumentSchema, AppointmentSchema
 } from './schemas';
 import { initialDrugs, initialSettings, initialTemplates } from '../../config/seeds';
 import { masterSeeder } from '../../services/MasterSeeder';
@@ -191,7 +191,11 @@ const _create = async () => {
             },
             2: returnSameDoc // v2: Added maxLength to patient_id
         }
-    }
+    },
+
+      appointments: {
+        schema: AppointmentSchema
+      }
   });
   } catch (e) {
     // DB6 happens when IndexedDB already has the collection with a different schema version/shape.

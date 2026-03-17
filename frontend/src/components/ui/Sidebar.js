@@ -13,7 +13,8 @@ import {
   FileText,
   Activity,
   FlaskConical,
-  Eye
+  Eye,
+  Calendar
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
@@ -42,6 +43,13 @@ export function Sidebar() {
       icon: LayoutGrid,
       path: '/patients',
       enabled: hasModule('core')
+    },
+    {
+      id: 'agenda',
+      name: 'Agenda',
+      icon: Calendar,
+      path: '/agenda',
+      enabled: true
     },
     {
       id: 'prescription',

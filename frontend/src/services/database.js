@@ -696,6 +696,53 @@ class DatabaseService {
       }
       throw new Error('Transaction not found');
   }
+  // ================= APPOINTMENTS =================
+  async createAppointment(data) {
+      const db = await getDatabase();
+      const record = {
+          id: genId(),
+          patientName: data.patientName || '',
+          patientId: data.patientId || '',
+          date: data.date,
+          time: data.time,
+          type: data.type || 'Consulta',
+          status: data.status || 'Agendado',
+          notes: data.notes || ''
+      };
+      await db.appointments.insert(record);
+      return record;
+  }
+
+  async getAppointments(filters = {}) {
+      try {
+        const db = await getDatabase();
+        const selector = {};
+        if (filters.date) selector.date = filters.date;
+        if (filters.status) selector.status = filters.status;
+        const rows = await this._files(db.appointments.find({ selector }));
+        rows.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        return rows;
+      } catch (e) {
+        console.error('[DB] getAppointments FAILED:', e);
+        return [];
+      }
+  }
+
+  async updateAppointment(id, data) {
+      const db = await getDatabase();
+      const doc = await db.appointments.findOne(id).exec();
+      if (doc) {
+          await doc.patch(data);
+          return doc.toJSON();
+      }
+      throw new Error('Appointment not found');
+  }
+
+  async deleteAppointment(id) {
+      const db = await getDatabase();
+      const doc = await db.appointments.findOne(id).exec();
+      if (doc) await doc.remove();
+  }
 }
 
 export const db = new DatabaseService();

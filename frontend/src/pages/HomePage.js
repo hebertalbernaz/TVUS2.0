@@ -23,6 +23,9 @@ import {
   Scale,
   ChevronRight,
   Stethoscope,
+  Calendar,
+  Clock,
+  Coffee,
 } from 'lucide-react';
 import { db } from '@/services/database';
 import { useLicense } from '@/contexts/LicenseContext';
@@ -43,6 +46,7 @@ export default function HomePage() {
 
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState([]);
+  const [todayAppts, setTodayAppts] = useState([]);
   const [metrics, setMetrics] = useState({ totalPatients: 0, monthIncome: 0, monthExpense: 0, balance: 0 });
 
   const activeScope = practice === 'human' ? 'HUMAN' : 'VET';
@@ -54,9 +58,11 @@ export default function HomePage() {
   const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
-      const [allPatients, balanceData] = await Promise.all([
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const [allPatients, balanceData, appts] = await Promise.all([
         db.getPatients({ scope: activeScope }),
         db.getBalance({ month, year }),
+        db.getAppointments({ date: todayStr }),
       ]);
 
       // Sort by latest created (assuming IDs are roughly chronological or there's a created_at)
@@ -67,6 +73,7 @@ export default function HomePage() {
       });
 
       setPatients(sorted.slice(0, 5));
+      setTodayAppts(appts || []);
       setMetrics({
         totalPatients: allPatients.length,
         monthIncome: balanceData.totalIncome || 0,
@@ -200,6 +207,70 @@ export default function HomePage() {
           </>
         )}
       </div>
+
+      {/* ═══ AGENDA DE HOJE ═══ */}
+      <Card className="bg-card mb-8" data-testid="dashboard-today-agenda">
+        <CardHeader className="border-b py-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Agenda de Hoje
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/agenda')}
+              data-testid="dashboard-see-agenda"
+            >
+              Ver Agenda <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-6 space-y-3">
+              {[1,2].map(i => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-14 rounded" />
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-5 w-16 ml-auto rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : todayAppts.length === 0 ? (
+            <div className="p-10 text-center" data-testid="dashboard-no-appointments">
+              <Coffee className="h-9 w-9 mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-muted-foreground text-sm">Nenhum paciente agendado para hoje.</p>
+              <p className="text-muted-foreground/60 text-xs mt-0.5">Aproveite o café!</p>
+            </div>
+          ) : (
+            <div className="divide-y" data-testid="dashboard-today-appointments-list">
+              {todayAppts.map((a) => (
+                <div key={a.id} className="flex items-center gap-4 px-6 py-3" data-testid={`today-appt-${a.id}`}>
+                  <div className="font-mono text-sm font-semibold text-primary w-14 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" /> {a.time}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-sm text-foreground">{a.patientName}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">{a.type}</Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] ${
+                      a.status === 'Confirmado' ? 'border-emerald-300 text-emerald-700' :
+                      a.status === 'Concluído' ? 'border-zinc-300 text-zinc-500' :
+                      a.status === 'Cancelado' ? 'border-red-300 text-red-600 line-through' :
+                      'border-blue-300 text-blue-700'
+                    }`}
+                  >
+                    {a.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ═══ RECENT PATIENTS ═══ */}
       <Card className="bg-card" data-testid="dashboard-recent-patients">

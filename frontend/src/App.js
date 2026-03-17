@@ -12,6 +12,7 @@ import { getDatabase, getLastSeedResult } from './core/database/db';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage'; // Dashboard
 import PatientsPage from './pages/PatientsPage'; // Patient List
+import AgendaPage from './pages/AgendaPage'; // Agenda
 import ExamPage from './pages/ExamPage'; // Core Module (Ultrasound)
 import PatientHistoryPage from './pages/PatientHistoryPage';
 import SettingsPage from './pages/SettingsPage';
@@ -133,6 +134,14 @@ function App() {
                 <PrivateRoute>
                   <AppLayout>
                     <PatientsPage />
+                  </AppLayout>
+                </PrivateRoute>
+              } />
+
+              <Route path="/agenda" element={
+                <PrivateRoute>
+                  <AppLayout>
+                    <AgendaPage />
                   </AppLayout>
                 </PrivateRoute>
               } />
