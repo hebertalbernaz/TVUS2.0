@@ -1,17 +1,17 @@
 /** @jest-environment jsdom */
 
-import { getDatabase } from '../core/database/db';
+import { localDb, getLocalDb } from '../core/database/localDb';
 import { db } from '../services/database';
 
 /**
- * Blindagem: garante que a timeline do paciente sempre inclua
+ * Blindagem: garante que a timeline do paciente sempre inclui
  * - 1 exame de imagem (collection: exams)
  * - 1 receita (collection: prescriptions)
  * - 1 exame laboratorial (collection: lab_exams)
  */
 describe('db.getPatientTimeline', () => {
   test('deve retornar 3 itens (exame + receita + lab) na timeline', async () => {
-    const rxdb = await getDatabase();
+    await getLocalDb();
 
     // 1) cria paciente mock
     const patient = await db.createPatient({
@@ -33,8 +33,7 @@ describe('db.getPatientTimeline', () => {
     });
 
     // 3) insere 1 Receita
-    await rxdb.prescriptions.insert({
-      id: 'rx-test-1',
+    await db.createPrescription({
       patient_id: patient.id,
       doctor_name: 'Dr Teste',
       date: new Date('2025-01-03T11:00:00.000Z').toISOString(),
@@ -50,7 +49,7 @@ describe('db.getPatientTimeline', () => {
     });
 
     // 4) insere 1 Exame Laboratorial
-    await rxdb.lab_exams.insert({
+    await localDb.lab_exams.put({
       id: 'lab-test-1',
       patient_id: patient.id,
       patient_name: patient.name,
@@ -95,5 +94,6 @@ describe('db.getPatientTimeline', () => {
     // cleanup (best-effort)
     await db.deletePatient(patient.id);
     await db.deleteExam(exam.id);
+    await localDb.lab_exams.delete('lab-test-1');
   });
 });

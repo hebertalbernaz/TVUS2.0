@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Search, Plus } from 'lucide-react';
 import { useLicense } from '@/contexts/LicenseContext';
-import { getDatabase } from '@/core/database/db'; 
+import { db } from '@/services/database';
 
 export function DrugSelector({ onSelect }) {
   const { practice } = useLicense();
@@ -19,30 +19,15 @@ export function DrugSelector({ onSelect }) {
         return;
       }
 
+      const trimmedSearch = searchTerm.trim();
+      if (!trimmedSearch) {
+        setResults([]);
+        return;
+      }
+
       try {
-          const db = await getDatabase();
-          
-          // --- CORREÇÃO DO ERRO QU16 AQUI ---
-          // O RxDB exige que o regex seja uma STRING, e não um objeto new RegExp().
-          // Usamos $options: 'i' para ignorar maiúsculas/minúsculas.
-          const trimmedSearch = searchTerm.trim();
-          if (!trimmedSearch) {
-            setResults([]);
-            return;
-          }
-          
-          const docs = await db.drugs.find({
-            selector: {
-              name: { 
-                $regex: trimmedSearch,  // Garantir que é uma string válida
-                $options: 'i'        
-              },
-              type: practice 
-            },
-            limit: 10
-          }).exec();
-          
-          setResults(docs.map(d => d.toJSON()));
+          const docs = await db.searchDrugs(trimmedSearch, practice);
+          setResults(docs.slice(0, 10));
           setShowResults(true);
       } catch (e) {
           console.error("Search error:", e);

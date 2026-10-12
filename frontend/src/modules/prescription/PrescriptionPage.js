@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Printer, Save, ArrowLeft } from 'lucide-react';
 import { db } from '@/services/database';
-import { getDatabase, genId } from '@/core/database/db';
 import { useLicense } from '@/contexts/LicenseContext';
 import { DrugSelector } from '@/components/DrugSelector';
 import { generatePrescriptionDOCX } from '@/services/documentGenerator';
@@ -108,9 +107,8 @@ export default function PrescriptionPage() {
       if (!items.length) return toast.warning("Adicione medicamentos antes de salvar.");
       
       try {
-          const rxdb = await getDatabase();
           const prescriptionData = {
-              id: genId(),
+              id: undefined, // gerado pelo serviço
               patient_id: patient.id,
               doctor_name: settings.veterinarian_name,
               date: new Date().toISOString(),
@@ -118,7 +116,7 @@ export default function PrescriptionPage() {
               notes: notes
           };
           
-          await rxdb.prescriptions.insert(prescriptionData);
+          await db.createPrescription(prescriptionData);
           toast.success("Receita salva no histórico!");
       } catch (e) {
           console.error(e);

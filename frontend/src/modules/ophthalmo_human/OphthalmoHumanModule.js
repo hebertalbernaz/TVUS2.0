@@ -14,7 +14,7 @@ import {
   Eye, Plus, Save, Printer, Trash2, Search, CheckCircle, Clock,
   ArrowLeft, ChevronRight, Sparkles, FileText, User, Calendar
 } from 'lucide-react';
-import { getDatabase, genId } from '@/core/database/db';
+import { localDb, getLocalDb, genId } from '@/core/database/localDb';
 import { db as dbService } from '@/services/database';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -491,9 +491,9 @@ export default function OphthalmoHumanModule() {
   const loadExams = async () => {
     try {
       setLoading(true);
-      const rxdb = await getDatabase();
-      const docs = await rxdb.ophthalmo.find().sort({ date: 'desc' }).exec();
-      setExams(docs.map(d => d.toJSON()));
+      await getLocalDb();
+      const docs = await localDb.ophthalmo.reverse().sortBy('date');
+      setExams(docs);
     } catch (e) {
       console.error('Error loading ophthalmo exams:', e);
       toast.error('Erro ao carregar exames');
@@ -585,7 +585,6 @@ export default function OphthalmoHumanModule() {
     
     try {
       setIsSaving(true);
-      const rxdb = await getDatabase();
       
       const dataToSave = {
         ...examData,
@@ -596,13 +595,8 @@ export default function OphthalmoHumanModule() {
         })
       };
       
-      const existing = await rxdb.ophthalmo.findOne(examData.id).exec();
-      
-      if (existing) {
-        await existing.patch(dataToSave);
-      } else {
-        await rxdb.ophthalmo.insert(dataToSave);
-      }
+      // Upsert local: atualiza se existe, cria se não
+      await localDb.ophthalmo.put(dataToSave);
       
       toast.success(finalize ? 'Exame finalizado!' : 'Exame salvo!');
       await loadExams();
@@ -620,18 +614,14 @@ export default function OphthalmoHumanModule() {
     if (!window.confirm('Excluir este exame oftalmológico?')) return;
     
     try {
-      const rxdb = await getDatabase();
-      const doc = await rxdb.ophthalmo.findOne(examId).exec();
-      if (doc) {
-        await doc.remove();
-        toast.success('Exame excluído');
-        await loadExams();
-        
-        if (selectedExam?.id === examId) {
-          setSelectedExam(null);
-          setExamData(null);
-          setEditMode(false);
-        }
+      await localDb.ophthalmo.delete(examId);
+      toast.success('Exame excluído');
+      await loadExams();
+      
+      if (selectedExam?.id === examId) {
+        setSelectedExam(null);
+        setExamData(null);
+        setEditMode(false);
       }
     } catch (e) {
       toast.error('Erro ao excluir');

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Search, Plus, Trash2, Edit, Save, Pill } from 'lucide-react';
-import { getDatabase, genId } from '@/core/database/db';
+import { db } from '@/services/database';
 import { useLicense } from '@/contexts/LicenseContext';
 import {
   Dialog,
@@ -27,26 +27,14 @@ export function DrugsManager() {
 
   const loadDrugs = useCallback(async () => {
     try {
-      const db = await getDatabase();
-      
-      let query = {
-        selector: {
-          type: practice
-        },
-        sort: [{ name: 'asc' }]
-      };
-
-      // Only add regex search if we have a valid search term
-      if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
-        const trimmedSearch = searchTerm.trim();
-        query.selector.name = { 
-            $regex: trimmedSearch, 
-            $options: 'i' 
-        };
+      const trimmedSearch = searchTerm && typeof searchTerm === 'string' ? searchTerm.trim() : '';
+      let docs;
+      if (trimmedSearch) {
+        docs = await db.searchDrugs(trimmedSearch, practice);
+      } else {
+        docs = await db.getDrugs({ type: practice });
       }
-
-      const docs = await db.drugs.find(query).exec();
-      setDrugs(docs.map(d => d.toJSON()));
+      setDrugs(docs);
     } catch (e) {
       console.error("Erro ao carregar drogas:", e);
     }
@@ -66,21 +54,15 @@ export function DrugsManager() {
     }
 
     try {
-        const db = await getDatabase();
-        
         if (editingDrug) {
-            const doc = await db.drugs.findOne(editingDrug.id).exec();
-            if (doc) {
-                await doc.patch({
-                    name: formData.name,
-                    category: formData.category || doc.toJSON().category || 'Geral',
-                    default_dosage: formData.default_dosage
-                });
-                toast.success("Atualizado com sucesso!");
-            }
+            await db.updateDrug(editingDrug.id, {
+                name: formData.name,
+                category: formData.category || 'Geral',
+                default_dosage: formData.default_dosage
+            });
+            toast.success("Atualizado com sucesso!");
         } else {
-            await db.drugs.insert({
-                id: genId(),
+            await db.createDrug({
                 name: formData.name,
                 category: formData.category || 'Geral',
                 default_dosage: formData.default_dosage,
@@ -102,9 +84,7 @@ export function DrugsManager() {
   const handleDelete = async (id) => {
       if (!window.confirm("Excluir este medicamento?")) return;
       try {
-          const db = await getDatabase();
-          const doc = await db.drugs.findOne(id).exec();
-          if (doc) await doc.remove();
+          await db.deleteDrug(id);
           toast.success("Medicamento removido.");
           loadDrugs();
       } catch (e) {

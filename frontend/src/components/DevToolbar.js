@@ -10,7 +10,7 @@ import {
   Trash2,
   RefreshCw
 } from 'lucide-react';
-import { getDatabase } from '@/core/database/db';
+import { localDb, getLocalDb } from '@/core/database/localDb';
 import { 
   testDrugs, 
   testProfiles, 
@@ -42,7 +42,7 @@ export function DevToolbar() {
     setSeedResult(null);
     
     try {
-      const db = await getDatabase();
+      await getLocalDb();
       const results = {
         drugs: { inserted: 0, skipped: 0 },
         profiles: { inserted: 0, skipped: 0 },
@@ -54,9 +54,9 @@ export function DevToolbar() {
 
       // 1. Insert Drugs (check for duplicates)
       for (const drug of testDrugs) {
-        const existing = await db.drugs.findOne(drug.id).exec();
+        const existing = await localDb.drugs.get(drug.id);
         if (!existing) {
-          await db.drugs.insert(drug);
+          await localDb.drugs.add(drug);
           results.drugs.inserted++;
         } else {
           results.drugs.skipped++;
@@ -65,9 +65,9 @@ export function DevToolbar() {
 
       // 2. Insert Profiles
       for (const profile of testProfiles) {
-        const existing = await db.profiles.findOne(profile.id).exec();
+        const existing = await localDb.profiles.get(profile.id);
         if (!existing) {
-          await db.profiles.insert(profile);
+          await localDb.profiles.add(profile);
           results.profiles.inserted++;
         } else {
           results.profiles.skipped++;
@@ -76,9 +76,9 @@ export function DevToolbar() {
 
       // 3. Insert Templates
       for (const template of testTemplates) {
-        const existing = await db.templates.findOne(template.id).exec();
+        const existing = await localDb.templates.get(template.id);
         if (!existing) {
-          await db.templates.insert(template);
+          await localDb.templates.add(template);
           results.templates.inserted++;
         } else {
           results.templates.skipped++;
@@ -87,9 +87,9 @@ export function DevToolbar() {
 
       // 4. Insert Reference Values
       for (const refVal of testReferenceValues) {
-        const existing = await db.reference_values.findOne(refVal.id).exec();
+        const existing = await localDb.reference_values.get(refVal.id);
         if (!existing) {
-          await db.reference_values.insert(refVal);
+          await localDb.reference_values.add(refVal);
           results.referenceValues.inserted++;
         } else {
           results.referenceValues.skipped++;
@@ -98,9 +98,9 @@ export function DevToolbar() {
 
       // 5. Insert Financial Transactions
       for (const trans of testFinancialTransactions) {
-        const existing = await db.financial.findOne(trans.id).exec();
+        const existing = await localDb.financial.get(trans.id);
         if (!existing) {
-          await db.financial.insert(trans);
+          await localDb.financial.add(trans);
           results.financial.inserted++;
         } else {
           results.financial.skipped++;
@@ -109,9 +109,9 @@ export function DevToolbar() {
 
       // 6. Insert Test Patients
       for (const patient of testPatients) {
-        const existing = await db.patients.findOne(patient.id).exec();
+        const existing = await localDb.patients.get(patient.id);
         if (!existing) {
-          await db.patients.insert(patient);
+          await localDb.patients.add(patient);
           results.patients.inserted++;
         } else {
           results.patients.skipped++;
@@ -145,14 +145,14 @@ export function DevToolbar() {
    */
   const loadDBStats = async () => {
     try {
-      const db = await getDatabase();
+      await getLocalDb();
       const stats = {
-        patients: await db.patients.count().exec(),
-        drugs: await db.drugs.count().exec(),
-        templates: await db.templates.count().exec(),
-        profiles: await db.profiles.count().exec(),
-        financial: await db.financial.count().exec(),
-        exams: await db.exams.count().exec()
+        patients: await localDb.patients.count(),
+        drugs: await localDb.drugs.count(),
+        templates: await localDb.templates.count(),
+        profiles: await localDb.profiles.count(),
+        financial: await localDb.financial.count(),
+        exams: await localDb.exams.count()
       };
       setDbStats(stats);
     } catch (e) {
@@ -169,48 +169,48 @@ export function DevToolbar() {
     }
 
     try {
-      const db = await getDatabase();
+      await getLocalDb();
       let removed = 0;
 
       // Remove test drugs
-      const testDrugDocs = await db.drugs.find({ selector: { id: { $regex: '^td_' } } }).exec();
+      const testDrugDocs = await localDb.drugs.filter((d) => d.id.startsWith('td_')).toArray();
       for (const doc of testDrugDocs) {
-        await doc.remove();
+        await localDb.drugs.delete(doc.id);
         removed++;
       }
 
       // Remove test templates
-      const testTplDocs = await db.templates.find({ selector: { id: { $regex: '^tpl_' } } }).exec();
+      const testTplDocs = await localDb.templates.filter((d) => d.id.startsWith('tpl_')).toArray();
       for (const doc of testTplDocs) {
-        await doc.remove();
+        await localDb.templates.delete(doc.id);
         removed++;
       }
 
       // Remove test profiles
-      const testProfileDocs = await db.profiles.find({ selector: { id: { $regex: '^profile_' } } }).exec();
+      const testProfileDocs = await localDb.profiles.filter((d) => d.id.startsWith('profile_')).toArray();
       for (const doc of testProfileDocs) {
-        await doc.remove();
+        await localDb.profiles.delete(doc.id);
         removed++;
       }
 
       // Remove test reference values
-      const testRefDocs = await db.reference_values.find({ selector: { id: { $regex: '^ref_' } } }).exec();
+      const testRefDocs = await localDb.reference_values.filter((d) => d.id.startsWith('ref_')).toArray();
       for (const doc of testRefDocs) {
-        await doc.remove();
+        await localDb.reference_values.delete(doc.id);
         removed++;
       }
 
       // Remove test financial
-      const testFinDocs = await db.financial.find({ selector: { id: { $regex: '^fin_' } } }).exec();
+      const testFinDocs = await localDb.financial.filter((d) => d.id.startsWith('fin_')).toArray();
       for (const doc of testFinDocs) {
-        await doc.remove();
+        await localDb.financial.delete(doc.id);
         removed++;
       }
 
       // Remove test patients
-      const testPatDocs = await db.patients.find({ selector: { id: { $regex: '^test_pat_' } } }).exec();
+      const testPatDocs = await localDb.patients.filter((d) => d.id.startsWith('test_pat_')).toArray();
       for (const doc of testPatDocs) {
-        await doc.remove();
+        await localDb.patients.delete(doc.id);
         removed++;
       }
 

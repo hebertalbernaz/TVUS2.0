@@ -14,7 +14,7 @@ import {
   FileText, CheckCircle, Clock, AlertTriangle, Dog, Cat,
   ArrowLeft, RefreshCw, Download, X, ChevronRight, Beaker
 } from 'lucide-react';
-import { getDatabase, genId } from '@/core/database/db';
+import { localDb, getLocalDb, genId } from '@/core/database/localDb';
 import { db as dbService } from '@/services/database';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -284,9 +284,9 @@ export default function LabVetModule() {
   const loadLabExams = async () => {
     try {
       setLoading(true);
-      const rxdb = await getDatabase();
-      const docs = await rxdb.lab_exams.find().sort({ date: 'desc' }).exec();
-      setLabExams(docs.map(d => d.toJSON()));
+      await getLocalDb();
+      const docs = await localDb.lab_exams.reverse().sortBy('date');
+      setLabExams(docs);
     } catch (e) {
       console.error('Error loading lab exams:', e);
       toast.error('Erro ao carregar exames');
@@ -434,7 +434,6 @@ export default function LabVetModule() {
     
     try {
       setIsSaving(true);
-      const rxdb = await getDatabase();
       
       const dataToSave = {
         ...examData,
@@ -446,14 +445,8 @@ export default function LabVetModule() {
         })
       };
       
-      // Check if exists
-      const existing = await rxdb.lab_exams.findOne(examData.id).exec();
-      
-      if (existing) {
-        await existing.patch(dataToSave);
-      } else {
-        await rxdb.lab_exams.insert(dataToSave);
-      }
+      // Upsert local: atualiza se existe, cria se não
+      await localDb.lab_exams.put(dataToSave);
       
       toast.success(finalize ? 'Exame finalizado!' : 'Exame salvo!');
       await loadLabExams();
@@ -475,18 +468,14 @@ export default function LabVetModule() {
     if (!window.confirm('Excluir este exame laboratorial?')) return;
     
     try {
-      const rxdb = await getDatabase();
-      const doc = await rxdb.lab_exams.findOne(examId).exec();
-      if (doc) {
-        await doc.remove();
-        toast.success('Exame excluído');
-        await loadLabExams();
-        
-        if (selectedExam?.id === examId) {
-          setSelectedExam(null);
-          setExamData(null);
-          setEditMode(false);
-        }
+      await localDb.lab_exams.delete(examId);
+      toast.success('Exame excluído');
+      await loadLabExams();
+      
+      if (selectedExam?.id === examId) {
+        setSelectedExam(null);
+        setExamData(null);
+        setEditMode(false);
       }
     } catch (e) {
       toast.error('Erro ao excluir');

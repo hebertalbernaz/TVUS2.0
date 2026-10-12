@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Edit, Trash2, Save, Pill, Database, AlertCircle } from 'lucide-react';
-import { getDatabase, genId } from '../../core/database/db';
+import { db } from '../../services/database';
 import { toast } from 'sonner';
 
 /**
@@ -32,17 +32,13 @@ export default function PrescriptionModule() {
   const loadDrugs = useCallback(async () => {
     try {
       setLoading(true);
-      const db = await getDatabase();
-      // Filter by type (vet or human) and search by name
-      const query = {
-          selector: {
-              type: practice,
-              name: { $regex: new RegExp(searchTerm, 'i') }
-          },
-          limit: 100
-      };
-      const docs = await db.drugs.find(query).exec();
-      setDrugsList(docs.map(d => d.toJSON()));
+      let docs;
+      if (searchTerm && searchTerm.trim()) {
+        docs = await db.searchDrugs(searchTerm.trim(), practice);
+      } else {
+        docs = await db.getDrugs({ type: practice });
+      }
+      setDrugsList(docs.slice(0, 100));
     } catch (e) {
       console.error('Error loading drugs:', e);
       toast.error('Erro ao carregar medicamentos');
@@ -72,11 +68,9 @@ export default function PrescriptionModule() {
       }
       
       try {
-          const db = await getDatabase();
           if (editingDrug) {
               // Update existing
-              const doc = await db.drugs.findOne(editingDrug.id).exec();
-              await doc.patch({
+              await db.updateDrug(editingDrug.id, {
                   name: formData.name,
                   default_dosage: formData.default_dosage,
                   type: formData.type
@@ -84,8 +78,7 @@ export default function PrescriptionModule() {
               toast.success("Medicamento atualizado!");
           } else {
               // Create new
-              await db.drugs.insert({
-                  id: genId(),
+              await db.createDrug({
                   name: formData.name,
                   default_dosage: formData.default_dosage,
                   type: formData.type
@@ -106,9 +99,7 @@ export default function PrescriptionModule() {
       if (!window.confirm("Tem certeza que deseja excluir este medicamento do banco?")) return;
       
       try {
-          const db = await getDatabase();
-          const doc = await db.drugs.findOne(id).exec();
-          await doc.remove();
+          await db.deleteDrug(id);
           toast.success("Medicamento excluído.");
           setDrugsList(prev => prev.filter(d => d.id !== id));
       } catch (e) {
