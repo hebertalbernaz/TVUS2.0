@@ -1,16 +1,14 @@
-// Jest setup for RxDB tests
-// Provides browser-like APIs in Jest (jsdom) environment.
+// Jest setup: APIs de navegador para os testes do banco local (Dexie).
 
-import 'fake-indexeddb/auto';
+// O ambiente "node" do jest não expõe DOMException nem Blob, exigidos pelo fake-indexeddb e pelo backup.
+if (typeof globalThis.DOMException === 'undefined') {
+  try { atob('*'); } catch (e) { globalThis.DOMException = e.constructor; }
+}
+if (typeof globalThis.Blob === 'undefined') {
+  globalThis.Blob = require('buffer').Blob;
+}
 
-// RxDB + leader election relies on BroadcastChannel.
-// In Jest/jsdom it might be missing, so we polyfill it.
-// NOTE: Node 18+/jsdom already has BroadcastChannel.
-
-// RxDB + uuid may require crypto.getRandomValues
 try {
-  // Node 18+ has webcrypto
-  // eslint-disable-next-line no-undef
   const nodeCrypto = require('crypto');
   if (!globalThis.crypto) {
     globalThis.crypto = nodeCrypto.webcrypto;
@@ -19,14 +17,18 @@ try {
   // ignore
 }
 
-// Polyfill structuredClone for fake-indexeddb
+// Clone estruturado mínimo: preserva Blob/binários em vez de serializar via JSON.
 if (!globalThis.structuredClone) {
-  globalThis.structuredClone = (obj) => {
-    try {
-      return JSON.parse(JSON.stringify(obj));
-    } catch (e) {
-      // Fallback for complex objects
-      return obj;
-    }
+  const clone = (v) => {
+    if (v === null || typeof v !== 'object') return v;
+    if (v instanceof Date) return new Date(v.getTime());
+    if (typeof Blob !== 'undefined' && v instanceof Blob) return v;
+    if (ArrayBuffer.isView(v)) return v.slice();
+    if (v instanceof ArrayBuffer) return v.slice(0);
+    if (Array.isArray(v)) return v.map(clone);
+    return Object.fromEntries(Object.entries(v).map(([k, val]) => [k, clone(val)]));
   };
+  globalThis.structuredClone = clone;
 }
+
+require('fake-indexeddb/auto');

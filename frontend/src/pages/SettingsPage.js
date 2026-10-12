@@ -9,6 +9,7 @@ import { ReferenceValuesManager } from '@/components/ReferenceValuesManager';
 import { ProfilesManager } from '@/components/ProfilesManager';
 import { DrugsManager } from '@/components/DrugsManager'; // <--- IMPORT NOVO
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BackupManager } from '@/components/BackupManager';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null);
@@ -119,9 +120,7 @@ export default function SettingsPage() {
             </TabsContent>
             
             <TabsContent value="backup">
-                <div className="p-8 text-center border-2 border-dashed rounded-lg">
-                    Funcionalidade de Backup em Manutenção (Use o Export no Desktop)
-                </div>
+                <BackupManager />
             </TabsContent>
           </div>
         </Tabs>

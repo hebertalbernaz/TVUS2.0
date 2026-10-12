@@ -157,7 +157,7 @@ export function UltrasoundEditor({
                         const imgData = { 
                             filename: file.name, 
                             data: base64, 
-                            originalData: base64, 
+                            file,
                             mimeType: isDicom ? 'application/dicom' : (file.type || 'application/octet-stream') 
                         };
                         const saved = await db.saveImage(exam.id, imgData);
@@ -188,12 +188,12 @@ export function UltrasoundEditor({
     const handleResetImage = async (imgId) => {
         if (!window.confirm('Restaurar original?')) return;
         try {
-            const updated = images.map(img => {
-                if (img.id === imgId && img.originalData) {
-                    return { ...img, data: img.originalData, mimeType: 'application/dicom' };
-                }
-                return img;
-            });
+            const target = images.find(img => img.id === imgId);
+            const original = target && await db.getOriginalImage(target);
+            if (!original) return;
+            const updated = images.map(img =>
+                img.id === imgId ? { ...img, data: original.data, mimeType: original.mimeType, edited: false } : img
+            );
             await db.updateExam(exam.id, { images: updated });
             setImages(updated);
             toast.success('Restaurada!');
@@ -205,7 +205,7 @@ export function UltrasoundEditor({
         try {
             const updated = images.map(img => {
                 if (img.id === editingImage.id) {
-                    return { ...img, data: newDataBase64, mimeType: 'image/png' };
+                    return { ...img, data: newDataBase64, mimeType: 'image/png', edited: true };
                 }
                 return img;
             });
@@ -264,7 +264,7 @@ export function UltrasoundEditor({
                                             <Maximize2 className="h-5 w-5 text-white" />
                                         </div>
                                         <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {img.originalData && img.data !== img.originalData && (
+                                            {(img.edited || (img.originalData && img.data !== img.originalData)) && (
                                                 <button onClick={(e) => { e.stopPropagation(); handleResetImage(img.id); }} className="bg-yellow-500/90 text-white p-1 rounded hover:bg-yellow-600 shadow-sm"><RotateCcw className="h-3 w-3" /></button>
                                             )}
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }} className="bg-destructive/90 text-white p-1 rounded hover:bg-destructive shadow-sm"><Trash2 className="h-3 w-3" /></button>
@@ -312,7 +312,7 @@ export function UltrasoundEditor({
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-6 animate-in fade-in no-print">
                         <div className="w-full h-full relative flex flex-col">
                             <button onClick={() => setEditingImage(null)} className="absolute top-4 right-4 text-white/70 hover:text-white z-50 bg-white/10 p-2 rounded-full"><X className="h-6 w-6"/></button>
-                            <DicomViewer imageBlob={dataURItoBlob(editingImage.data)} />
+                            <DicomViewer imageBlob={dataURItoBlob(editingImage.data)} mediaId={editingImage.original_media_id} />
                         </div>
                     </div>
                 ) : (

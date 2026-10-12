@@ -194,7 +194,7 @@ export default function ExamPage() {
              const imgData = { 
                  filename: file.name, 
                  data: base64, 
-                 originalData: base64, 
+                 file,
                  mimeType: isDicom ? 'application/dicom' : (file.type || 'application/octet-stream') 
              };
              const saved = await db.saveImage(examId, imgData);
@@ -224,11 +224,14 @@ export default function ExamPage() {
           const imagesClone = JSON.parse(JSON.stringify(examData.images || []));
           const imageIndex = imagesClone.findIndex(i => i.id === imgId);
           
-          if (imageIndex !== -1 && imagesClone[imageIndex].originalData) {
+          if (imageIndex !== -1) {
+              const original = await db.getOriginalImage(imagesClone[imageIndex]);
+              if (!original) return;
               imagesClone[imageIndex] = {
                   ...imagesClone[imageIndex],
-                  data: imagesClone[imageIndex].originalData,
-                  mimeType: 'application/dicom' 
+                  data: original.data,
+                  mimeType: original.mimeType,
+                  edited: false
               };
               
               await db.updateExam(examId, { images: imagesClone });
@@ -245,12 +248,10 @@ export default function ExamPage() {
     if (!editingImage) return;
     try {
         const updatedImage = { 
-            id: editingImage.id,
-            filename: editingImage.filename,
+            ...editingImage,
             data: newDataBase64,
-            originalData: editingImage.originalData || editingImage.data,
             mimeType: 'image/png', 
-            tags: editingImage.tags || []
+            edited: true
         };
 
         const examData = await db.getExam(examId);
@@ -575,7 +576,7 @@ export default function ExamPage() {
                                                 <Maximize2 className="h-5 w-5 text-white" />
                                             </div>
                                             <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {img.originalData && img.data !== img.originalData && (
+                                                {(img.edited || (img.originalData && img.data !== img.originalData)) && (
                                                     <button onClick={(e) => { e.stopPropagation(); handleResetImage(img.id); }} className="bg-yellow-500/90 text-white p-1 rounded hover:bg-yellow-600 shadow-sm"><RotateCcw className="h-3 w-3" /></button>
                                                 )}
                                                 <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }} className="bg-destructive/90 text-white p-1 rounded hover:bg-destructive shadow-sm"><Trash2 className="h-3 w-3" /></button>
@@ -692,7 +693,7 @@ export default function ExamPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-6 animate-in fade-in no-print">
                     <div className="w-full h-full relative flex flex-col">
                         <button onClick={() => setEditingImage(null)} className="absolute top-4 right-4 text-white/70 hover:text-white z-50 bg-white/10 p-2 rounded-full"><X className="h-6 w-6"/></button>
-                        <DicomViewer imageBlob={dataURItoBlob(editingImage.data)} />
+                        <DicomViewer imageBlob={dataURItoBlob(editingImage.data)} mediaId={editingImage.original_media_id} />
                     </div>
                 </div>
             ) : (

@@ -5,6 +5,7 @@ import cornerstoneTools from 'cornerstone-tools';
 import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import Hammer from 'hammerjs';
+import { localDb } from '@/core/database/localDb';
 
 // --- INICIALIZAÇÃO ÚNICA ---
 if (typeof window !== 'undefined' && !window.cornerstoneInitialized) {
@@ -40,16 +41,23 @@ if (typeof window !== 'undefined' && !window.cornerstoneInitialized) {
     window.cornerstoneInitialized = true;
 }
 
-export function DicomViewer({ imageBlob }) {
+export function DicomViewer({ imageBlob, mediaId }) {
   const elementRef = useRef(null);
   const [imageId, setImageId] = useState(null);
   const [status, setStatus] = useState('Inicializando...');
   const [details, setDetails] = useState('');
 
   useEffect(() => {
-    if (imageBlob) {
+    let cancelled = false;
+    const mount = async () => {
       try {
-        const blob = new Blob([imageBlob], { type: 'application/dicom' });
+        const stored = mediaId ? await localDb.media.get(mediaId) : null;
+        const source = stored?.blob || imageBlob;
+        if (!source || cancelled) {
+          if (!source) setStatus('Arquivo DICOM não encontrado.');
+          return;
+        }
+        const blob = new Blob([source], { type: 'application/dicom' });
         const id = cornerstoneWADOImageLoader.wadouri.fileManager.add(blob);
         setImageId(id);
         setDetails(`Tamanho: ${(blob.size / 1024).toFixed(2)} KB`);
@@ -57,8 +65,10 @@ export function DicomViewer({ imageBlob }) {
         setStatus("Erro crítico ao montar arquivo.");
         console.error(err);
       }
-    }
-  }, [imageBlob]);
+    };
+    mount();
+    return () => { cancelled = true; };
+  }, [imageBlob, mediaId]);
 
   useEffect(() => {
     const element = elementRef.current;

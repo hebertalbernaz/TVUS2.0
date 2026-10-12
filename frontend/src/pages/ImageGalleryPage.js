@@ -79,7 +79,7 @@ export default function ImageGalleryPage() {
             <div className="flex-1 w-full h-full flex items-center justify-center overflow-hidden">
                 {selectedImage && (
                     isDicom(selectedImage) ? (
-                        <DicomViewer imageBlob={dataURItoBlob(selectedImage.data)} />
+                        <DicomViewer imageBlob={dataURItoBlob(selectedImage.data)} mediaId={selectedImage.original_media_id} />
                     ) : (
                         <img 
                             src={selectedImage.data} 

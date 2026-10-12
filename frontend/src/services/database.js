@@ -3,7 +3,7 @@
  * Mesma interface pública da versão RxDB - a UI não muda.
  * 100% offline: nenhuma chamada de rede.
  */
-import { localDb, getLocalDb, genId } from '../core/database/localDb';
+import { localDb, getLocalDb, genId, saveMediaBlob, getMediaDataUrl } from '../core/database/localDb';
 
 const _err = (msg, e) => console.error(`[LocalDB] ${msg}`, e);
 
@@ -189,7 +189,10 @@ class DatabaseService {
 
   async deleteExam(id) {
     try {
-      await localDb.exams.delete(id);
+      await localDb.transaction('rw', localDb.exams, localDb.media, async () => {
+        await localDb.media.where('exam_id').equals(id).delete();
+        await localDb.exams.delete(id);
+      });
     } catch (e) {
       _err('Erro ao excluir exame:', e);
       throw e;
@@ -270,10 +273,15 @@ class DatabaseService {
         id: genId(),
         filename: d.filename,
         data: d.data,
-        originalData: d.data,
         mimeType: d.mimeType || 'image/png',
         tags: d.tags || []
       };
+      if (d.file) {
+        const original = await saveMediaBlob(examId, d.file, d.filename);
+        img.original_media_id = original.id;
+      } else {
+        img.originalData = d.data;
+      }
       await localDb.exams.update(examId, { images: [...(exam.images || []), img] });
       return img;
     } catch (e) {
@@ -282,13 +290,27 @@ class DatabaseService {
     }
   }
 
+  async getOriginalImage(img) {
+    if (img.original_media_id) {
+      const rec = await localDb.media.get(img.original_media_id);
+      if (rec) return { data: await getMediaDataUrl(rec.id), mimeType: rec.mimeType };
+    }
+    if (img.originalData) {
+      const mime = img.originalData.match(/^data:([^;,]+)/)?.[1];
+      return { data: img.originalData, mimeType: mime || img.mimeType };
+    }
+    return null;
+  }
+
   async deleteImage(examId, imageId) {
     try {
       const exam = await localDb.exams.get(examId);
       if (!exam) return;
+      const target = (exam.images || []).find((i) => i.id === imageId);
       await localDb.exams.update(examId, {
         images: (exam.images || []).filter((i) => i.id !== imageId)
       });
+      if (target?.original_media_id) await localDb.media.delete(target.original_media_id);
     } catch (e) {
       _err('Erro ao excluir imagem:', e);
       throw e;

@@ -63,6 +63,11 @@ class TVUSvetLocalDB extends Dexie {
       // Usuários locais (login offline)
       app_users: 'id, email'
     });
+
+    // v2 - arquivos binários (DICOM / imagens originais) como Blob
+    this.version(2).stores({
+      media: 'id, exam_id, mimeType, created_at'
+    });
   }
 }
 
@@ -99,6 +104,33 @@ export function getLocalDb() {
     });
   }
   return _readyPromise;
+}
+
+// ---------- Arquivos de mídia (Blob) ----------
+
+export async function saveMediaBlob(examId, blob, filename) {
+  const record = {
+    id: genId(),
+    exam_id: examId,
+    filename,
+    mimeType: blob.type || 'application/octet-stream',
+    size: blob.size,
+    blob,
+    created_at: new Date().toISOString()
+  };
+  await localDb.media.put(record);
+  return record;
+}
+
+export async function getMediaDataUrl(mediaId) {
+  const rec = mediaId ? await localDb.media.get(mediaId) : null;
+  if (!rec) return null;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(rec.blob);
+  });
 }
 
 // ---------- Helpers de consulta para laudos ----------
