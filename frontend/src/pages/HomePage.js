@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Search, Settings, Plus, Users, LayoutGrid } from 'lucide-react';
-import { db } from '@/services/database';
+import { localDb, getLocalDb } from '@/core/database/localDb';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { PatientCard } from '@/components/PatientCard';
 import { PatientForm } from '@/components/PatientForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,7 +17,6 @@ import logoImg from '../logo-tvusvet.png';
 
 export default function HomePage() {
   const { terms, practice } = useLicense(); // 🟢 Contexto
-  const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewPatient, setShowNewPatient] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
@@ -25,17 +25,23 @@ export default function HomePage() {
   // Segregation mapping: practice (vet/human) -> scope (VET/HUMAN)
   const activeScope = practice === 'human' ? 'HUMAN' : 'VET';
 
+  // Lista reativa: atualiza instantaneamente quando um paciente é
+  // criado/editado no banco local (IndexedDB), sem reload manual.
+  const patients = useLiveQuery(
+    () => localDb.patients.where('scope').equals(activeScope).sortBy('name'),
+    [activeScope],
+    []
+  ) || [];
+
   const loadPatients = useCallback(async () => {
+    // Mantido para compatibilidade com callbacks de componentes filhos;
+    // com useLiveQuery a lista já reage sozinha, então é um no-op seguro.
     try {
-      // Filter by scope to prevent cross-contamination
-      const scopedPatients = await db.getPatients({ scope: activeScope });
-      setPatients(scopedPatients);
+      await getLocalDb();
     } catch (error) {
       console.error('loadPatients failed:', error);
     }
   }, [activeScope]);
-
-  useEffect(() => { loadPatients(); }, [loadPatients]);
 
   const filteredPatients = patients.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,8 +191,7 @@ export default function HomePage() {
             onSuccess={() => {
               setShowNewPatient(false);
               setEditingPatient(null);
-              // reload patients with a slight delay to avoid RxDB replication timing
-              setTimeout(() => loadPatients(), 150);
+              // A lista reage via useLiveQuery; nenhum reload necessário.
             }} 
             onCancel={() => { setShowNewPatient(false); setEditingPatient(null); }} 
           />

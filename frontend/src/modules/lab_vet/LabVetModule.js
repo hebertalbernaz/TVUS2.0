@@ -14,7 +14,8 @@ import {
   FileText, CheckCircle, Clock, AlertTriangle, Dog, Cat,
   ArrowLeft, RefreshCw, Download, X, ChevronRight, Beaker
 } from 'lucide-react';
-import { localDb, getLocalDb, genId } from '@/core/database/localDb';
+import { localDb, genId } from '@/core/database/localDb';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db as dbService } from '@/services/database';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -257,11 +258,18 @@ function PatientSelector({ isOpen, onClose, onSelect }) {
 // MAIN MODULE COMPONENT
 // ============================================================================
 export default function LabVetModule() {
-  // State: List & Selection
-  const [labExams, setLabExams] = useState([]);
+  // State: Selection
   const [selectedExam, setSelectedExam] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
+
+  // Lista reativa: atualiza instantaneamente quando um exame laboratorial
+  // é criado/editado/excluído no banco local (IndexedDB).
+  const labExams = useLiveQuery(
+    () => localDb.lab_exams.reverse().sortBy('date'),
+    [],
+    undefined
+  );
+  const loading = labExams === undefined;
   
   // State: Editor
   const [editMode, setEditMode] = useState(false);
@@ -277,23 +285,8 @@ export default function LabVetModule() {
 
   // Load data on mount
   useEffect(() => {
-    loadLabExams();
     loadSettings();
   }, []);
-
-  const loadLabExams = async () => {
-    try {
-      setLoading(true);
-      await getLocalDb();
-      const docs = await localDb.lab_exams.reverse().sortBy('date');
-      setLabExams(docs);
-    } catch (e) {
-      console.error('Error loading lab exams:', e);
-      toast.error('Erro ao carregar exames');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadSettings = async () => {
     try {
@@ -449,9 +442,8 @@ export default function LabVetModule() {
       await localDb.lab_exams.put(dataToSave);
       
       toast.success(finalize ? 'Exame finalizado!' : 'Exame salvo!');
-      await loadLabExams();
       
-      // Update selected exam reference
+      // Update selected exam reference (a lista reage via useLiveQuery)
       setSelectedExam(dataToSave);
       setExamData(dataToSave);
       
@@ -470,7 +462,6 @@ export default function LabVetModule() {
     try {
       await localDb.lab_exams.delete(examId);
       toast.success('Exame excluído');
-      await loadLabExams();
       
       if (selectedExam?.id === examId) {
         setSelectedExam(null);
@@ -483,7 +474,8 @@ export default function LabVetModule() {
   };
 
   // Filter exams
-  const filteredExams = labExams.filter(exam => 
+  const examList = labExams || [];
+  const filteredExams = examList.filter(exam => 
     exam.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     exam.exam_type_label?.toLowerCase().includes(searchTerm.toLowerCase())
   );

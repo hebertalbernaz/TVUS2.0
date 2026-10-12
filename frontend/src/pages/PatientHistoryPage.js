@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/database';
+import { localDb } from '@/core/database/localDb';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { AnamnesisModal } from '@/components/AnamnesisModal';
 import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList } from 'lucide-react';
 import { getExamTypeName } from '@/lib/exam_types';
@@ -14,33 +16,45 @@ export default function PatientHistoryPage() {
   const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
-  const [timeline, setTimeline] = useState([]); // unified: exams + prescriptions
-
   const [showAnamnesis, setShowAnamnesis] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  // Timeline unificada reativa: exams + prescriptions + lab + anamnese.
+  // Reage instantaneamente a qualquer novo laudo/receita salvo localmente.
+  const timeline = useLiveQuery(
+    async () => {
+      if (!patientId) return [];
+      const [exams, prescriptions, labExams, anamnesis] = await Promise.all([
+        localDb.exams.where('patient_id').equals(patientId).toArray(),
+        localDb.prescriptions.where('patient_id').equals(patientId).toArray(),
+        localDb.lab_exams.where('patient_id').equals(patientId).toArray(),
+        localDb.anamnesis.where('patient_id').equals(patientId).toArray()
+      ]);
+      const entry = (collection, date, data) => ({ collection, date: date || new Date().toISOString(), data });
+      const merged = [
+        ...exams.map((e) => entry('exams', e.date || e.exam_date || e.examDate, e)),
+        ...prescriptions.map((r) => entry('prescriptions', r.date, r)),
+        ...labExams.map((l) => entry('lab_exams', l.date || l.created_at, l)),
+        ...anamnesis.map((a) => entry('anamnesis', a.date, a))
+      ];
+      merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return merged;
+    },
+    [patientId],
+    []
+  ) || [];
+
+  // Paciente reativo: assim que carregado (ou null), atualiza o estado.
+  const patientLive = useLiveQuery(
+    () => localDb.patients.get(patientId),
+    [patientId],
+    undefined
+  );
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!patientId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const p = await db.getPatient(patientId);
-        setPatient(p);
-
-        // Unified timeline query: { collection: 'exams'|'prescriptions', date, data }
-        const t = await db.getPatientTimeline(patientId);
-        // Defensive: ensure contract contains { collection, date }
-        setTimeline((t || []).filter(x => x?.collection && x?.date));
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [patientId]);
+    if (patientLive !== undefined) {
+      setPatient(patientLive);
+    }
+  }, [patientLive]);
 
   const hasPatient = !!patientId;
 
@@ -85,6 +99,7 @@ export default function PatientHistoryPage() {
     return 'Nenhum item no histórico deste paciente.';
   }, [hasPatient]);
 
+  const loading = patientLive === undefined && !!patientId;
   if (loading) return <div className="p-8 text-center text-muted-foreground" data-testid="patient-history-loading">Carregando histórico...</div>;
 
   // Se abriu /history sem patientId
@@ -442,8 +457,7 @@ export default function PatientHistoryPage() {
           // type is derived from patient.scope
           const type = (patient?.scope || 'VET') === 'HUMAN' ? 'human' : 'vet';
           await db.createAnamnesis({ ...payload, type });
-          const t = await db.getPatientTimeline(patientId);
-          setTimeline((t || []).filter(x => x?.collection && x?.date));
+          // A timeline reage via useLiveQuery; sem reload manual.
         }}
       />
     </div>
