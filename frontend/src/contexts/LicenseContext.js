@@ -17,10 +17,28 @@ const LicenseContext = createContext({});
 
 export const useLicense = () => useContext(LicenseContext);
 
+// Bypass de desenvolvimento: licença sempre válida, ativa, premium e vitalícia.
+// Para reativar o licenciamento real, mude para false.
+const DEV_LICENSE_BYPASS = true;
+
+const ALL_MODULES = ['core', 'ultrasound', 'cardio', 'prescription', 'lab_vet', 'ophthalmo_human', 'financial'];
+
+const MOCK_LICENSE = Object.freeze({
+  isValid: true,
+  isActive: true,
+  isPremium: true,
+  plan: 'lifetime',
+  expiresAt: null,
+  modules: ALL_MODULES
+});
+
+const fetchLicenseStatus = () => Promise.resolve(MOCK_LICENSE);
+
 export const LicenseProvider = ({ children }) => {
   const { currentUser, claims } = useAuth(); 
   const [practice, setPractice] = useState('vet'); 
-  const [licenses, setLicenses] = useState(['core']);
+  const [licenses, setLicenses] = useState(DEV_LICENSE_BYPASS ? [...ALL_MODULES] : ['core']);
+  const [licenseStatus, setLicenseStatus] = useState(MOCK_LICENSE);
   const [loading, setLoading] = useState(true);
 
   // Carrega configurações do banco local ou claims
@@ -29,18 +47,21 @@ export const LicenseProvider = ({ children }) => {
       try {
         // Banco Local (Offline) - única fonte de verdade
         const settings = await db.getSettings();
-        if (settings) {
-            setPractice(settings.practice_type || 'vet');
-            // Clone o array para evitar problemas de imutabilidade
-            setLicenses([...(settings.active_modules || ['core'])]);
-        } else {
-            setPractice('vet');
-            setLicenses(['core']);
+        setPractice(settings?.practice_type || 'vet');
+
+        if (DEV_LICENSE_BYPASS) {
+          const status = await fetchLicenseStatus();
+          setLicenseStatus(status);
+          setLicenses([...status.modules]);
+          return;
         }
+
+        // Clone o array para evitar problemas de imutabilidade
+        setLicenses([...(settings?.active_modules || ['core'])]);
       } catch (e) {
         console.error("License Init Error:", e);
         setPractice('vet');
-        setLicenses(['core']);
+        setLicenses(DEV_LICENSE_BYPASS ? [...ALL_MODULES] : ['core']);
       } finally {
         setLoading(false);
       }
@@ -56,10 +77,12 @@ export const LicenseProvider = ({ children }) => {
   const hasModule = (moduleName) => {
     // Core é sempre true
     if (moduleName === 'core') return true;
-    
-    // Regras Hard-Lock (Segurança de Negócio por Área)
+
+    // Regras Hard-Lock (Segurança de Negócio por Área) - separação Vet/Humano, não licença
     if (moduleName === 'lab_vet' && practice !== 'vet') return false;
     if (moduleName === 'ophthalmo_human' && practice !== 'human') return false;
+
+    if (DEV_LICENSE_BYPASS) return true;
 
     // Se a licença permitir, libera
     return licenses.includes(moduleName);
@@ -96,7 +119,7 @@ export const LicenseProvider = ({ children }) => {
           moduleSet.add('core');
           
           // Convert Set back to Array (NEW array, not mutated)
-          const newModulesArray = Array.from(moduleSet);
+          const newModulesArray = DEV_LICENSE_BYPASS ? [...ALL_MODULES] : Array.from(moduleSet);
           
           // Update local React state with NEW array
           setLicenses(newModulesArray);
@@ -119,6 +142,7 @@ export const LicenseProvider = ({ children }) => {
     practice,
     setPractice: switchPractice,
     licenses,
+    ...licenseStatus,
     terms,
     hasModule,
     loading
