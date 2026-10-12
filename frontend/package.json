@@ -50,6 +50,8 @@
     "cornerstone-wado-image-loader": "^4.13.2",
     "cra-template": "1.2.0",
     "date-fns": "^3.0.0",
+    "dexie": "4.4.6",
+    "dexie-react-hooks": "1.1.7",
     "dicom-parser": "^1.8.21",
     "docx": "^9.2.4",
     "embla-carousel-react": "^8.6.0",
