@@ -13,7 +13,17 @@ import { db } from '../services/database';
 import { vetTerms } from '../config/dictionaries/vet_terms';
 import { humanTerms } from '../config/dictionaries/human_terms';
 
-const LicenseContext = createContext({});
+const DEFAULT_PRACTICE = 'vet';
+const normalizePractice = (value) => (value === 'human' ? 'human' : DEFAULT_PRACTICE);
+
+const LicenseContext = createContext({
+  practice: DEFAULT_PRACTICE,
+  terms: vetTerms,
+  licenses: ['core'],
+  hasModule: (moduleName) => moduleName === 'core',
+  setPractice: () => {},
+  loading: true
+});
 
 export const useLicense = () => useContext(LicenseContext);
 
@@ -36,7 +46,7 @@ const fetchLicenseStatus = () => Promise.resolve(MOCK_LICENSE);
 
 export const LicenseProvider = ({ children }) => {
   const { currentUser, claims } = useAuth(); 
-  const [practice, setPractice] = useState('vet'); 
+  const [practice, setPractice] = useState(DEFAULT_PRACTICE); 
   const [licenses, setLicenses] = useState(DEV_LICENSE_BYPASS ? [...ALL_MODULES] : ['core']);
   const [licenseStatus, setLicenseStatus] = useState(MOCK_LICENSE);
   const [loading, setLoading] = useState(true);
@@ -47,7 +57,7 @@ export const LicenseProvider = ({ children }) => {
       try {
         // Banco Local (Offline) - única fonte de verdade
         const settings = await db.getSettings();
-        setPractice(settings?.practice_type || 'vet');
+        setPractice(normalizePractice(settings?.practice_type));
 
         if (DEV_LICENSE_BYPASS) {
           const status = await fetchLicenseStatus();
@@ -60,7 +70,7 @@ export const LicenseProvider = ({ children }) => {
         setLicenses([...(settings?.active_modules || ['core'])]);
       } catch (e) {
         console.error("License Init Error:", e);
-        setPractice('vet');
+        setPractice(DEFAULT_PRACTICE);
         setLicenses(DEV_LICENSE_BYPASS ? [...ALL_MODULES] : ['core']);
       } finally {
         setLoading(false);
@@ -71,7 +81,7 @@ export const LicenseProvider = ({ children }) => {
   }, [currentUser, claims]);
 
   // Carrega termos baseados na prática
-  const terms = practice === 'vet' ? vetTerms : humanTerms;
+  const terms = practice === 'human' ? humanTerms : vetTerms;
 
   // Verifica módulo (Core da Venda Modular)
   const hasModule = (moduleName) => {

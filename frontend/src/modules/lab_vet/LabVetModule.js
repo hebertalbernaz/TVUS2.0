@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -19,6 +19,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db as dbService } from '@/services/database';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { vetTerms, getSpeciesLabel } from '@/config/dictionaries/vet_terms';
 import { 
   PANEL_PRESETS, 
   getPanelReferences, 
@@ -80,8 +81,8 @@ function LabReportView({ exam, settings, onClose }) {
         <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded mb-6 print:bg-white">
           <div>
             <p><strong>Paciente:</strong> {exam.patient_name}</p>
-            <p><strong>Espécie:</strong> {exam.patient_species === 'dog' ? 'Canino' : exam.patient_species === 'cat' ? 'Felino' : exam.patient_species}</p>
-            <p><strong>Tutor:</strong> {exam.owner_name || '-'}</p>
+            <p><strong>{vetTerms.species_label}:</strong> {getSpeciesLabel(exam.patient_species)}</p>
+            <p><strong>{vetTerms.owner_label}:</strong> {exam.owner_name || '-'}</p>
           </div>
           <div>
             <p><strong>Exame:</strong> {exam.exam_type_label}</p>
@@ -206,11 +207,12 @@ function PatientSelector({ isOpen, onClose, onSelect }) {
             <Search className="h-5 w-5" />
             Selecionar Paciente
           </DialogTitle>
+          <DialogDescription>Somente pacientes veterinários são listados.</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
           <Input 
-            placeholder="Buscar por nome ou tutor..." 
+            placeholder={`Buscar por nome ou ${vetTerms.owner_label.toLowerCase()}...`}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -239,7 +241,7 @@ function PatientSelector({ isOpen, onClose, onSelect }) {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{patient.name}</p>
                       <p className="text-sm text-muted-foreground truncate">
-                        {patient.breed} • Tutor: {patient.owner_name || '-'}
+                        {patient.breed} • {getSpeciesLabel(patient.species)} • {vetTerms.owner_label}: {patient.owner_name || '-'}
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -345,6 +347,9 @@ export default function LabVetModule() {
     const preset = PANEL_PRESETS[panelId];
     const species = examData.patient_species || 'dog';
     const references = getPanelReferences(panelId, species);
+    if (species !== 'dog' && species !== 'cat') {
+      toast.warning(`Sem referências específicas para a espécie ${getSpeciesLabel(species)}. Valores de cão aplicados — revise os intervalos.`);
+    }
     
     setExamData({
       ...examData,
@@ -678,7 +683,7 @@ export default function LabVetModule() {
                   {/* Meta Fields */}
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label className="text-xs">Veterinário Solicitante</Label>
+                      <Label className="text-xs">{vetTerms.doctor_label}</Label>
                       <Input 
                         placeholder="Dr(a). ..."
                         value={examData.requesting_vet || ''}

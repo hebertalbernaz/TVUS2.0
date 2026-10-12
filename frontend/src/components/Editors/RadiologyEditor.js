@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Card, CardContent, CardHeader, CardTitle 
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ReportSearch, useFindShortcut, useMatchCursor } from '@/components/Editors/ReportSearch';
+import { HighlightTextarea } from '@/components/Editors/HighlightTextarea';
+import { findMatches } from '@/lib/textSearch';
 import { 
   Bone, Save, FileText, CheckCircle2, AlertTriangle 
 } from 'lucide-react';
@@ -30,6 +32,19 @@ export function RadiologyEditor({ exam, onSave, isSaving }) {
         shortAxis: '', // Eixo Curto
         totalVhs: 0
     });
+
+    const rootRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectNonce, setSelectNonce] = useState(0);
+    useFindShortcut(rootRef, searchInputRef);
+
+    const searchMatches = useMemo(() => [reportText, conclusion].flatMap((text, field) =>
+        findMatches(text, searchTerm).map((_, index) => ({ field, index }))
+    ), [reportText, conclusion, searchTerm]);
+    const { current, step, setIndex } = useMatchCursor(searchMatches.length);
+    useEffect(() => setIndex(0), [searchTerm]);
+    const activeMatchFor = (field) => (searchMatches[current]?.field === field ? searchMatches[current].index : -1);
 
     // Calcula VHS automaticamente
     useEffect(() => {
@@ -64,8 +79,8 @@ export function RadiologyEditor({ exam, onSave, isSaving }) {
     };
 
     return (
-        <div className="h-full flex flex-col bg-slate-50/50 p-4 overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
+        <div ref={rootRef} className="h-full flex flex-col bg-slate-50/50 p-4 overflow-y-auto">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
                 <div className="flex items-center gap-2">
                     <div className="p-2 bg-slate-200 text-slate-700 rounded-lg">
                         <Bone className="h-6 w-6" />
@@ -75,7 +90,18 @@ export function RadiologyEditor({ exam, onSave, isSaving }) {
                         <p className="text-xs text-muted-foreground">Laudo Descritivo & VHS</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <ReportSearch
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        total={searchMatches.length}
+                        current={current}
+                        onNext={() => step(1)}
+                        onPrev={() => step(-1)}
+                        onGoToText={() => setSelectNonce((n) => n + 1)}
+                        inputRef={searchInputRef}
+                        className="w-64"
+                    />
                     <Button variant="outline" onClick={applyNormalText} className="text-green-700 border-green-200 hover:bg-green-50">
                         <CheckCircle2 className="h-4 w-4 mr-2" /> Laudo Normal
                     </Button>
@@ -137,11 +163,15 @@ export function RadiologyEditor({ exam, onSave, isSaving }) {
                     <Card className="flex-1 flex flex-col">
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-bold uppercase text-muted-foreground">Descrição Radiográfica</CardTitle></CardHeader>
                         <CardContent className="flex-1 flex flex-col">
-                            <Textarea 
-                                className="flex-1 resize-none text-base leading-relaxed" 
+                            <HighlightTextarea 
+                                className="resize-none text-base leading-relaxed" 
                                 placeholder="Descreva os achados radiográficos..."
                                 value={reportText}
                                 onChange={e => setReportText(e.target.value)}
+                                searchTerm={searchTerm}
+                                activeIndex={activeMatchFor(0)}
+                                selectNonce={selectNonce}
+                                revealInPage
                             />
                         </CardContent>
                     </Card>
@@ -149,11 +179,15 @@ export function RadiologyEditor({ exam, onSave, isSaving }) {
                     <Card className="h-1/3 flex flex-col">
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-bold uppercase text-muted-foreground">Impressão Diagnóstica / Conclusão</CardTitle></CardHeader>
                         <CardContent className="flex-1 flex flex-col">
-                            <Textarea 
-                                className="flex-1 resize-none" 
+                            <HighlightTextarea 
+                                className="resize-none" 
                                 placeholder="Conclusão..."
                                 value={conclusion}
                                 onChange={e => setConclusion(e.target.value)}
+                                searchTerm={searchTerm}
+                                activeIndex={activeMatchFor(1)}
+                                selectNonce={selectNonce}
+                                revealInPage
                             />
                         </CardContent>
                     </Card>

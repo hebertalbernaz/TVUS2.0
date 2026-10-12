@@ -151,7 +151,7 @@ export function ImageEditor({ imageUrl, isOpen, onClose, onSave }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[850px] p-0 border-zinc-800 bg-zinc-900 text-white gap-0 outline-none [&>button]:hidden">
+      <DialogContent aria-describedby={undefined} className="max-w-[850px] p-0 border-zinc-800 bg-zinc-900 text-white gap-0 outline-none [&>button]:hidden">
         
         <div className="p-3 px-4 border-b border-zinc-700 bg-zinc-800 flex justify-between items-center rounded-t-lg">
           <DialogTitle className="text-white font-medium">Editor de Imagem</DialogTitle>

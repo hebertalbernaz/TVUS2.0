@@ -279,7 +279,7 @@ function PatientSelector({ isOpen, onClose, onSelect }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -995,7 +995,7 @@ export default function OphthalmoHumanModule() {
       {/* Fundus Editor Modal */}
       {showFundusEditor && (
         <Dialog open={showFundusEditor} onOpenChange={setShowFundusEditor}>
-          <DialogContent className="max-w-[600px]">
+          <DialogContent aria-describedby={undefined} className="max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Desenho de Fundoscopia ({editingEye === 'right_eye' ? 'OD' : 'OS'})</DialogTitle>
             </DialogHeader>
@@ -1010,7 +1010,7 @@ export default function OphthalmoHumanModule() {
       {/* Campimetry Modal */}
       {showCampimetry && (
         <Dialog open={showCampimetry} onOpenChange={setShowCampimetry}>
-          <DialogContent className="max-w-[400px]">
+          <DialogContent aria-describedby={undefined} className="max-w-[400px]">
             <DialogHeader>
               <DialogTitle>Campimetria ({editingEye === 'right_eye' ? 'OD' : 'OS'})</DialogTitle>
             </DialogHeader>

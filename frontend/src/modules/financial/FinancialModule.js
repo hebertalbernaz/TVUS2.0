@@ -472,7 +472,7 @@ export default function FinancialModule() {
 
       {/* Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[520px]" data-testid="financial-transaction-modal">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-[520px]" data-testid="financial-transaction-modal">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-primary" />

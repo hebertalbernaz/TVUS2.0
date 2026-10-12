@@ -6,44 +6,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { db } from '@/services/database';
 import { toast } from 'sonner';
 import { useLicense } from '@/contexts/LicenseContext';
+import { cn } from '@/lib/utils';
 
 export function PatientForm({ patient, onSuccess, onCancel }) {
   const { terms, practice } = useLicense();
+  const isHuman = practice === 'human';
   const currentYear = new Date().getFullYear();
-  
-  // Inicializa formData baseado em patient ou valores padrão
+
   const initialFormData = useMemo(() => {
-    if (patient) {
-      let year = patient.birth_year || '';
-      if (!year && patient.birth_date) {
-        try { year = new Date(patient.birth_date).getFullYear().toString(); } catch (e) { /* ignore */ }
-      }
-      return {
-        name: patient.name || '',
-        species: patient.species || (practice === 'vet' ? 'dog' : 'human'),
-        breed: patient.breed || '',
-        sex: patient.sex || 'male',
-        size: patient.size || 'medium',
-        birth_year: year ? String(year) : '',
-        weight: patient.weight || '',
-        owner_name: patient.owner_name || '',
-        ownerPhone: patient.ownerPhone || ''
-      };
+    let year = patient?.birth_year || '';
+    if (!year && patient?.birth_date) {
+      try { year = new Date(patient.birth_date).getFullYear().toString(); } catch (e) { /* ignore */ }
     }
     return {
-      name: '',
-      species: practice === 'vet' ? 'dog' : 'human',
-      breed: '',
-      sex: 'male',
-      size: 'medium',
-      birth_year: '',
-      weight: '',
-      owner_name: '',
-      ownerPhone: ''
+      name: patient?.name || '',
+      species: isHuman ? 'human' : (patient?.species || ''),
+      breed: patient?.breed || '',
+      sex: patient?.sex || 'male',
+      size: patient?.size || 'medium',
+      birth_year: year ? String(year) : '',
+      weight: patient?.weight ?? '',
+      owner_name: patient?.owner_name || '',
+      ownerPhone: patient?.ownerPhone || ''
     };
-  }, [patient, practice]);
+  }, [patient, isHuman]);
 
   const [formData, setFormData] = useState(initialFormData);
+  const [errors, setErrors] = useState({});
 
   const initialAge = useMemo(() => {
     if (patient?.birth_year) {
@@ -54,30 +43,39 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
 
   const [age, setAge] = useState(initialAge);
 
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: false }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.name || formData.name.trim() === '') {
-      return toast.error("Por favor, informe o nome do paciente.");
-    }
+
+    const nextErrors = {
+      name: !formData.name.trim(),
+      species: !isHuman && !formData.species,
+      breed: !isHuman && !formData.breed.trim()
+    };
+    setErrors(nextErrors);
+
+    if (nextErrors.name) return toast.error(`Por favor, informe o nome do ${terms.patient_label.toLowerCase()}.`);
+    if (nextErrors.species) return toast.error('Selecione a espécie do paciente.');
+    if (nextErrors.breed) return toast.error('Informe a raça do paciente (use "SRD" se não tiver raça definida).');
 
     try {
-      // Conversão de Tipos Rigorosa para RxDB
       const dataToSave = {
         name: formData.name.trim(),
         // Strict segregation (White Label safety)
-        scope: practice === 'human' ? 'HUMAN' : 'VET',
-        species: practice === 'human' ? 'human' : (formData.species || 'dog'),
-        breed: formData.breed || '',
+        scope: isHuman ? 'HUMAN' : 'VET',
+        species: isHuman ? 'human' : formData.species,
+        breed: isHuman ? '' : formData.breed.trim(),
         sex: formData.sex || 'male',
         size: formData.size || 'medium',
         owner_name: formData.owner_name || '',
         ownerPhone: formData.ownerPhone || '',
         weight: formData.weight ? parseFloat(formData.weight) : null,
         birth_year: formData.birth_year ? String(formData.birth_year) : null,
-        // 🟢 CORREÇÃO: Removemos birth_date: null. 
-        // Se não houver data, não enviamos o campo, pois o Schema exige 'string' se presente.
-        ...(patient?.birth_date ? { birth_date: patient.birth_date } : {}) 
+        ...(patient?.birth_date ? { birth_date: patient.birth_date } : {})
       };
 
       if (patient) {
@@ -97,56 +95,59 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
   const handleAgeChange = (val) => {
     setAge(val);
     if (val && !isNaN(val)) {
-      const calculatedYear = currentYear - parseInt(val);
-      setFormData(prev => ({ ...prev, birth_year: calculatedYear.toString() }));
+      updateField('birth_year', (currentYear - parseInt(val)).toString());
     } else {
-      setFormData(prev => ({ ...prev, birth_year: '' }));
+      updateField('birth_year', '');
     }
   };
 
+  const errorRing = (field) => errors[field] && 'border-destructive focus-visible:ring-destructive';
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Nome do {terms.patient_label} *</Label>
-          <Input id="name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+          <Input id="name" required aria-invalid={!!errors.name} className={cn(errorRing('name'))} value={formData.name} onChange={e => updateField('name', e.target.value)} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="owner_name">{terms.owner_label}</Label>
-          <Input id="owner_name" value={formData.owner_name} onChange={e => setFormData({...formData, owner_name: e.target.value})} />
+          <Input id="owner_name" value={formData.owner_name} onChange={e => updateField('owner_name', e.target.value)} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="ownerPhone">Telefone / Contato</Label>
-            <Input id="ownerPhone" value={formData.ownerPhone} onChange={e => setFormData({...formData, ownerPhone: e.target.value})} placeholder="(00) 00000-0000" />
+            <Input id="ownerPhone" value={formData.ownerPhone} onChange={e => updateField('ownerPhone', e.target.value)} placeholder="(00) 00000-0000" />
           </div>
       </div>
 
-      {practice === 'vet' && (
+      {!isHuman && (
         <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-            <Label htmlFor="species">{terms.species_label}</Label>
-            <Select value={formData.species} onValueChange={val => setFormData({...formData, species: val})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+            <Label htmlFor="species">{terms.species_label} *</Label>
+            <Select value={formData.species} onValueChange={val => updateField('species', val)}>
+                <SelectTrigger id="species" aria-invalid={!!errors.species} className={cn(errorRing('species'))}>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="dog">Canino</SelectItem>
-                <SelectItem value="cat">Felino</SelectItem>
-                <SelectItem value="other">Outro</SelectItem>
+                  {terms.species_options.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
                 </SelectContent>
             </Select>
             </div>
 
             <div className="space-y-2">
-            <Label htmlFor="breed">{terms.breed_label}</Label>
-            <Input id="breed" value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})} />
+            <Label htmlFor="breed">{terms.breed_label} *</Label>
+            <Input id="breed" required aria-invalid={!!errors.breed} className={cn(errorRing('breed'))} placeholder="Ex: SRD, Labrador" value={formData.breed} onChange={e => updateField('breed', e.target.value)} />
             </div>
 
             <div className="space-y-2">
             <Label htmlFor="size">Porte</Label>
-            <Select value={formData.size} onValueChange={val => setFormData({...formData, size: val})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select value={formData.size} onValueChange={val => updateField('size', val)}>
+                <SelectTrigger id="size"><SelectValue /></SelectTrigger>
                 <SelectContent>
                 <SelectItem value="small">Pequeno</SelectItem>
                 <SelectItem value="medium">Médio</SelectItem>
@@ -160,31 +161,31 @@ export function PatientForm({ patient, onSuccess, onCancel }) {
       <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label htmlFor="sex">{terms.sex_label}</Label>
-          <Select value={formData.sex} onValueChange={val => setFormData({...formData, sex: val})}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select value={formData.sex} onValueChange={val => updateField('sex', val)}>
+            <SelectTrigger id="sex"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="male">{practice === 'vet' ? 'Macho' : 'Masculino'}</SelectItem>
-              <SelectItem value="female">{practice === 'vet' ? 'Fêmea' : 'Feminino'}</SelectItem>
+              <SelectItem value="male">{terms.sex_male}</SelectItem>
+              <SelectItem value="female">{terms.sex_female}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
             <Label htmlFor="age_calc" className="text-blue-600 font-semibold">{terms.age_label} (calc)</Label>
-            <Input type="number" placeholder="Ex: 5" value={age} onChange={e => handleAgeChange(e.target.value)} />
+            <Input id="age_calc" type="number" placeholder="Ex: 5" value={age} onChange={e => handleAgeChange(e.target.value)} />
         </div>
 
         <div className="space-y-2">
             <Label htmlFor="birth_year">Ano Nasc.</Label>
-            <Input type="number" placeholder="Ex: 2020" value={formData.birth_year} onChange={e => {
-                setFormData(prev => ({ ...prev, birth_year: e.target.value }));
+            <Input id="birth_year" type="number" placeholder="Ex: 2020" value={formData.birth_year} onChange={e => {
+                updateField('birth_year', e.target.value);
                 if (e.target.value.length === 4) setAge((currentYear - parseInt(e.target.value)).toString());
             }} />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="weight">{terms.weight_label}</Label>
-          <Input type="number" step="0.1" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} />
+          <Input id="weight" type="number" step="0.1" value={formData.weight} onChange={e => updateField('weight', e.target.value)} />
         </div>
       </div>
 

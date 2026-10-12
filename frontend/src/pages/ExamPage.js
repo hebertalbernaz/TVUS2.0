@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -25,6 +24,10 @@ import { ImageEditor } from '@/components/ImageEditor';
 import { parseDicomTags } from '@/services/dicomService';
 import { DicomViewer } from '@/components/DicomViewer';
 import { dataURItoBlob, cn } from '@/lib/utils';
+import { getSpeciesLabel } from '@/config/dictionaries/vet_terms';
+import { ReportSearch } from '@/components/Editors/ReportSearch';
+import { HighlightTextarea } from '@/components/Editors/HighlightTextarea';
+import { useOrganSearch } from '@/components/Editors/useOrganSearch';
 import '../print.css'; // CSS Atualizado
 
 // Módulos Visuais
@@ -56,6 +59,15 @@ export default function ExamPage() {
   const [examWeight, setExamWeight] = useState('');
   const [examDateTime, setExamDateTime] = useState('');
   const [referringVet, setReferringVet] = useState('');
+
+  const pageRef = useRef(null);
+  const search = useOrganSearch({
+    organs: organsData,
+    currentIndex: currentOrganIndex,
+    setCurrentIndex: setCurrentOrganIndex,
+    language: reportLanguage,
+    containerRef: pageRef,
+  });
 
   // --- CARREGAMENTO INICIAL ---
   useEffect(() => {
@@ -500,7 +512,7 @@ export default function ExamPage() {
     <div className="h-screen flex flex-col bg-background overflow-hidden">
         
         {/* === INTERFACE (ESCONDIDA NA IMPRESSÃO) === */}
-        <div className="no-print h-full flex flex-col">
+        <div ref={pageRef} className="no-print h-full flex flex-col">
             {/* HEADER */}
             <div className="h-16 border-b flex items-center justify-between px-4 bg-card shrink-0 shadow-sm z-20">
                 <div className="flex items-center gap-3">
@@ -513,7 +525,7 @@ export default function ExamPage() {
                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                                 <span className={`w-2 h-2 rounded-full ${patient.species === 'cat' ? 'bg-orange-400' : 'bg-blue-400'}`}></span>
-                                {patient.species === 'dog' ? 'Canino' : 'Felino'} • {patient.breed}
+                                {getSpeciesLabel(patient.species)} • {patient.breed}
                             </span>
                             <div className="flex items-center gap-1 bg-muted/30 px-2 py-0.5 rounded border border-border/40">
                                 <span>Peso:</span>
@@ -591,7 +603,39 @@ export default function ExamPage() {
                     
                     {/* CENTRO: Editor */}
                     <ResizablePanel defaultSize={55} className="bg-background flex flex-col">
-                        <OrganEditor organ={currentOrgan} templates={activeTemplates} onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)} />
+                        <div className="h-11 shrink-0 border-b bg-muted/5 px-4 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">Laudo</span>
+                                {search.hasTerm && (
+                                    <span className="text-[11px] text-muted-foreground truncate animate-in fade-in duration-150">
+                                        {search.total
+                                            ? `${search.total} ${search.total === 1 ? 'ocorrência' : 'ocorrências'} em ${search.sectionsWithMatches} ${search.sectionsWithMatches === 1 ? 'seção' : 'seções'}`
+                                            : 'Nenhuma ocorrência no texto'}
+                                    </span>
+                                )}
+                            </div>
+                            <ReportSearch
+                                value={search.searchTerm}
+                                onChange={search.setSearchTerm}
+                                total={search.total}
+                                current={search.current}
+                                onNext={search.onNext}
+                                onPrev={search.onPrev}
+                                onGoToText={search.onGoToText}
+                                inputRef={search.inputRef}
+                            />
+                        </div>
+                        <div className="flex-1 min-h-0 flex flex-col">
+                            <OrganEditor
+                                key={currentOrganIndex}
+                                organ={currentOrgan}
+                                templates={activeTemplates}
+                                onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)}
+                                searchTerm={search.searchTerm}
+                                activeMatchIndex={search.activeIndexInCurrent}
+                                selectNonce={search.selectNonce}
+                            />
+                        </div>
                     </ResizablePanel>
                     <ResizableHandle />
 
@@ -600,12 +644,21 @@ export default function ExamPage() {
                         <div className="p-3 border-b bg-muted/5"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Roteiro</span></div>
                         <ScrollArea className="flex-1">
                             <div className="flex flex-col p-2 gap-1">
-                                {organsData.map((organ, idx) => (
-                                    <button key={idx} onClick={() => setCurrentOrganIndex(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground")}>
-                                        <span className="truncate pr-4">{translate(organ.organ_name, reportLanguage)}</span>
-                                        {organ.report_text && <Check className="h-3.5 w-3.5 text-green-600 absolute right-2" />}
-                                    </button>
-                                ))}
+                                {organsData.map((organ, idx) => {
+                                    const stat = search.stats[idx] || { count: 0, nameMatch: false };
+                                    const dimmed = search.hasTerm && !stat.count && !stat.nameMatch && currentOrganIndex !== idx;
+                                    return (
+                                        <button key={idx} ref={search.organButtonRef(idx)} onClick={() => search.selectOrgan(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between gap-2 group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground", dimmed && "opacity-40")}>
+                                            <span className="truncate">{translate(organ.organ_name, reportLanguage)}</span>
+                                            <span className="flex items-center gap-1.5 shrink-0">
+                                                {search.hasTerm && stat.count > 0 && (
+                                                    <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold inline-flex items-center justify-center tabular-nums animate-in zoom-in-50 duration-150">{stat.count}</span>
+                                                )}
+                                                {organ.report_text && <Check className="h-3.5 w-3.5 text-green-600" />}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </ScrollArea>
                     </ResizablePanel>
@@ -640,7 +693,7 @@ export default function ExamPage() {
                     <div><strong>Tutor:</strong> {patient.owner_name}</div>
                 </div>
                 <div className="pb-col">
-                    <div><strong>Raça:</strong> {patient.breed} ({patient.species === 'dog' ? 'Canino' : 'Felino'})</div>
+                    <div><strong>Raça:</strong> {patient.breed} ({getSpeciesLabel(patient.species)})</div>
                     <div><strong>Data:</strong> {new Date(examDateTime).toLocaleDateString('pt-BR')}</div>
                 </div>
             </div>
@@ -710,7 +763,7 @@ export default function ExamPage() {
 }
 
 // Subcomponente OrganEditor (Mantido igual)
-function OrganEditor({ organ, templates, onChange }) {
+function OrganEditor({ organ, templates, onChange, searchTerm, activeMatchIndex, selectNonce }) {
     const [text, setText] = useState(organ.report_text || '');
     const [measurements, setMeasurements] = useState(organ.measurements || {});
     const textAreaRef = useRef(null);
@@ -729,7 +782,7 @@ function OrganEditor({ organ, templates, onChange }) {
             <ResizablePanel defaultSize={70} minSize={40}>
                 <div className="flex flex-col h-full p-4 gap-3">
                     <div className="flex justify-between items-center"><h2 className="text-xl font-bold text-primary">{organ.organ_name}</h2><div className="flex gap-2 bg-muted/30 px-2 py-1 rounded border">{[1,2,3].map(n=><div key={n} className="flex gap-1 items-center"><span className="text-[10px] font-bold">M{n}</span><input className="w-10 h-6 text-xs border rounded text-center" placeholder="0.0" value={measurements[`m${n}`]?.value||''} onChange={e=>setMeasurement(n,e.target.value)}/></div>)}</div></div>
-                    <div className="flex-1 flex flex-col border rounded-md relative"><div className="flex gap-1 p-1 border-b bg-muted/10"><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('bold')}><Bold className="h-3.5 w-3.5"/></Button><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('italic')}><Italic className="h-3.5 w-3.5"/></Button></div><Textarea ref={textAreaRef} className="flex-1 border-none shadow-none resize-none p-3" value={text} onChange={e=>updateText(e.target.value)} placeholder="Laudo..."/></div>
+                    <div className="flex-1 flex flex-col border rounded-md relative"><div className="flex gap-1 p-1 border-b bg-muted/10"><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('bold')}><Bold className="h-3.5 w-3.5"/></Button><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('italic')}><Italic className="h-3.5 w-3.5"/></Button></div><HighlightTextarea ref={textAreaRef} className="border-none shadow-none resize-none p-3" value={text} onChange={e=>updateText(e.target.value)} placeholder="Laudo..." searchTerm={searchTerm} activeIndex={activeMatchIndex} selectNonce={selectNonce}/></div>
                 </div>
             </ResizablePanel>
             <ResizableHandle withHandle />

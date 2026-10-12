@@ -11,8 +11,11 @@ export const humanTerms = {
     species_label: null, // Não usa
     breed_label: null,   // Não usa
     sex_label: "Sexo",
+    sex_male: "Masculino",
+    sex_female: "Feminino",
     doctor_label: "Médico Solicitante",
     crm_label: "CRM",
+    species_options: [],
     
     // Module Specific
     prescription_header: "Receituário Médico",

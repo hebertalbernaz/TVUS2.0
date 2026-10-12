@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User } from 'lucide-react';
+import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, PawPrint } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLicense } from '../contexts/LicenseContext';
 import { getAllExamTypes } from '@/lib/exam_types';
@@ -46,10 +46,11 @@ export function PatientCard({ patient, onUpdate }) {
   const ageLabel = useMemo(() => calcAgeLabel(patient), [patient]);
 
   // Ícone Dinâmico
-  let SpeciesIcon = HelpCircle;
-  if (patient?.species === 'cat') SpeciesIcon = Cat;
+  let SpeciesIcon = PawPrint;
+  if (practice === 'human') SpeciesIcon = User;
+  else if (patient?.species === 'cat') SpeciesIcon = Cat;
   else if (patient?.species === 'dog') SpeciesIcon = Dog;
-  else if (practice === 'human') SpeciesIcon = User;
+  else if (!patient?.species) SpeciesIcon = HelpCircle;
 
   const canUsePrescription = hasModule?.('prescription');
 
@@ -85,7 +86,7 @@ export function PatientCard({ patient, onUpdate }) {
                 {patient.name}
               </CardTitle>
               <div className="mt-1 text-xs text-muted-foreground truncate" data-testid={`patient-card-subtitle-${patient.id}`}>
-                {practice === 'vet' ? (patient.breed || '--') : 'Paciente'}
+                {practice === 'human' ? terms.patient_label : (patient.breed || '--')}
                 {' • '}
                 {terms.owner_label}: {patient.owner_name || '--'}
                 {' • '}
@@ -166,7 +167,7 @@ export function PatientCard({ patient, onUpdate }) {
 
           {/* Info extra compacta */}
           <div className="text-xs text-muted-foreground" data-testid={`patient-card-vitals-${patient.id}`}>
-            {practice === 'vet' && patient.weight ? `Peso: ${patient.weight}kg` : null}
+            {practice !== 'human' && patient.weight ? `Peso: ${patient.weight}kg` : null}
           </div>
         </div>
       </CardContent>

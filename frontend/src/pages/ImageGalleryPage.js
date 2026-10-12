@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { db } from '@/services/database';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { X, ZoomIn, Download, FileDigit } from 'lucide-react';
 import { DicomViewer } from '@/components/DicomViewer';
 import { dataURItoBlob } from '@/lib/utils';
@@ -65,6 +65,8 @@ export default function ImageGalleryPage() {
 
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-[95vw] h-[90vh] p-0 bg-black border-none flex flex-col">
+            <DialogTitle className="sr-only">Visualizar imagem</DialogTitle>
+            <DialogDescription className="sr-only">Visualização ampliada da imagem selecionada.</DialogDescription>
             <div className="absolute top-4 right-4 z-50 flex gap-2">
                 <Button 
                     size="icon" 

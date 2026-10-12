@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 export function ProfileSelector({ onProfileChange }) {
   const [profiles, setProfiles] = useState([]);
   const [activeProfileId, setActiveProfileId] = useState(null);
-  const [activeProfileName, setActiveProfileName] = useState('Padrão');
+  const [activeProfileName, setActiveProfileName] = useState('Clínica Veterinária');
 
   useEffect(() => {
     loadProfiles();
@@ -25,9 +25,9 @@ export function ProfileSelector({ onProfileChange }) {
     try {
         const ps = await db.getProfiles();
         const settings = await db.getSettings();
-        setProfiles(ps);
-        setActiveProfileId(settings.active_profile_id);
-        setActiveProfileName(settings.active_profile_name || settings.clinic_name || 'Sem Perfil');
+        setProfiles(ps || []);
+        setActiveProfileId(settings?.active_profile_id || null);
+        setActiveProfileName(settings?.active_profile_name || settings?.clinic_name || 'Clínica Veterinária');
     } catch (e) { console.error(e); }
   };
 

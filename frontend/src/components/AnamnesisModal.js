@@ -85,7 +85,7 @@ export function AnamnesisModal({ open, onOpenChange, patient, defaultDoctorName,
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="sm:max-w-[800px]" data-testid="anamnesis-modal">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-[800px]" data-testid="anamnesis-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-primary" />
