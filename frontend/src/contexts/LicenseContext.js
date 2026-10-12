@@ -25,23 +25,19 @@ export const LicenseProvider = ({ children }) => {
 
   // Carrega configurações do banco local ou claims
   useEffect(() => {
-    let cancelled = false;
-
     const initLicense = async () => {
       try {
         const db = await getDatabase();
         
         // 1. Tenta pegar do Claims (Autenticado - Futuro SaaS Remoto)
         if (currentUser && claims) {
-            if (!cancelled) {
-              if (claims.practice) setPractice(claims.practice);
-              if (claims.modules) setLicenses([...claims.modules]);
-            }
+            if (claims.practice) setPractice(claims.practice);
+            if (claims.modules) setLicenses([...claims.modules]); // Clone array!
             
-            // Sync to local settings using incrementalPatch to avoid CONFLICT
+            // Sync to local settings
             const settings = await db.settings.findOne({ selector: { id: 'global_settings' } }).exec();
             if (settings) {
-                await settings.incrementalPatch({ 
+                await settings.patch({ 
                     practice_type: claims.practice || 'vet',
                     active_modules: [...(claims.modules || [])]
                 });
@@ -50,28 +46,26 @@ export const LicenseProvider = ({ children }) => {
         // 2. Fallback: Banco Local (Offline/Anon/Dev)
         else {
             const settings = await db.settings.findOne({ selector: { id: 'global_settings' } }).exec();
-            if (settings && !cancelled) {
+            if (settings) {
                 const settingsData = settings.toJSON();
                 setPractice(settingsData.practice_type || 'vet');
+                // IMPORTANT: Clone the array to avoid frozen object issues
                 setLicenses([...(settingsData.active_modules || ['core'])]);
-            } else if (!cancelled) {
+            } else {
                 setPractice('vet');
                 setLicenses(['core']);
             }
         }
       } catch (e) {
         console.error("License Init Error:", e);
-        if (!cancelled) {
-          setPractice('vet');
-          setLicenses(['core']);
-        }
+        setPractice('vet');
+        setLicenses(['core']);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     };
 
     initLicense();
-    return () => { cancelled = true; };
   }, [currentUser, claims]);
 
   // Carrega termos baseados na prática
@@ -132,8 +126,8 @@ export const LicenseProvider = ({ children }) => {
               // Update local React state with NEW array
               setLicenses(newModulesArray);
 
-              // Persist to RxDB using incrementalPatch (avoids CONFLICT)
-              await settings.incrementalPatch({ 
+              // Persist to RxDB using patch with completely NEW object
+              await settings.patch({ 
                   practice_type: newType,
                   active_modules: newModulesArray
               });

@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -86,25 +85,7 @@
   }
 }
 
-/* Esconde o relatório de impressão na tela normal */
-#printable-report { display: none; }
-
-/* ── Marca d'água NexaClinq ── */
-.bg-watermark {
-  position: relative;
-}
-.bg-watermark::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: 45% auto;
-  opacity: 0.035;
-}
-.bg-watermark > * {
-  position: relative;
-  z-index: 1;
+/* Regras de Impressão (Mantidas) */
+@media print {
+  #printable-report { display: none; }
 }

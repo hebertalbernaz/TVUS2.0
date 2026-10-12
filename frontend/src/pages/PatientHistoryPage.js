@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/database';
 import { AnamnesisModal } from '@/components/AnamnesisModal';
-import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList, Eye, FileCheck, Edit } from 'lucide-react';
+import { Calendar, FileText, ImageIcon, Pill, ArrowLeft, FlaskConical, ClipboardList } from 'lucide-react';
 import { getExamTypeName } from '@/lib/exam_types';
 
 export default function PatientHistoryPage() {
@@ -31,35 +31,10 @@ export default function PatientHistoryPage() {
         const p = await db.getPatient(patientId);
         setPatient(p);
 
-        // Unified timeline query: get all exam types from multiple collections
+        // Unified timeline query: { collection: 'exams'|'prescriptions', date, data }
         const t = await db.getPatientTimeline(patientId);
-
-        // The timeline already includes exams, prescriptions, lab_exams, and anamnesis
-        // but we'll also check for ophthalmo exams explicitly to ensure they're included
-        const { getDatabase } = await import('@/core/database/db');
-        const rxdb = await getDatabase();
-
-        const ophthalmoExams = await rxdb.ophthalmo
-          .find({ selector: { patient_id: patientId } })
-          .exec();
-
-        const ophthalmoEntries = ophthalmoExams.map(doc => ({
-          collection: 'ophthalmo',
-          date: doc.date || doc.created_at || new Date().toISOString(),
-          data: doc.toJSON()
-        }));
-
-        // Combine all timeline entries
-        const allEntries = [...(t || []), ...ophthalmoEntries];
-
-        // Sort by date descending and filter valid entries
-        const validTimeline = allEntries
-          .filter(x => x?.collection && x?.date)
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        setTimeline(validTimeline);
-      } catch (error) {
-        console.error('Error loading patient history:', error);
+        // Defensive: ensure contract contains { collection, date }
+        setTimeline((t || []).filter(x => x?.collection && x?.date));
       } finally {
         setLoading(false);
       }
@@ -162,18 +137,11 @@ export default function PatientHistoryPage() {
         {/* Ações rápidas (PEP) */}
         <div className="mt-4 flex flex-wrap gap-2 justify-end" data-testid="patient-history-actions">
           <Button
-            data-testid="new-smart-anamnesis-button"
-            onClick={() => navigate(`/patient/${patientId}/anamnesis/new`)}
+            data-testid="new-anamnesis-button"
+            onClick={() => setShowAnamnesis(true)}
             className="bg-primary hover:bg-primary/90"
           >
-            <ClipboardList className="h-4 w-4 mr-2" /> Anamnese Inteligente
-          </Button>
-          <Button
-            data-testid="new-anamnesis-button"
-            variant="outline"
-            onClick={() => setShowAnamnesis(true)}
-          >
-            <ClipboardList className="h-4 w-4 mr-2" /> Anamnese Rapida
+            <ClipboardList className="h-4 w-4 mr-2" /> Nova Anamnese
           </Button>
         </div>
       </div>
@@ -393,12 +361,6 @@ export default function PatientHistoryPage() {
 
               if (isAnamnesis) {
                 const a = entry.data;
-                const chiefComplaint = a.chief_complaint || a.main_complaint;
-                const historyIllness = a.history_current_illness || a.history;
-                const diagnosisList = a.diagnosis_hypothesis || [];
-                const treatmentPlan = a.treatment_plan || a.conduct;
-                const isSmartAnamnesis = !!a.chief_complaint || !!a.systems_review;
-
                 return (
                   <Card
                     key={`anamnesis-${a.id}`}
@@ -417,22 +379,12 @@ export default function PatientHistoryPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {isSmartAnamnesis && (
-                            <Badge variant="default" className="text-xs font-semibold px-2 py-0.5 bg-sky-600">
-                              Smart
-                            </Badge>
-                          )}
                           <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 uppercase tracking-wide" data-testid={`timeline-anamnesis-badge-${a.id}`}>
                             Anamnese
                           </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => navigate(`/patient/${patientId}/anamnesis/${a.id}/edit`)}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
+                          <Badge variant="outline" className="text-xs" data-testid={`timeline-anamnesis-type-${a.id}`}>
+                            {a.type === 'human' ? 'Humano' : 'Vet'}
+                          </Badge>
                         </div>
                       </div>
                     </CardHeader>
@@ -442,254 +394,38 @@ export default function PatientHistoryPage() {
                         <span className="font-semibold text-foreground">Profissional:</span> {a.doctor_name || '--'}
                       </div>
 
-                      {chiefComplaint ? (
+                      {a.main_complaint ? (
                         <div className="text-sm">
                           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Queixa Principal</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{chiefComplaint}</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{a.main_complaint}</div>
                         </div>
                       ) : null}
 
-                      {historyIllness ? (
+                      {a.history ? (
                         <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">HMA</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">
-                            {historyIllness.length > 200 ? `${historyIllness.substring(0, 200)}...` : historyIllness}
-                          </div>
+                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">História</div>
+                          <div className="whitespace-pre-wrap text-foreground/80">{a.history}</div>
                         </div>
                       ) : null}
 
-                      {diagnosisList.length > 0 ? (
-                        <div className="text-sm pt-3 border-t">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Hipoteses Diagnosticas</div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {diagnosisList.map((diag, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {diag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (a.diagnosis ? (
-                        <div className="text-sm pt-3 border-t">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnostico</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{a.diagnosis}</div>
-                        </div>
-                      ) : null)}
-
-                      {treatmentPlan ? (
-                        <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta/Tratamento</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">
-                            {treatmentPlan.length > 150 ? `${treatmentPlan.substring(0, 150)}...` : treatmentPlan}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {a.physical_exam?.temperature || a.physical_exam?.heart_rate ? (
-                        <div className="grid grid-cols-4 gap-2 pt-3 border-t">
-                          {a.physical_exam.temperature && (
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <div className="text-xs text-muted-foreground">Temp</div>
-                              <div className="font-semibold">{a.physical_exam.temperature}C</div>
-                            </div>
-                          )}
-                          {a.physical_exam.heart_rate && (
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <div className="text-xs text-muted-foreground">FC</div>
-                              <div className="font-semibold">{a.physical_exam.heart_rate}bpm</div>
-                            </div>
-                          )}
-                          {a.physical_exam.respiratory_rate && (
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <div className="text-xs text-muted-foreground">FR</div>
-                              <div className="font-semibold">{a.physical_exam.respiratory_rate}mpm</div>
-                            </div>
-                          )}
-                          {a.physical_exam.weight && (
-                            <div className="text-center p-2 bg-muted/30 rounded">
-                              <div className="text-xs text-muted-foreground">Peso</div>
-                              <div className="font-semibold">{a.physical_exam.weight}kg</div>
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                );
-              }
-
-              if (entry.collection === 'clinical_documents') {
-                const doc = entry.data;
-                const docTypeLabel = {
-                  certificate: 'Atestado',
-                  anamnesis: 'Anamnese (Novo)',
-                  referral: 'Encaminhamento'
-                }[doc.type] || 'Documento';
-
-                return (
-                  <Card
-                    key={`clinical-doc-${doc.id}`}
-                    className="border-l-4 border-l-teal-500/60 shadow-sm hover:shadow transition-all"
-                    data-testid={`timeline-clinical-doc-${doc.id}`}
-                  >
-                    <CardHeader className="pb-3 bg-muted/5 border-b">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-teal-500/10 p-2.5 rounded-full text-teal-700">
-                            <FileCheck className="h-5 w-5" />
+                      {(a.diagnosis || a.conduct) ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t">
+                          <div>
+                            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnóstico</div>
+                            <div className="whitespace-pre-wrap text-foreground/80 text-sm">{a.diagnosis || '--'}</div>
                           </div>
                           <div>
-                            <p className="font-bold text-lg text-foreground">{date}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{time}</p>
+                            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta</div>
+                            <div className="whitespace-pre-wrap text-foreground/80 text-sm">{a.conduct || '--'}</div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="secondary"
-                            className="text-xs font-semibold px-3 py-1 uppercase tracking-wide"
-                            data-testid={`timeline-clinical-doc-badge-${doc.id}`}
-                          >
-                            {docTypeLabel}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => navigate(
-                              `/patient/${patientId}/document/new/${doc.type || 'certificate'}`,
-                              { state: { document: doc } }
-                            )}
-                            data-testid={`edit-clinical-doc-${doc.id}`}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="pt-4 space-y-3">
-                      <div className="text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground">Profissional:</span> {doc.doctor_name || '--'}
-                      </div>
-
-                      {doc.title && (
-                        <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Titulo</div>
-                          <div className="font-semibold text-foreground">{doc.title}</div>
-                        </div>
-                      )}
-
-                      {doc.content && (
-                        <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conteudo</div>
-                          <div className="whitespace-pre-wrap text-foreground/80 bg-muted/20 p-3 rounded border">
-                            {doc.content.length > 300 ? `${doc.content.substring(0, 300)}...` : doc.content}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              }
-
-              if (entry.collection === 'ophthalmo') {
-                const ophth = entry.data;
-                return (
-                  <Card
-                    key={`ophthalmo-${ophth.id}`}
-                    className="border-l-4 border-l-indigo-500/60 shadow-sm hover:shadow transition-all"
-                    data-testid={`timeline-ophthalmo-${ophth.id}`}
-                  >
-                    <CardHeader className="pb-3 bg-muted/5 border-b">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-indigo-500/10 p-2.5 rounded-full text-indigo-700">
-                            <Eye className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-lg text-foreground">{date}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{time}</p>
-                          </div>
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs font-semibold px-3 py-1 uppercase tracking-wide"
-                          data-testid={`timeline-ophthalmo-badge-${ophth.id}`}
-                        >
-                          Oftalmologia
-                        </Badge>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="pt-4 space-y-4">
-                      <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <div className="text-muted-foreground">
-                          <span className="font-semibold text-foreground">Médico:</span> {ophth.doctor_name || '--'}
-                        </div>
-                        {ophth.requesting_doctor ? (
-                          <div className="text-muted-foreground">
-                            <span className="font-semibold text-foreground">Solicitante:</span> {ophth.requesting_doctor}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {ophth.chief_complaint ? (
-                        <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Queixa Principal</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{ophth.chief_complaint}</div>
-                        </div>
-                      ) : null}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {ophth.right_eye && (
-                          <div className="p-3 rounded-md border bg-card">
-                            <div className="text-xs font-bold text-blue-600 mb-2">Olho Direito (OD)</div>
-                            {ophth.right_eye.visual_acuity && (
-                              <div className="text-sm">
-                                <span className="font-semibold">AV:</span> {ophth.right_eye.visual_acuity}
-                              </div>
-                            )}
-                            {ophth.right_eye.iop && (
-                              <div className="text-sm">
-                                <span className="font-semibold">PIO:</span> {ophth.right_eye.iop} mmHg
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {ophth.left_eye && (
-                          <div className="p-3 rounded-md border bg-card">
-                            <div className="text-xs font-bold text-green-600 mb-2">Olho Esquerdo (OS)</div>
-                            {ophth.left_eye.visual_acuity && (
-                              <div className="text-sm">
-                                <span className="font-semibold">AV:</span> {ophth.left_eye.visual_acuity}
-                              </div>
-                            )}
-                            {ophth.left_eye.iop && (
-                              <div className="text-sm">
-                                <span className="font-semibold">PIO:</span> {ophth.left_eye.iop} mmHg
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {ophth.general_diagnosis ? (
-                        <div className="pt-3 border-t text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Diagnóstico</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{ophth.general_diagnosis}</div>
-                        </div>
-                      ) : null}
-
-                      {ophth.treatment_plan ? (
-                        <div className="text-sm">
-                          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Conduta</div>
-                          <div className="whitespace-pre-wrap text-foreground/80">{ophth.treatment_plan}</div>
                         </div>
                       ) : null}
                     </CardContent>
                   </Card>
                 );
               }
+
+
 
               return null;
             })

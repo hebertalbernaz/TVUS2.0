@@ -20,24 +20,6 @@ export const AuthProvider = ({ children }) => {
   const [claims, setClaims] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // TESTING BYPASS: Auto-login for development/testing
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
-      console.log('[AuthContext] Development mode detected - bypassing authentication for testing');
-      setCurrentUser({ 
-        uid: 'test-user-id',
-        email: 'test@test.com',
-        displayName: 'Test User'
-      });
-      setClaims({
-        practice: 'vet',
-        modules: ['core', 'prescription', 'cardio', 'lab_vet', 'financial', 'clinical']
-      });
-      setLoading(false);
-      return;
-    }
-  }, []);
-
   // Função de Login Protegida
   const login = async (email, password) => {
     try {
@@ -87,23 +69,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // TESTING BYPASS: Skip Firebase auth entirely in development
-    if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
-      console.log('[AuthContext] Development mode - bypassing Firebase authentication');
-      setCurrentUser({ 
-        uid: 'test-user-id',
-        email: 'test@test.com',
-        displayName: 'Test User'
-      });
-      setClaims({
-        practice: 'vet',
-        modules: ['core', 'prescription', 'cardio', 'lab_vet', 'financial', 'clinical']
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Production Firebase auth
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       

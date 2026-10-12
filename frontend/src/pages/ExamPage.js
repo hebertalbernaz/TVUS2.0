@@ -31,14 +31,6 @@ import '../print.css'; // CSS Atualizado
 import { EyeFundusEditor } from '@/components/ophthalmo/EyeFundusEditor';
 import { CampimetryGrid } from '@/components/ophthalmo/CampimetryGrid';
 
-// Editores Especializados de Diagnóstico por Imagem
-import { RadiologyEditor } from '@/components/Editors/RadiologyEditor';
-import { CTScanEditor } from '@/components/Editors/CTScanEditor';
-
-// Editores Especializados de Cardiologia
-import { EchocardiogramEditor } from '@/components/Editors/EchocardiogramEditor';
-import { ElectrocardiogramEditor } from '@/components/Editors/ElectrocardiogramEditor';
-
 export default function ExamPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
@@ -144,35 +136,6 @@ export default function ExamPage() {
         toast.error(`Erro ao salvar: ${msg}`); 
     } finally {
         setIsSaving(false);
-    }
-  };
-
-  // --- SAVE HANDLER FOR SPECIALIZED EDITORS (Radiology / CT) ---
-  const handleSpecializedSave = async (editorPayload) => {
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      const payload = {
-        organs_data: editorPayload.organs_data || [],
-        report_content: editorPayload.report_content || '',
-        conclusion: editorPayload.conclusion || '',
-        date: examDateTime ? new Date(examDateTime).toISOString() : new Date().toISOString(),
-        status: 'draft',
-      };
-      if (examWeight && !isNaN(parseFloat(examWeight))) payload.exam_weight = parseFloat(examWeight);
-      if (referringVet && referringVet.trim() !== '') payload.referring_vet = referringVet;
-
-      // Also update local organsData state so print preview stays in sync
-      if (editorPayload.organs_data) setOrgansData(editorPayload.organs_data);
-
-      await db.updateExam(examId, payload);
-      toast.success('Laudo salvo!');
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      const msg = error?.parameters?.errors?.[0]?.message || error.message;
-      toast.error(`Erro ao salvar: ${msg}`);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -625,60 +588,26 @@ export default function ExamPage() {
                     </ResizablePanel>
                     <ResizableHandle />
                     
-                    {/* CENTRO + DIREITA: Editor Especializado ou Genérico */}
-                    {exam.exam_type === 'radiography' ? (
-                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="radiology-editor-panel">
-                            <RadiologyEditor
-                                exam={exam}
-                                onSave={handleSpecializedSave}
-                                isSaving={isSaving}
-                            />
-                        </ResizablePanel>
-                    ) : exam.exam_type === 'tomography' ? (
-                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="ct-editor-panel">
-                            <CTScanEditor
-                                exam={exam}
-                                onSave={handleSpecializedSave}
-                                isSaving={isSaving}
-                            />
-                        </ResizablePanel>
-                    ) : exam.exam_type === 'echocardiogram' ? (
-                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="echo-editor-panel">
-                            <EchocardiogramEditor
-                                exam={exam}
-                                onSave={handleSpecializedSave}
-                                isSaving={isSaving}
-                            />
-                        </ResizablePanel>
-                    ) : exam.exam_type === 'ecg' ? (
-                        <ResizablePanel defaultSize={75} className="bg-background flex flex-col" data-testid="ecg-editor-panel">
-                            <ElectrocardiogramEditor
-                                exam={exam}
-                                onSave={handleSpecializedSave}
-                                isSaving={isSaving}
-                            />
-                        </ResizablePanel>
-                    ) : (
-                        <>
-                            <ResizablePanel defaultSize={55} className="bg-background flex flex-col">
-                                <OrganEditor organ={currentOrgan} templates={activeTemplates} onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)} />
-                            </ResizablePanel>
-                            <ResizableHandle />
-                            <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className="border-l bg-muted/10 flex flex-col">
-                                <div className="p-3 border-b bg-muted/5"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Roteiro</span></div>
-                                <ScrollArea className="flex-1">
-                                    <div className="flex flex-col p-2 gap-1">
-                                        {organsData.map((organ, idx) => (
-                                            <button key={idx} onClick={() => setCurrentOrganIndex(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground")}>
-                                                <span className="truncate pr-4">{translate(organ.organ_name, reportLanguage)}</span>
-                                                {organ.report_text && <Check className="h-3.5 w-3.5 text-green-600 absolute right-2" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                            </ResizablePanel>
-                        </>
-                    )}
+                    {/* CENTRO: Editor */}
+                    <ResizablePanel defaultSize={55} className="bg-background flex flex-col">
+                        <OrganEditor organ={currentOrgan} templates={activeTemplates} onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)} />
+                    </ResizablePanel>
+                    <ResizableHandle />
+
+                    {/* DIREITA: Roteiro */}
+                    <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className="border-l bg-muted/10 flex flex-col">
+                        <div className="p-3 border-b bg-muted/5"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Roteiro</span></div>
+                        <ScrollArea className="flex-1">
+                            <div className="flex flex-col p-2 gap-1">
+                                {organsData.map((organ, idx) => (
+                                    <button key={idx} onClick={() => setCurrentOrganIndex(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground")}>
+                                        <span className="truncate pr-4">{translate(organ.organ_name, reportLanguage)}</span>
+                                        {organ.report_text && <Check className="h-3.5 w-3.5 text-green-600 absolute right-2" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </ResizablePanel>
                 </ResizablePanelGroup>
             </div>
         </div>

@@ -6,9 +6,6 @@ import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import Hammer from 'hammerjs';
 
-// Helper to build absolute URLs for web workers (prevents issues with deep routes)
-const getPublicUrl = (path) => `${window.location.origin}/${path.replace(/^\//, '')}`;
-
 // --- INICIALIZAÇÃO ÚNICA ---
 if (typeof window !== 'undefined' && !window.cornerstoneInitialized) {
     cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
@@ -17,20 +14,22 @@ if (typeof window !== 'undefined' && !window.cornerstoneInitialized) {
     cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
     cornerstoneTools.external.Hammer = Hammer;
 
+    const baseUrl = window.location.origin;
+
     const config = {
         maxWebWorkers: navigator.hardwareConcurrency || 1,
         startWebWorkersOnDemand: true,
-        webWorkerPath: getPublicUrl('cornerstoneWADOImageLoaderWebWorker.min.js'),
+        webWorkerPath: `${baseUrl}/cornerstoneWADOImageLoaderWebWorker.min.js`,
         taskConfiguration: {
             decodeTask: {
                 initializeCodecsOnStartup: false,
                 usePDFJS: false,
                 strict: false,
-                codecsPath: getPublicUrl('cornerstoneWADOImageLoaderCodecs.min.js'),
+                codecsPath: `${baseUrl}/cornerstoneWADOImageLoaderCodecs.min.js`,
             },
         },
     };
-
+    
     cornerstoneWADOImageLoader.webWorkerManager.initialize(config);
 
     cornerstoneTools.init({

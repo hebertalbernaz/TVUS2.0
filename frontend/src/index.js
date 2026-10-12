@@ -3,9 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-// MOCK ELECTRON APIS FOR WEB ENVIRONMENT (must run BEFORE React mounts)
-import './mockElectron';
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(

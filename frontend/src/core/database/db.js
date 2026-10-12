@@ -6,14 +6,12 @@ import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
-import {
-  PatientSchema, SettingsSchema, DrugSchema, PrescriptionSchema,
-  ExamSchema, OphthalmoSchema, TemplateSchema, ReferenceValueSchema,
-  ProfileSchema, FinancialSchema, LabExamSchema, AnamnesisSchema,
-  ClinicalDocumentSchema, AppointmentSchema
+import { 
+  PatientSchema, SettingsSchema, DrugSchema, PrescriptionSchema, 
+  ExamSchema, OphthalmoSchema, TemplateSchema, ReferenceValueSchema, 
+  ProfileSchema, FinancialSchema, LabExamSchema, AnamnesisSchema        
 } from './schemas';
 import { initialDrugs, initialSettings, initialTemplates } from '../../config/seeds';
-import { masterSeeder } from '../../services/MasterSeeder';
 import { v4 as uuidv4 } from 'uuid';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === undefined;
@@ -37,8 +35,8 @@ const returnSameDoc = (oldDoc) => oldDoc;
 const _create = async () => {
   console.log(`Database: Initializing RxDB tvusvet_db_v9 [Env: ${isDev ? 'DEV' : 'PROD'}]...`);
 
-  const storage = isDev
-      ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() })
+  const storage = isDev 
+      ? wrappedValidateAjvStorage({ storage: getRxStorageDexie() }) 
       : getRxStorageDexie();
 
   // Hash function for Jest/Node.js environment
@@ -52,29 +50,13 @@ const _create = async () => {
     }
   };
 
-  let db;
-  try {
-    db = await createRxDatabase({
-      name: "tvusvet_db_v9",
-      storage: storage,
-      ignoreDuplicate: true,
-      hashFunction: hashFunction
-    });
-  } catch (createError) {
-    console.error('Database creation failed:', createError);
+  const db = await createRxDatabase({
+    name: "tvusvet_db_v9", // Reset limpo para forçar atualização de seeds
 
-    if (isDev && createError.message.includes('different schema')) {
-      console.error(
-        '⚠️ SCHEMA VERSION CONFLICT DETECTED\n' +
-        'Your IndexedDB has a different schema version than the code expects.\n' +
-        'Solutions:\n' +
-        '  1. Clear IndexedDB: DevTools → Application → Storage → IndexedDB → Delete "tvusvet_db_v9"\n' +
-        '  2. Bump schema version in schemas.js and add migration strategy\n' +
-        '  3. Use a different database name (db.js line 54)\n'
-      );
-    }
-    throw createError;
-  }
+    storage: storage,
+    ignoreDuplicate: true,
+    hashFunction: hashFunction
+  });
 
   // Create Collections with migration strategies for ALL versioned schemas
   try {
@@ -99,13 +81,12 @@ const _create = async () => {
             2: returnSameDoc
         }
     },
-      exams: {
+      exams: { 
         schema: ExamSchema,
         migrationStrategies: {
             1: returnSameDoc,
             2: returnSameDoc,
-            3: returnSameDoc,
-            4: returnSameDoc // v4: Added maxLength to patient_id
+            3: returnSameDoc
         }
     },
     
@@ -119,12 +100,7 @@ const _create = async () => {
         })
       }
     },
-      prescriptions: {
-        schema: PrescriptionSchema,
-        migrationStrategies: {
-            1: returnSameDoc // v1: Added maxLength to patient_id
-        }
-      },
+      prescriptions: { schema: PrescriptionSchema },
       templates: { schema: TemplateSchema },
       reference_values: { schema: ReferenceValueSchema },
       profiles: { schema: ProfileSchema },
@@ -138,45 +114,14 @@ const _create = async () => {
               payment_method: 'cash',
               due_date: oldDoc.date ?? null,
               paid_at: oldDoc.date ?? null
-            }),
-            2: returnSameDoc // v2: Added maxLength to patient_id
+            })
         }
     },
-      lab_exams: {
-        schema: LabExamSchema,
-        migrationStrategies: {
-            1: returnSameDoc // v1: Added maxLength to patient_id
-        }
-      },
-      anamnesis: {
-        schema: AnamnesisSchema,
-        migrationStrategies: {
-          1: (oldDoc) => ({
-            ...oldDoc,
-            chief_complaint: oldDoc.chief_complaint || oldDoc.main_complaint || '',
-            history_current_illness: oldDoc.history_current_illness || oldDoc.history || '',
-            physiological_data: oldDoc.physiological_data || oldDoc.general_data || {},
-            systems_review: oldDoc.systems_review || {},
-            physical_exam: oldDoc.physical_exam || {},
-            diagnosis_hypothesis: oldDoc.diagnosis_hypothesis || (oldDoc.diagnosis ? [oldDoc.diagnosis] : []),
-            treatment_plan: oldDoc.treatment_plan || oldDoc.conduct || '',
-            status: oldDoc.status || 'finalized',
-            created_at: oldDoc.created_at || oldDoc.date,
-            updated_at: oldDoc.updated_at || new Date().toISOString()
-          }),
-          2: returnSameDoc // v2: Added maxLength to patient_id for index compliance
-        }
-      },
-      clinical_documents: {
-        schema: ClinicalDocumentSchema,
-        migrationStrategies: {
-            1: returnSameDoc, // v1: Added maxLength to patient_id
-            2: returnSameDoc  // v2: Added 'prescription' to type enum
-        }
-      },
-
+      lab_exams: { schema: LabExamSchema },
+      anamnesis: { schema: AnamnesisSchema },
+      
       // Ophthalmo with version: 1 needs migration
-      ophthalmo: {
+      ophthalmo: { 
         schema: OphthalmoSchema,
         migrationStrategies: {
             1: (oldDoc) => {
@@ -188,14 +133,9 @@ const _create = async () => {
                     general_diagnosis: oldDoc.diagnosis || '',
                     created_at: oldDoc.created_at || new Date().toISOString()
                 };
-            },
-            2: returnSameDoc // v2: Added maxLength to patient_id
+            }
         }
-    },
-
-      appointments: {
-        schema: AppointmentSchema
-      }
+    }
   });
   } catch (e) {
     // DB6 happens when IndexedDB already has the collection with a different schema version/shape.
@@ -212,141 +152,52 @@ const _create = async () => {
   }
 
 
-  const seedResult = await seedDatabase(db);
+  await seedDatabase(db);
   console.log('Database: Ready.');
-  return { db, seedResult };
+  return db;
 };
 
 const seedDatabase = async (db) => {
-  console.log('Database: Checking if seeding is needed...');
-
   try {
-    // SETTINGS - Insert only if exactly 'global_settings' doesn't exist
-    const settingsDoc = await db.settings.findOne({
-      selector: { id: 'global_settings' }
-    }).exec();
-
-    if (!settingsDoc) {
-      console.log('Database: Seeding settings...');
-      try {
+      const settingsDoc = await db.settings.findOne({ selector: { id: 'global_settings' } }).exec();
+      if (!settingsDoc) {
+        console.log('Seeding Settings...');
         await db.settings.insert(initialSettings);
-        console.log('Database: Settings seeded successfully');
-      } catch (insertError) {
-        if (insertError.code === 'CONFLICT' || insertError.code === 409) {
-          console.log('Database: Settings already exist (conflict ignored)');
-        } else {
-          console.warn('Database: Settings insert failed:', insertError.message);
+      }
+
+      // Se count de drugs for baixo, roda o bulkInsert(initialDrugs) novamente
+      const drugsCount = await db.drugs.count().exec();
+      if (drugsCount < 5) {
+        try {
+          await db.drugs.bulkInsert(initialDrugs);
+        } catch (e) {
+          // ignore duplicates
         }
       }
-    } else {
-      console.log('Database: Settings already exist, skipping');
-    }
 
-    // MASTER DATA V2 - Use MasterSeeder for upsert-capable seeding
-    console.log(`Database: Loading Master Data V${masterSeeder.getVersion()}...`);
-    const summary = masterSeeder.getDataSummary();
-    console.log('Database: Master Data Summary:', summary);
-
-    const seedResult = await masterSeeder.seedAll(db);
-
-    console.log('Database: Seeding check completed');
-    return seedResult;
-  } catch (seedError) {
-    console.error("Database: Seeding error:", seedError);
-    return { success: false, error: seedError };
+      // SMART SEED: Templates
+      const templatesCount = await db.templates.count().exec();
+      if (templatesCount < 3) {
+          try {
+            await db.templates.bulkInsert(initialTemplates);
+          } catch (e) {
+            // ignore duplicates
+          }
+      }
+  } catch (e) {
+      console.warn("Seed warning:", e);
   }
 };
-
-// Cache for seed result (used by App.js for toast notification)
-let _lastSeedResult = null;
 
 export const getDatabase = () => {
   if (window._tvusvet_db_promise) {
       return window._tvusvet_db_promise;
   }
-  // _create returns { db, seedResult }; unwrap so consumers always get the raw RxDB instance
-  window._tvusvet_db_promise = _create().then(result => {
-      _lastSeedResult = result.seedResult;
-      return result.db;
-  }).catch(err => {
+  window._tvusvet_db_promise = _create().catch(err => {
       console.error("DB Init Failed:", err);
       throw err;
   });
   return window._tvusvet_db_promise;
 };
 
-export const getLastSeedResult = () => _lastSeedResult;
-
 export const genId = () => uuidv4();
-
-/**
- * EMERGENCY RESET FUNCTION
- * Exposed globally for critical recovery scenarios
- * Usage: Open browser console and type: window.resetDB()
- */
-if (typeof window !== 'undefined') {
-  window.resetDB = async () => {
-    console.warn('🚨 EMERGENCY DATABASE RESET INITIATED');
-
-    if (!window.confirm(
-      '⚠️ EMERGENCY DATABASE RESET ⚠️\n\n' +
-      'This will COMPLETELY DESTROY the database and reload the page.\n' +
-      'ALL DATA WILL BE LOST (patients, exams, financial records, everything).\n\n' +
-      'This should only be used for:\n' +
-      '- Corrupted database\n' +
-      '- Schema version conflicts\n' +
-      '- Data stuck or not loading\n\n' +
-      'Type OK to proceed with destruction.'
-    )) {
-      console.log('Reset cancelled by user');
-      return;
-    }
-
-    try {
-      console.log('Destroying database...');
-
-      // Get and destroy RxDB instance
-      const db = await getDatabase();
-      await db.destroy();
-      console.log('RxDB instance destroyed');
-
-      // Clear promise cache
-      delete window._tvusvet_db_promise;
-
-      // Delete IndexedDB database
-      if (window.indexedDB) {
-        await new Promise((resolve, reject) => {
-          const deleteRequest = window.indexedDB.deleteDatabase('tvusvet_db_v9');
-          deleteRequest.onsuccess = () => {
-            console.log('IndexedDB deleted successfully');
-            resolve();
-          };
-          deleteRequest.onerror = (err) => {
-            console.error('IndexedDB deletion error:', err);
-            resolve(); // Continue anyway
-          };
-        });
-      }
-
-      console.log('✅ Database completely destroyed. Reloading page...');
-      alert('Database destroyed successfully. Page will reload now.');
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-
-    } catch (error) {
-      console.error('❌ Emergency reset failed:', error);
-      alert(
-        'Emergency reset failed: ' + error.message + '\n\n' +
-        'Manual reset required:\n' +
-        '1. Open DevTools (F12)\n' +
-        '2. Go to Application → Storage → IndexedDB\n' +
-        '3. Delete "tvusvet_db_v9"\n' +
-        '4. Reload page'
-      );
-    }
-  };
-
-  console.log('💡 Emergency reset available: window.resetDB()');
-}

@@ -68,79 +68,54 @@ class DatabaseService {
    * Returns all patients OR filtered by scope.
    * @param {Object} [filters]
    * @param {'VET'|'HUMAN'} [filters.scope]
-   *
-   * SOFT-FAIL: Returns empty array on error to prevent UI crashes
    */
-  async getPatients(filters = {}) {
-      try {
-        const db = await getDatabase();
-        const selector = {};
-        if (filters.scope) selector.scope = filters.scope;
-        const patients = await this._files(db.patients.find({ selector }).sort({ name: 'asc' }));
-        console.log(`[DB] getPatients: Found ${patients.length} patients with filters:`, filters);
-        return patients;
-      } catch (error) {
-        console.error('[DB] getPatients FAILED (soft-fail: returning empty array):', error);
-        // SOFT-FAIL: Return empty array instead of throwing
-        // This prevents UI crashes when database is initializing or corrupted
-        return [];
-      }
+  async getPatients(filters = {}) { 
+      const db = await getDatabase();
+      const selector = {};
+      if (filters.scope) selector.scope = filters.scope;
+      return await this._files(db.patients.find({ selector }).sort({ name: 'asc' }));
   }
 
   /**
-   * Patient unified timeline: Exams + Prescriptions + Lab + Anamnesis + Clinical Documents.
-   * Returns array of entries: { collection: string, date, data }
-   *
-   * SOFT-FAIL: Returns empty array on error to prevent UI crashes
+   * Patient unified timeline: Exams + Prescriptions.
+   * Returns array of entries: { collection: 'exams'|'prescriptions', date, data }
    */
   async getPatientTimeline(patientId) {
-      try {
-        const db = await getDatabase();
-        const [exams, prescriptions, labExams, anamnesis, clinicalDocs] = await Promise.all([
-            this._files(db.exams.find({ selector: { patient_id: patientId } })),
-            this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
-            this._files(db.lab_exams.find({ selector: { patient_id: patientId } })),
-            this._files(db.anamnesis.find({ selector: { patient_id: patientId } })),
-            this._files(db.clinical_documents.find({ selector: { patient_id: patientId } }))
-        ]);
+      const db = await getDatabase();
+      const [exams, prescriptions, labExams, anamnesis] = await Promise.all([
+          this._files(db.exams.find({ selector: { patient_id: patientId } })),
+          this._files(db.prescriptions.find({ selector: { patient_id: patientId } })),
+          this._files(db.lab_exams.find({ selector: { patient_id: patientId } })),
+          this._files(db.anamnesis.find({ selector: { patient_id: patientId } }))
+      ]);
 
-        const examEntries = (exams || []).map(e => ({
-            collection: 'exams',
-            date: e.date || e.exam_date || e.examDate || new Date().toISOString(),
-            data: e
-        }));
+      const examEntries = (exams || []).map(e => ({
+          collection: 'exams',
+          date: e.date || e.exam_date || e.examDate || new Date().toISOString(),
+          data: e
+      }));
 
-        const rxEntries = (prescriptions || []).map(r => ({
-            collection: 'prescriptions',
-            date: r.date || new Date().toISOString(),
-            data: r
-        }));
+      const rxEntries = (prescriptions || []).map(r => ({
+          collection: 'prescriptions',
+          date: r.date || new Date().toISOString(),
+          data: r
+      }));
 
-        const labEntries = (labExams || []).map(l => ({
-            collection: 'lab_exams',
-            date: l.date || l.created_at || new Date().toISOString(),
-            data: l
-        }));
+      const labEntries = (labExams || []).map(l => ({
+          collection: 'lab_exams',
+          date: l.date || l.created_at || new Date().toISOString(),
+          data: l
+      }));
 
-        const anamnesisEntries = (anamnesis || []).map(a => ({
-            collection: 'anamnesis',
-            date: a.date || new Date().toISOString(),
-            data: a
-        }));
+      const anamnesisEntries = (anamnesis || []).map(a => ({
+          collection: 'anamnesis',
+          date: a.date || new Date().toISOString(),
+          data: a
+      }));
 
-        const clinicalDocEntries = (clinicalDocs || []).map(doc => ({
-            collection: 'clinical_documents',
-            date: doc.date || doc.created_at || new Date().toISOString(),
-            data: doc
-        }));
-
-        const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries, ...clinicalDocEntries];
-        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-        return merged;
-      } catch (error) {
-        console.error('[DB] getPatientTimeline FAILED (soft-fail: returning empty array):', error);
-        return [];
-      }
+      const merged = [...examEntries, ...rxEntries, ...labEntries, ...anamnesisEntries];
+      merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return merged;
   }
   
   async getPatient(id) { 
@@ -208,15 +183,10 @@ class DatabaseService {
       return ne; 
   }
   
-  async getExams(pid = null) {
-      try {
-        const db = await getDatabase();
-        const query = pid ? { selector: { patient_id: pid } } : {};
-        return await this._files(db.exams.find(query).sort({ date: 'desc' }));
-      } catch (error) {
-        console.error('[DB] getExams FAILED (soft-fail: returning empty array):', error);
-        return [];
-      }
+  async getExams(pid = null) { 
+      const db = await getDatabase();
+      const query = pid ? { selector: { patient_id: pid } } : {};
+      return await this._files(db.exams.find(query).sort({ date: 'desc' }));
   }
 
   /**
@@ -224,7 +194,7 @@ class DatabaseService {
    * (Used by timeline; also useful for future screens.)
    */
 
-  // ================= SMART ANAMNESIS =================
+  // ================= ANAMNESIS (PEP) =================
   async createAnamnesis(data) {
       const db = await getDatabase();
       const nowIso = new Date().toISOString();
@@ -233,25 +203,13 @@ class DatabaseService {
           patient_id: data.patient_id,
           date: data.date || nowIso,
           doctor_name: data.doctor_name || '',
-          type: data.type,
-          chief_complaint: data.chief_complaint || data.main_complaint || '',
-          history_current_illness: data.history_current_illness || data.history || '',
-          physiological_data: data.physiological_data || data.general_data || {},
-          systems_review: data.systems_review || {},
+          type: data.type, // 'vet' | 'human'
+          main_complaint: data.main_complaint || '',
+          history: data.history || '',
+          general_data: data.general_data || {},
           physical_exam: data.physical_exam || {},
-          diagnosis_hypothesis: data.diagnosis_hypothesis || [],
-          treatment_plan: data.treatment_plan || data.conduct || '',
-          additional_exams: data.additional_exams || '',
-          prognosis: data.prognosis || '',
-          notes: data.notes || '',
-          main_complaint: data.main_complaint || data.chief_complaint || '',
-          history: data.history || data.history_current_illness || '',
-          general_data: data.general_data || data.physiological_data || {},
-          diagnosis: data.diagnosis || (data.diagnosis_hypothesis?.[0] || ''),
-          conduct: data.conduct || data.treatment_plan || '',
-          status: data.status || 'draft',
-          created_at: nowIso,
-          updated_at: nowIso
+          diagnosis: data.diagnosis || '',
+          conduct: data.conduct || ''
       };
       await db.anamnesis.insert(record);
       return record;
@@ -260,83 +218,6 @@ class DatabaseService {
   async getAnamnesis(patientId) {
       const db = await getDatabase();
       return await this._files(db.anamnesis.find({ selector: { patient_id: patientId } }).sort({ date: 'desc' }));
-  }
-
-  async getAnamnesisById(id) {
-      const db = await getDatabase();
-      return await this._one(db.anamnesis.findOne(id));
-  }
-
-  async getLatestAnamnesis(patientId) {
-      const db = await getDatabase();
-      const results = await this._files(
-          db.anamnesis.find({ selector: { patient_id: patientId } }).sort({ date: 'desc' }).limit(1)
-      );
-      return results?.[0] || null;
-  }
-
-  async updateAnamnesis(id, data) {
-      const db = await getDatabase();
-      const doc = await db.anamnesis.findOne(id).exec();
-      if (doc) {
-          const patch = { ...data, updated_at: new Date().toISOString() };
-          await doc.patch(patch);
-          return doc.toJSON();
-      }
-      throw new Error('Anamnesis not found');
-  }
-
-  async deleteAnamnesis(id) {
-      const db = await getDatabase();
-      const doc = await db.anamnesis.findOne(id).exec();
-      if (doc) await doc.remove();
-  }
-
-  // ================= CLINICAL DOCUMENTS =================
-  async createClinicalDocument(data) {
-      const db = await getDatabase();
-      const nowIso = new Date().toISOString();
-      const document = {
-          id: genId(),
-          patient_id: data.patient_id,
-          type: data.type,
-          title: data.title || '',
-          content: data.content || '',
-          date: data.date || nowIso,
-          doctor_name: data.doctor_name || '',
-          created_at: nowIso,
-          updated_at: nowIso
-      };
-      await db.clinical_documents.insert(document);
-      return document;
-  }
-
-  async getClinicalDocuments(patientId = null) {
-      const db = await getDatabase();
-      const query = patientId ? { selector: { patient_id: patientId } } : {};
-      return await this._files(db.clinical_documents.find(query).sort({ date: 'desc' }));
-  }
-
-  async getClinicalDocument(id) {
-      const db = await getDatabase();
-      return await this._one(db.clinical_documents.findOne(id));
-  }
-
-  async updateClinicalDocument(id, data) {
-      const db = await getDatabase();
-      const doc = await db.clinical_documents.findOne(id).exec();
-      if (doc) {
-          const patch = { ...data, updated_at: new Date().toISOString() };
-          await doc.patch(patch);
-          return doc.toJSON();
-      }
-      throw new Error('Clinical document not found');
-  }
-
-  async deleteClinicalDocument(id) {
-      const db = await getDatabase();
-      const doc = await db.clinical_documents.findOne(id).exec();
-      if (doc) await doc.remove();
   }
 
   async getPrescriptions(patientId = null) {
@@ -596,7 +477,7 @@ class DatabaseService {
           paid_at: paidAtIso,
 
           description: data.description || '',
-          patient_id: data.patient_id || ''
+          patient_id: data.patient_id || null
       };
       await db.financial.insert(transaction);
       return transaction;
@@ -695,53 +576,6 @@ class DatabaseService {
           return doc.toJSON();
       }
       throw new Error('Transaction not found');
-  }
-  // ================= APPOINTMENTS =================
-  async createAppointment(data) {
-      const db = await getDatabase();
-      const record = {
-          id: genId(),
-          patientName: data.patientName || '',
-          patientId: data.patientId || '',
-          date: data.date,
-          time: data.time,
-          type: data.type || 'Consulta',
-          status: data.status || 'Agendado',
-          notes: data.notes || ''
-      };
-      await db.appointments.insert(record);
-      return record;
-  }
-
-  async getAppointments(filters = {}) {
-      try {
-        const db = await getDatabase();
-        const selector = {};
-        if (filters.date) selector.date = filters.date;
-        if (filters.status) selector.status = filters.status;
-        const rows = await this._files(db.appointments.find({ selector }));
-        rows.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-        return rows;
-      } catch (e) {
-        console.error('[DB] getAppointments FAILED:', e);
-        return [];
-      }
-  }
-
-  async updateAppointment(id, data) {
-      const db = await getDatabase();
-      const doc = await db.appointments.findOne(id).exec();
-      if (doc) {
-          await doc.patch(data);
-          return doc.toJSON();
-      }
-      throw new Error('Appointment not found');
-  }
-
-  async deleteAppointment(id) {
-      const db = await getDatabase();
-      const doc = await db.appointments.findOne(id).exec();
-      if (doc) await doc.remove();
   }
 }
 

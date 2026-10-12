@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Stethoscope, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LoginPage = () => {
@@ -21,8 +20,8 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      toast.success("Bem-vindo ao NexaClinq!");
-      navigate('/');
+      toast.success("Bem-vindo ao NexaClinq");
+      navigate('/'); // Redireciona para a Home após login
     } catch (error) {
       console.error(error);
       toast.error("Falha ao entrar. Verifique suas credenciais.");
@@ -32,89 +31,54 @@ const LoginPage = () => {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-background p-4"
-      data-testid="login-page"
-    >
-      {/* Subtle background grid */}
-      <div className="fixed inset-0 pointer-events-none select-none opacity-[0.015] dark:opacity-[0.03]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }}
-      />
-
-      <div className="relative w-full max-w-md space-y-8">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center justify-center text-center" data-testid="login-brand">
-          <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center mb-5 shadow-lg shadow-primary/20">
-            <Stethoscope className="h-8 w-8 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4" data-testid="login-page">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 shadow-sm">
+            <span className="text-primary font-bold text-xl">N</span>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground" data-testid="login-title">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             NexaClinq
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-            Plataforma de Gestão Clínica Inteligente.
-            <br />
-            Controle total do seu consultório em um só lugar.
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Gestão & Inteligência Clínica
           </p>
         </div>
 
-        {/* Login Card */}
-        <Card className="shadow-xl border-border/60" data-testid="login-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Acessar Painel</CardTitle>
-            <CardDescription>Digite suas credenciais para continuar.</CardDescription>
+        <Card>
+          <CardHeader>
+            <CardTitle>Entrar</CardTitle>
+            <CardDescription>Digite seu e-mail e senha para continuar.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    data-testid="login-email-input"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9"
-                    required
-                  />
-                </div>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    data-testid="login-password-input"
-                    type="password"
-                    placeholder="Sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9"
-                    required
-                  />
-                </div>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required 
+                />
               </div>
-              <Button
-                className="w-full h-11 font-semibold"
-                type="submit"
-                disabled={isLoading}
-                data-testid="login-submit-button"
-              >
-                {isLoading ? 'Entrando...' : 'Acessar NexaClinq'}
+              <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading ? "Entrando..." : "Acessar"}
               </Button>
             </form>
           </CardContent>
         </Card>
-
-        <p className="text-center text-xs text-muted-foreground/60">
-          NexaClinq &copy; {new Date().getFullYear()} &mdash; Todos os direitos reservados
-        </p>
       </div>
     </div>
   );

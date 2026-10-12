@@ -68,15 +68,15 @@ export const PatientSchema = {
   required: ['id', 'name']
 };
 
-// --- EXAMS (FINAL V4 - Added maxLength to patient_id) ---
+// --- EXAMS (FINAL V3) ---
 export const ExamSchema = {
   title: 'exam schema',
-  version: 4,
+  version: 3,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
     exam_type: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     exam_weight: { type: 'number' },
@@ -199,15 +199,15 @@ export const DrugSchema = {
   required: ['id', 'name']
 };
 
-// --- PRESCRIPTIONS (V1 - Added maxLength to patient_id) ---
+// --- PRESCRIPTIONS ---
 export const PrescriptionSchema = {
   title: 'prescription schema',
-  version: 1,
+  version: 0,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
     doctor_name: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     items: { type: 'array', items: { type: 'object' } },
@@ -269,15 +269,15 @@ const EyeDataProperties = {
   conduct: { type: 'string' }
 };
 
-// --- OPHTHALMO (Professional Version V2 - Added maxLength to patient_id) ---
+// --- OPHTHALMO (Professional Version V1) ---
 export const OphthalmoSchema = {
   title: 'ophthalmo exam schema',
-  version: 2,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
     patient_name: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     doctor_name: { type: 'string' },
@@ -316,12 +316,11 @@ export const OphthalmoSchema = {
   required: ['id', 'patient_id']
 };
 
-// --- FINANCIAL (V2 - Added maxLength to patient_id) ---
+// --- FINANCIAL ---
 export const FinancialSchema = {
   title: 'financial schema',
-  // v2: Added maxLength to patient_id for RxDB compliance
   // v1: professional cashflow fields (status, payment_method, due_date, paid_at)
-  version: 2,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -347,7 +346,7 @@ export const FinancialSchema = {
     description: { type: 'string' },
 
     // Optional link to patient
-    patient_id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
 
     // Cashflow state
     status: { type: 'string', enum: ['pending', 'paid', 'cancelled'], default: 'paid' },
@@ -374,105 +373,44 @@ export const FinancialSchema = {
   required: ['id', 'type', 'amount', 'date']
 };
 
-// --- SMART ANAMNESIS (V2 - Fixed maxLength for indexed field) ---
+// --- LAB EXAMS ---
+// --- ANAMNESIS (PEP) ---
 export const AnamnesisSchema = {
   title: 'anamnesis schema',
-  version: 2,
+  version: 0,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
     date: { type: 'string', format: 'date-time' },
     doctor_name: { type: 'string' },
+
+    // type of record based on scope
     type: { type: 'string', enum: ['vet', 'human'] },
-
-    chief_complaint: { type: 'string' },
-    history_current_illness: { type: 'string' },
-
-    physiological_data: {
-      type: 'object',
-      properties: {
-        feeding: { type: 'string' },
-        feeding_type: { type: 'string' },
-        appetite: { type: 'string' },
-        water_intake: { type: 'string' },
-        vaccine_status: { type: 'string' },
-        deworming_status: { type: 'string' },
-        environment: { type: 'string' },
-        contact_animals: { type: 'string' },
-        reproductive_status: { type: 'string' },
-        last_heat: { type: 'string' },
-        previous_diseases: { type: 'string' },
-        previous_surgeries: { type: 'string' },
-        current_medications: { type: 'string' },
-        allergies: { type: 'string' }
-      }
-    },
-
-    systems_review: {
-      type: 'object',
-      properties: {
-        digestive: { type: 'string' },
-        cardio_resp: { type: 'string' },
-        genitourinary: { type: 'string' },
-        neuro_locomotor: { type: 'string' },
-        tegumentary: { type: 'string' },
-        eyes_ears: { type: 'string' },
-        lymphatic: { type: 'string' }
-      }
-    },
-
-    physical_exam: {
-      type: 'object',
-      properties: {
-        general_state: { type: 'string' },
-        temperature: { type: 'number' },
-        heart_rate: { type: 'number' },
-        respiratory_rate: { type: 'number' },
-        weight: { type: 'number' },
-        hydration: { type: 'string' },
-        mucous_membranes: { type: 'string' },
-        capillary_refill: { type: 'string' },
-        lymph_nodes: { type: 'string' },
-        body_condition_score: { type: 'string' },
-        observations: { type: 'string' }
-      }
-    },
-
-    diagnosis_hypothesis: {
-      type: 'array',
-      items: { type: 'string' }
-    },
-
-    treatment_plan: { type: 'string' },
-    additional_exams: { type: 'string' },
-    prognosis: { type: 'string' },
-    notes: { type: 'string' },
 
     main_complaint: { type: 'string' },
     history: { type: 'string' },
-    general_data: { type: 'object', additionalProperties: true },
-    diagnosis: { type: 'string' },
-    conduct: { type: 'string' },
 
-    status: { type: 'string', enum: ['draft', 'finalized'], default: 'draft' },
-    created_at: { type: 'string', format: 'date-time' },
-    updated_at: { type: 'string', format: 'date-time' }
+    // Free-form objects (dynamic fields by scope)
+    general_data: { type: 'object', additionalProperties: true },
+    physical_exam: { type: 'object', additionalProperties: true },
+
+    diagnosis: { type: 'string' },
+    conduct: { type: 'string' }
   },
-  required: ['id', 'patient_id', 'date', 'type'],
-  indexes: ['patient_id']
+  required: ['id', 'patient_id', 'date', 'type']
 };
 
-// --- LAB EXAMS (V1 - Added maxLength to patient_id) ---
+// --- LAB EXAMS ---
 export const LabExamSchema = {
   title: 'lab exam schema',
-  version: 1,
+  version: 0,
   primaryKey: 'id',
   type: 'object',
   properties: {
     id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string', maxLength: 100 },
+    patient_id: { type: 'string' },
     patient_name: { type: 'string' },
     patient_species: { type: 'string' },
     owner_name: { type: 'string' },
@@ -506,43 +444,4 @@ export const LabExamSchema = {
     finalized_by: { type: 'string' }
   },
   required: ['id', 'patient_id', 'exam_type', 'date']
-};
-
-// --- CLINICAL DOCUMENTS (V2 - Added 'prescription' to type enum) ---
-export const ClinicalDocumentSchema = {
-  title: 'clinical document schema',
-  version: 2,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string', maxLength: 100 },
-    patient_id: { type: 'string', maxLength: 100 },
-    type: { type: 'string', enum: ['anamnesis', 'certificate', 'referral', 'prescription'] },
-    title: { type: 'string' },
-    content: { type: 'string' },
-    date: { type: 'string', format: 'date-time' },
-    doctor_name: { type: 'string' },
-    created_at: { type: 'string', format: 'date-time' },
-    updated_at: { type: 'string', format: 'date-time' }
-  },
-  required: ['id', 'patient_id', 'type', 'date']
-};
-
-// --- APPOINTMENTS (V0) ---
-export const AppointmentSchema = {
-  title: 'appointment schema',
-  version: 0,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id:          { type: 'string', maxLength: 100 },
-    patientName: { type: 'string' },
-    patientId:   { type: 'string', maxLength: 100 },
-    date:        { type: 'string' },   // YYYY-MM-DD
-    time:        { type: 'string' },   // HH:MM
-    type:        { type: 'string' },   // Consulta, Retorno, Exame, Cirurgia
-    status:      { type: 'string', enum: ['Agendado','Confirmado','Cancelado','Concluído'] },
-    notes:       { type: 'string' }
-  },
-  required: ['id', 'patientName', 'date', 'time', 'status']
 };

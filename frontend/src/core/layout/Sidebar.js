@@ -11,9 +11,7 @@ import {
   Settings, 
   LogOut,
   Dog,
-  User,
-  Home,
-  Stethoscope
+  User
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
@@ -28,17 +26,10 @@ export function Sidebar() {
 
   const modules = [
     {
-      id: 'home',
-      name: 'Dashboard',
-      icon: Home,
-      path: '/',
-      enabled: true
-    },
-    {
       id: 'core',
-      name: terms.patient_label + 's',
+      name: terms.patient_label + 's', // "Pacientes"
       icon: LayoutGrid,
-      path: '/patients',
+      path: '/',
       enabled: hasModule('core')
     },
     {
@@ -80,15 +71,15 @@ export function Sidebar() {
 
   return (
     <div className="h-screen w-64 bg-card border-r flex flex-col fixed left-0 top-0 z-50">
-      {/* Header - NexaClinq Brand */}
-      <div className="p-5 flex items-center gap-3 border-b">
-        <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground shadow-sm">
-           <Stethoscope className="h-5 w-5" />
+      {/* Header */}
+      <div className="p-6 flex items-center gap-2 border-b">
+        <div className="h-8 w-8 bg-primary/20 rounded flex items-center justify-center text-primary">
+           <LayoutGrid className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="font-bold text-xl leading-none tracking-tight text-primary" data-testid="sidebar-brand-name">NexaClinq</h1>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-            {practice === 'vet' ? 'Gestão Veterinária' : 'Gestão Clínica'}
+          <h1 className="font-bold text-lg leading-none">TVUSVET</h1>
+          <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+            {practice === 'vet' ? 'Veterinary' : 'Human MD'}
           </span>
         </div>
       </div>
