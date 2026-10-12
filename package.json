@@ -1,4 +1,13 @@
 {
+  "name": "tvusvet-workspace",
+  "private": true,
+  "scripts": {
+    "setup": "cd frontend && npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund",
+    "dev": "npm run setup && cd frontend && npm start",
+    "start": "npm run dev",
+    "build": "npm run setup && cd frontend && npm run build",
+    "test": "cd frontend && npm test -- --watchAll=false"
+  },
   "dependencies": {
     "file-saver": "^2.0.5",
     "konva": "^10.0.12",
