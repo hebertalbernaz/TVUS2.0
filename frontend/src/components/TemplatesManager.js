@@ -59,7 +59,7 @@ export function TemplatesManager({ templates, onUpdate }) {
 
   const saveEdit = async () => {
     try {
-      await db.updateTemplate(editingId, editData);
+      await db.updateTemplate(editingId, { ...editData, edited: true });
       toast.success('Atualizado!');
       setEditingId(null);
       onUpdate();

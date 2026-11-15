@@ -61,6 +61,7 @@ export default function ExamPage() {
   const [editingImage, setEditingImage] = useState(null); 
   const [reportLanguage, setReportLanguage] = useState('pt');
   const [showPreview, setShowPreview] = useState(false);
+  const [fillNonce, setFillNonce] = useState(0);
 
   // Campos do Header
   const [examWeight, setExamWeight] = useState('');
@@ -480,6 +481,7 @@ export default function ExamPage() {
       // Estruturas agrupadas (ex.: "Rins") são puladas quando o roteiro já tem os lados separados.
       const skip = (o) => (AGGREGATE_ORGANS[o.organ_name] || []).some(part => names.includes(part));
       const targets = new Set(organsData.filter(o => !(o.report_text || '').trim() && !skip(o) && normalFor(o)).map(o => o.organ_name));
+      setFillNonce(n => n + 1);
       setOrgansData(prev => prev.map(o => (targets.has(o.organ_name) && !(o.report_text || '').trim() ? { ...o, report_text: normalFor(o).text } : o)));
       toast.success(targets.size ? `Texto normal aplicado em ${targets.size} órgão(s) vazio(s).` : 'Nenhum órgão vazio com texto normal disponível.');
   };
@@ -534,7 +536,7 @@ export default function ExamPage() {
                 <div className="flex items-center gap-2">
                     <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
                     <Select value={reportLanguage} onValueChange={setReportLanguage}>
-                        <SelectTrigger className="w-[70px] h-8 text-xs bg-muted/20"><SelectValue /></SelectTrigger>
+                        <SelectTrigger data-testid="exam-language-select" className="w-[92px] h-8 text-xs bg-muted/20"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             {getAvailableLanguages().map(l => <SelectItem key={l.code} value={l.code}>{l.flag} {l.code.toUpperCase()}</SelectItem>)}
                         </SelectContent>
@@ -619,7 +621,7 @@ export default function ExamPage() {
                         </div>
                         <div className="flex-1 min-h-0 flex flex-col">
                             <OrganEditor
-                                key={currentOrganIndex}
+                                key={`${currentOrganIndex}-${fillNonce}`}
                                 organ={currentOrgan}
                                 patient={patient}
                                 referenceValues={referenceValues}

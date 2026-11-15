@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend-only testing of TVUS 2.0 Vet Ultrasound consolidation (Playwright, fresh IndexedDB per run) + Jest. Almost everything requested works: quickstart patient -> exam page; new organs (Adrenal Esquerda/Direita, Cavidade Peritoneal) are there; Normal/Alterações tabs with insert-at-cursor, replace and organ-apply-normal; measurement labels and reference alerts (cat VU 0,4 -> high 'Ref: 0.13–0.17 cm · acima', 0.15 -> normal, dog Estômago 0.6 -> high with ref 0.3–0.5, cat Estômago 0.6 -> high with ref 0.17–0.36); roteiro-fill-normal skips aggregated Rins/Adrenais/Testículos and keeps custom text; search (Ctrl+F focuses the input, 'adrenal' jumps to Adrenal Esquerda, Enter/Shift+Enter wrap across organs, Esc selects the match in the textarea and typing replaces it, 'cavidade' on an empty exam -> '1 órgão com esse nome no roteiro'); preview shows a white A4 sheet with only filled organs, {M} filled / ___ for missing, the missing-measures warning, and a measures table with ref and an arrow; dark mode keeps the sheet white (#fff) with text #111; print media shows only #print-root, with break-inside avoid on .rd-organ/.rd-signature/.rd-measures (.rd-image has it in CSS, but no image was uploaded to check it live); on screen #print-root is display:none; autosave for ultrasound text and measurements, prescriptions (draft record, then manual save turns the same record final, no duplicate), anamnesis (draft kept after Fechar, Save finalizes the same id, no duplicate) and lab (draft saved, still there with its value after reload); Settings lists the builtin templates with Normal/Alteração badges and the seeded refs. Jest: 32/32 pass. 1 functional bug: 'Normal nos vazios' does not update the organ editor that is currently open (data-loss risk). A few minor issues are listed below.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ExamPage roteiro-fill-normal + UltrasoundOrganEditor", "issue": "If the organ open in the editor is empty and the user clicks 'Normal nos vazios', organsData gets the Normal text (the roteiro shows a check mark) but the open textarea stays empty. UltrasoundOrganEditor keeps text/measurements in local state and only re-syncs when organ.organ_name changes. When the user types, updateText overwrites the Normal text that was just applied (reproduced: Fígado showed 'X' after navigating back).", "selector": "[data-testid=roteiro-fill-normal], [data-testid=organ-report-textarea]", "priority": "HIGH"},
+      {"component": "PrescriptionPage autosave", "issue": "After the manual save (status 'final'), any further edit makes autosave persist status 'draft' again, so a finalized prescription quietly goes back to draft. persist() always defaults to 'draft'.", "selector": "[data-testid=prescription-save-button]", "priority": "MEDIUM"},
+      {"component": "ReferenceValuesManager list", "issue": "Builtin ultrasound refs have no size but are shown as 'Gato • Grande' / 'Cão • Grande', because a missing size falls back to 'Grande'. Any species other than dog is labeled 'Gato'.", "selector": "Settings > Valores Ref.", "priority": "LOW"},
+      {"component": "PrescriptionPage header", "issue": "A patient weight of 0 rendered a stray '0' after the name ('TEST_Bob0'). FIXED by testing agent with a ternary.", "selector": "h1 + p", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Patient history timeline", "issue": "Draft anamnesis/prescription records show in the timeline just like final ones (no 'Rascunho' badge). An empty ultrasound exam shows an empty card. The anamnesis time is always 12:00 (stored as T12:00Z).", "affected_selectors": ["[data-testid=new-anamnesis-button]"]}
+    ],
+    "design_issues": [
+      {"screen": "Exam header", "issues": ["The language selector is cut off ('🇧🇷 P'')"]},
+      {"screen": "Report preview / print", "issues": ["'Normal nos vazios' fills ~20 organs whose texts contain {M1}/{M2}, so an unmeasured report prints 20+ '___' blanks. Consider normal texts without mandatory placeholders, or omitting the clause when the value is empty.", "The measures table shows an empty bordered ref cell when no reference exists (e.g. dog Baço).", "The Estômago Normal text says 'espessura preservada ({M1})' even when M1 is flagged high; consider warning when the Normal text is used with out-of-range values."]},
+      {"screen": "Lab", "issues": ["The flag column shows the raw enum 'CRITICAL_HIGH' instead of a Portuguese label", "Data do Exame uses the browser's native date picker instead of the shadcn calendar", "Most lab controls have no data-testid (Novo Exame, panel buttons, result inputs, patient selector items)"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Sync UltrasoundOrganEditor with external organ changes. Either re-key the editor after fillEmptyWithNormal (e.g. key={`${currentOrganIndex}-${fillNonce}`}) or sync the local state from organ.report_text/measurements when they change outside the editor.",
+    "Prescription autosave: keep the current status ('final') once finalized, or show clearly that the record went back to draft",
+    "ReferenceValuesManager: show 'Todos os portes' when size is empty and use getSpeciesLabel for species",
+    "Optional: draft badge in the history timeline; translate lab flags; add data-testids to the lab module"
+  ],
+  "critical_code_review_comments": [
+    "UltrasoundEditor.js: the useEffect deps [organ.organ_name] miss external updates to report_text/measurements. This is the root cause of the fill-normal bug.",
+    "PrescriptionPage.persist defaults status='draft' for autosave even after finalization.",
+    "ExamPage.handlePrint calls autoSave.flush() and then saveExam(), so it writes twice (harmless).",
+    "ExamPage.js is 712 lines and LabVetModule.js is 880 lines, over the 700-line guideline. Consider splitting them.",
+    "formatRange: `!min` treats min=0 as 'até X' (intended), but min=0 with max=null would print '0–? cm'."
+  ],
+  "updated_files": ["/app/frontend/src/modules/prescription/PrescriptionPage.js"],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "~93% (1 functional bug, 1 medium status regression, minor display issues)"},
+  "seed_data_creation": "None persistent. Each Playwright run used a fresh browser IndexedDB with TEST_ patients (TEST_Mimi, TEST_Rex, TEST_Bob, TEST_LabCat, TEST_Fill).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "No-login offline app at http://localhost:3000 (HashRouter). Each browser run has a fresh IndexedDB 'tvusvet_local_db' (stores: patients, prescriptions, anamnesis, lab_exams...), so create data inside the same script. Species select options: 'Canina'/'Felina'. The drug selector needs at least 2 chars ('amo' finds Amoxicilina). The lab panel buttons need the selector button:has-text('Hemograma Completo') because of emoji prefixes. Retest: fill-normal while the current organ is empty, and prescription status after editing a finalized one.",
+  "rca of the issue": "Fill-normal bug: ExamPage.fillEmptyWithNormal updates organsData, but OrganEditor is keyed only by currentOrganIndex and UltrasoundOrganEditor's local `text` state re-syncs only on an organ_name change. So the open editor shows stale '' and the next keystroke calls onChange('report_text', 'X'), overwriting the Normal text. Repro: new exam -> stay on Fígado (empty) -> click roteiro-fill-normal -> textarea still empty -> type X -> Fígado text is 'X'. Mitigation: bump the editor key or sync the state from props."
+}

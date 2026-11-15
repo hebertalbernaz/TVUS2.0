@@ -44,7 +44,7 @@ function MeasuresTable({ organ, patient, referenceValues }) {
             <tr key={d.key}>
               <td>{d.label}</td>
               <td className="rd-num">{m.value} {m.unit || 'cm'}{st === 'high' ? ' ↑' : st === 'low' ? ' ↓' : ''}</td>
-              <td className="rd-ref">{ref ? `Ref.: ${formatRange(ref)}` : ''}</td>
+              {ref && <td className="rd-ref">Ref.: {formatRange(ref)}</td>}
             </tr>
           );
         })}

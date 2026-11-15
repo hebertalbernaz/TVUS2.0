@@ -102,3 +102,19 @@ describe('seed dos textos guia no IndexedDB', () => {
     expect(vetTemplates.length).toBeGreaterThanOrEqual(6);
   });
 });
+
+describe('texto normal sem medidas', () => {
+  test('parênteses com medidas vazias somem; parcialmente preenchidos mantêm ___', () => {
+    const t = 'Baço com dimensões preservadas (espessura: {M1}), contornos regulares.';
+    expect(fillPlaceholders(t, {})).toBe('Baço com dimensões preservadas, contornos regulares.');
+    expect(fillPlaceholders(t, { m1: { value: '0.8', unit: 'cm' } })).toBe('Baço com dimensões preservadas (espessura: 0.8 cm), contornos regulares.');
+    expect(fillPlaceholders('Rins (esquerdo: {M1}; direito: {M2}).', { m1: { value: '4' } })).toBe('Rins (esquerdo: 4 cm; direito: ___).');
+    expect(findMissingMeasures([{ organ_name: 'Baço', report_text: t, measurements: {} }])).toEqual([]);
+  });
+
+  test('todos os textos Normal ficam limpos (sem ___) quando nada foi medido', () => {
+    ULTRASOUND_TEMPLATES.filter((x) => x.category === 'normal').forEach((x) => {
+      expect({ id: x.id, out: fillPlaceholders(x.text, {}).includes('___') }).toEqual({ id: x.id, out: false });
+    });
+  });
+});

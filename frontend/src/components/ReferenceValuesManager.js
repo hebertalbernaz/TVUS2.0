@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trash2, Edit, Save, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { getSpeciesLabel } from '@/config/dictionaries/vet_terms';
 import { db } from '@/services/database';
 import { 
   ECHOCARDIOGRAM_STRUCTURES, 
@@ -74,7 +75,7 @@ export function ReferenceValuesManager({ values, onUpdate }) {
 
   const saveEdit = async () => {
     try {
-      await db.updateReferenceValue(editingId, {
+      await db.updateReferenceValue(editingId, { edited: true,
         ...editData,
         parameter: editData.measurement_type,
         min_value: parseFloat(editData.min_value),
@@ -230,7 +231,7 @@ export function ReferenceValuesManager({ values, onUpdate }) {
                     
                     <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                       <Badge variant="secondary" className="text-[10px]">
-                        {value.species === 'dog' ? 'Cão' : 'Gato'} • {value.size === 'small' ? 'Pequeno' : value.size === 'medium' ? 'Médio' : 'Grande'}
+                        {getSpeciesLabel(value.species)} • {({ small: 'Pequeno', medium: 'Médio', large: 'Grande' })[value.size] || 'Todos os portes'}
                       </Badge>
                       <span className="font-mono bg-muted px-1.5 rounded text-foreground">
                         {value.min_value} - {value.max_value} {value.unit}

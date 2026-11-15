@@ -35,9 +35,15 @@ export const formatRange = (ref) => {
 };
 
 // Substitui {M1}/{MEDIDA1} pelo valor + unidade; medidas vazias ficam com `missing`.
+// Parênteses cujas medidas estão todas vazias são omitidos — o texto normal fica limpo sem medir.
 export function fillPlaceholders(text, measurements, missing = '___') {
   if (!text) return '';
-  return text.replace(/\{(?:MEDIDA|M)([1-3])\}/gi, (_, n) => {
+  const has = (n) => !!String(measurements?.[`m${n}`]?.value ?? '').trim();
+  const cleaned = text.replace(/\s?\(([^()]*\{(?:MEDIDA|M)[1-3]\}[^()]*)\)/gi, (group, inner) => {
+    const ns = [...inner.matchAll(/\{(?:MEDIDA|M)([1-3])\}/gi)].map((m) => m[1]);
+    return ns.some(has) ? group : '';
+  });
+  return cleaned.replace(/\{(?:MEDIDA|M)([1-3])\}/gi, (_, n) => {
     const m = measurements?.[`m${n}`];
     return m && String(m.value).trim() ? `${m.value} ${m.unit || 'cm'}` : missing;
   });
@@ -63,10 +69,7 @@ export function applyTemplateText(current, snippet, { mode = 'insert', cursor } 
   return { text, cursor: (before + sepBefore + snippet).length };
 }
 
-// Órgãos cujo texto cita {M1..M3} sem valor preenchido.
+// Órgãos cujo texto cita {M1..M3} sem valor (fora de parênteses opcionais).
 export function findMissingMeasures(organs) {
-  return organs.filter((o) => (o.report_text || '').match(/\{(?:MEDIDA|M)[1-3]\}/gi)?.some((r) => {
-    const n = r.match(/[1-3]/)[0];
-    return !String(o.measurements?.[`m${n}`]?.value || '').trim();
-  })).map((o) => o.organ_name);
+  return organs.filter((o) => fillPlaceholders(o.report_text, o.measurements, '\u0000').includes('\u0000')).map((o) => o.organ_name);
 }

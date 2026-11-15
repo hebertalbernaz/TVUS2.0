@@ -42,7 +42,7 @@ const N = 'normal';
 const A = 'alteracao';
 
 const KIDNEY = (side) => [
-  [N, 'Normal', `Rim ${side} em topografia habitual, com formato e contornos preservados, medindo {M1} em seu eixo longitudinal. Cortical com espessura de {M2}, ecogenicidade e ecotextura preservadas. Relação e definição corticomedular mantidas. Pelve renal sem sinais de dilatação. Ausência de imagens sugestivas de cálculos ou massas.`],
+  [N, 'Normal', `Rim ${side} em topografia habitual, com formato e contornos preservados (comprimento: {M1}). Cortical ({M2}) com ecogenicidade e ecotextura preservadas. Relação e definição corticomedular mantidas. Pelve renal sem sinais de dilatação. Ausência de imagens sugestivas de cálculos ou massas.`],
   [A, 'Nefropatia crônica', `Rim ${side} com dimensões reduzidas ({M1}), contornos irregulares e cortical hiperecogênica ({M2}), com perda da definição corticomedular. Achados compatíveis com nefropatia crônica — correlacionar com exames laboratoriais (ureia, creatinina, SDMA).`],
   [A, 'Pielectasia', `Pelve renal ${side === 'esquerdo' ? 'esquerda' : 'direita'} discretamente dilatada, medindo {M3}, com conteúdo anecogênico. Achado compatível com pielectasia, podendo estar associada a fluidoterapia, pielonefrite ou obstrução distal — correlacionar com a clínica.`],
   [A, 'Nefrolitíase', `Presença de estrutura hiperecogênica formadora de sombra acústica posterior em região de pelve/divertículos do rim ${side}, compatível com nefrolitíase.`],
@@ -75,14 +75,14 @@ const RAW = {
     [A, 'Colelitíase', 'Presença de estrutura(s) hiperecogênica(s) formadora(s) de sombra acústica posterior no lúmen da vesícula biliar, compatível com colelitíase.']
   ],
   'Baço': [
-    [N, 'Normal', 'Baço com dimensões preservadas, espessura de {M1}, contornos regulares e bordas finas. Parênquima de ecotextura homogênea e ecogenicidade preservada. Vasos esplênicos de calibre habitual.'],
+    [N, 'Normal', 'Baço com dimensões preservadas (espessura: {M1}), contornos regulares e bordas finas. Parênquima de ecotextura homogênea e ecogenicidade preservada. Vasos esplênicos de calibre habitual.'],
     [A, 'Esplenomegalia', 'Baço com dimensões aumentadas (espessura de {M1}), bordas arredondadas e parênquima homogêneo. Achado compatível com esplenomegalia — considerar hiperplasia, congestão, hematopoiese extramedular, hemoparasitoses ou infiltração.'],
     [A, 'Nódulos esplênicos', 'Presença de nódulo(s) hipoecogênico(s) em parênquima esplênico, o maior medindo {M1}. Diagnósticos diferenciais: hiperplasia nodular, hematoma ou neoplasia — recomenda-se acompanhamento ou citologia.'],
     [A, 'Massa esplênica', 'Presença de formação cavitária, heterogênea, de contornos irregulares em baço, medindo {M1}. Considerar hematoma e neoplasia (ex.: hemangiossarcoma). Recomenda-se avaliação torácica e ecocardiográfica para estadiamento.'],
     [A, 'Parênquima "favo de mel"', 'Parênquima esplênico com padrão heterogêneo, com múltiplos pontos hipoecogênicos ("favo de mel"), podendo estar relacionado a hiperplasia linfoide ou infiltração neoplásica (linfoma/mastocitoma) — considerar citologia.']
   ],
   'Rins': [
-    [N, 'Normal', 'Rins em topografia habitual, simétricos, com formato e contornos preservados. Rim esquerdo medindo {M1} e rim direito medindo {M2} em seus eixos longitudinais. Corticais de ecogenicidade preservada, relação e definição corticomedular mantidas. Pelves renais sem dilatação. Ausência de cálculos ou massas.'],
+    [N, 'Normal', 'Rins em topografia habitual, simétricos, com formato e contornos preservados. Comprimento renal (esquerdo: {M1}; direito: {M2}). Corticais de ecogenicidade preservada, relação e definição corticomedular mantidas. Pelves renais sem dilatação. Ausência de cálculos ou massas.'],
     [A, 'Nefropatia crônica', 'Rins com dimensões reduzidas (esquerdo: {M1}; direito: {M2}), contornos irregulares, corticais hiperecogênicas e perda da definição corticomedular. Achados compatíveis com nefropatia crônica bilateral.'],
     [A, 'Pielectasia bilateral', 'Pelves renais discretamente dilatadas bilateralmente, com conteúdo anecogênico. Achado compatível com pielectasia (fluidoterapia, pielonefrite ou obstrução) — correlacionar com a clínica.'],
     [A, 'Nefrite / nefropatia aguda', 'Rins com dimensões aumentadas (esquerdo: {M1}; direito: {M2}), corticais hiperecogênicas e discreta quantidade de líquido perirrenal. Achados compatíveis com nefropatia aguda (nefrite/lesão renal aguda).']
@@ -114,24 +114,24 @@ const RAW = {
     [A, 'Fecaloma / constipação', 'Cólon distendido por grande quantidade de conteúdo fecal hiperecogênico formador de sombra acústica, compatível com constipação/fecaloma.']
   ],
   'Pâncreas': [
-    [N, 'Normal', 'Pâncreas visibilizado em topografia habitual, com espessura de {M1}, contornos regulares, ecotextura homogênea e ecogenicidade preservada. Ducto pancreático sem dilatação. Mesentério adjacente sem alterações.'],
+    [N, 'Normal', 'Pâncreas visibilizado em topografia habitual (espessura: {M1}), contornos regulares, ecotextura homogênea e ecogenicidade preservada. Ducto pancreático sem dilatação. Mesentério adjacente sem alterações.'],
     [A, 'Pancreatite aguda', 'Pâncreas aumentado (espessura de {M1}), hipoecogênico, de contornos irregulares, circundado por mesentério hiperecogênico e reativo. Achados compatíveis com pancreatite aguda — correlacionar com lipase pancreática específica.'],
     [A, 'Pancreatite crônica', 'Pâncreas com contornos irregulares, parênquima heterogêneo/hiperecogênico e espessura de {M1}. Achados compatíveis com pancreatite crônica/fibrose.'],
     [A, 'Nódulo pancreático', 'Presença de nódulo hipoecogênico em parênquima pancreático, medindo {M1}. Diferenciais: hiperplasia nodular, insulinoma ou outra neoplasia.']
   ],
   'Adrenais': [
-    [N, 'Normal', 'Adrenais em topografia habitual, com formato e contornos preservados, ecogenicidade habitual. Adrenal esquerda com polo caudal de {M1} e adrenal direita com polo caudal de {M2}.'],
+    [N, 'Normal', 'Adrenais em topografia habitual, com formato e contornos preservados, ecogenicidade habitual (polo caudal — esquerda: {M1}; direita: {M2}).'],
     [A, 'Hiperplasia bilateral', 'Adrenais com aumento simétrico bilateral (esquerda: {M1}; direita: {M2}), formato preservado. Achado compatível com hiperplasia adrenocortical — considerar hiperadrenocorticismo hipófise-dependente e correlacionar com testes endócrinos.'],
     [A, 'Massa adrenal', 'Adrenal com aumento assimétrico e perda do formato habitual, parênquima heterogêneo. Considerar neoplasia adrenal (adenoma/carcinoma/feocromocitoma) e avaliar invasão vascular (veia cava caudal).'],
     [A, 'Adrenais reduzidas', 'Adrenais com dimensões reduzidas (esquerda: {M1}; direita: {M2}). Considerar hipoadrenocorticismo ou uso de glicocorticoide exógeno — correlacionar com a clínica.']
   ],
   'Adrenal Esquerda': [
-    [N, 'Normal', 'Adrenal esquerda em topografia habitual, formato bilobado ("amendoim") preservado, contornos regulares e ecogenicidade habitual. Polo cranial com {M1} e polo caudal com {M2}.'],
+    [N, 'Normal', 'Adrenal esquerda em topografia habitual, formato bilobado ("amendoim") preservado, contornos regulares e ecogenicidade habitual (polo cranial: {M1}; polo caudal: {M2}).'],
     [A, 'Aumento', 'Adrenal esquerda aumentada (polo cranial {M1}; polo caudal {M2}), formato preservado. Achado compatível com hiperplasia adrenocortical — correlacionar com testes endócrinos.'],
     [A, 'Nódulo / massa', 'Adrenal esquerda com nódulo/aumento focal e perda do formato habitual, medindo {M2}. Considerar neoplasia adrenal e avaliar vasos adjacentes.']
   ],
   'Adrenal Direita': [
-    [N, 'Normal', 'Adrenal direita em topografia habitual, formato preservado, contornos regulares e ecogenicidade habitual. Polo cranial com {M1} e polo caudal com {M2}.'],
+    [N, 'Normal', 'Adrenal direita em topografia habitual, formato preservado, contornos regulares e ecogenicidade habitual (polo cranial: {M1}; polo caudal: {M2}).'],
     [A, 'Aumento', 'Adrenal direita aumentada (polo cranial {M1}; polo caudal {M2}), formato preservado. Achado compatível com hiperplasia adrenocortical — correlacionar com testes endócrinos.'],
     [A, 'Nódulo / massa', 'Adrenal direita com nódulo/aumento focal e perda do formato habitual, medindo {M2}. Considerar neoplasia adrenal e avaliar invasão da veia cava caudal.']
   ],
@@ -147,7 +147,7 @@ const RAW = {
     [A, 'Peritonite / esteatite', 'Mesentério difusamente hiperecogênico e reativo, associado a discreta quantidade de líquido livre ecogênico. Achados compatíveis com peritonite/esteatite — investigar foco.']
   ],
   'Próstata': [
-    [N, 'Normal', 'Próstata em topografia habitual, simétrica, de contornos regulares e parênquima homogêneo, medindo {M1} (comprimento) x {M2} (altura) x {M3} (largura).'],
+    [N, 'Normal', 'Próstata em topografia habitual, simétrica, de contornos regulares e parênquima homogêneo (dimensões: {M1} x {M2} x {M3}).'],
     [A, 'Hiperplasia prostática benigna', 'Próstata aumentada, medindo {M1} x {M2} x {M3}, simétrica, de contornos regulares e parênquima discretamente heterogêneo, com pequenos cistos intraparenquimatosos. Achados compatíveis com hiperplasia prostática benigna.'],
     [A, 'Prostatite', 'Próstata aumentada ({M1} x {M2} x {M3}), heterogênea, com áreas hipoecogênicas mal definidas e mesentério periprostático reativo. Achados compatíveis com prostatite — recomenda-se cultura de lavado/ejaculado.'],
     [A, 'Cisto paraprostático', 'Presença de estrutura cavitária anecogênica adjacente à próstata, medindo {M1}, compatível com cisto paraprostático.'],
@@ -155,20 +155,20 @@ const RAW = {
     [A, 'Neoplasia prostática', 'Próstata assimétrica, de contornos irregulares, com focos de mineralização. Em paciente castrado, achados sugestivos de neoplasia prostática — recomenda-se citologia.']
   ],
   'Testículos': [
-    [N, 'Normal', 'Testículos em bolsa escrotal, simétricos, de contornos regulares e parênquima homogêneo com mediastino testicular visível. Testículo esquerdo medindo {M1} e direito {M2}.'],
+    [N, 'Normal', 'Testículos em bolsa escrotal, simétricos, de contornos regulares e parênquima homogêneo com mediastino testicular visível (esquerdo: {M1}; direito: {M2}).'],
     [A, 'Nódulo testicular', 'Presença de nódulo hipoecogênico em parênquima testicular, medindo {M1}. Considerar neoplasia testicular (sertolioma/seminoma/leydigocitoma).'],
     [A, 'Orquite / epididimite', 'Testículo aumentado e heterogêneo, com epidídimo espessado e hipoecogênico. Achados compatíveis com orquite/epididimite.'],
     [A, 'Criptorquidismo', 'Testículo não visibilizado em bolsa escrotal; estrutura compatível com testículo ectópico identificada em região inguinal/abdominal, medindo {M1}.']
   ],
   'Útero': [
-    [N, 'Normal', 'Útero não distendido, de difícil visibilização, com corpo uterino de {M1}, paredes regulares e sem conteúdo luminal.'],
+    [N, 'Normal', 'Útero não distendido, de difícil visibilização (corpo uterino: {M1}), paredes regulares e sem conteúdo luminal.'],
     [A, 'Piometra', 'Útero distendido por conteúdo luminal ecogênico/celular, com corpo uterino de {M1} e cornos de {M2}, paredes espessadas. Achados compatíveis com piometra/mucometra — correlacionar com a clínica e hemograma.'],
     [A, 'Hiperplasia endometrial cística', 'Útero com paredes espessadas e múltiplas pequenas estruturas císticas endometriais (corpo: {M1}). Achados compatíveis com hiperplasia endometrial cística.'],
     [A, 'Gestação', 'Útero gravídico com vesículas gestacionais contendo estruturas fetais viáveis, com batimentos cardíacos presentes. Estimativa conforme medidas fetais.'],
     [A, 'Coto uterino', 'Coto uterino visibilizado dorsal à vesícula urinária, medindo {M1}, homogêneo e sem conteúdo (paciente castrada).']
   ],
   'Corpo Uterino': [
-    [N, 'Normal', 'Corpo uterino com diâmetro de {M1}, paredes regulares e sem conteúdo luminal.'],
+    [N, 'Normal', 'Corpo uterino (diâmetro: {M1}) com paredes regulares e sem conteúdo luminal.'],
     [A, 'Conteúdo luminal', 'Corpo uterino distendido ({M1}) por conteúdo ecogênico, compatível com piometra/mucometra.']
   ],
   'Ovários': [
@@ -178,19 +178,19 @@ const RAW = {
     [A, 'Remanescente ovariano', 'Estrutura compatível com tecido ovariano remanescente identificada em região caudal ao rim, medindo {M1}, em paciente castrada.']
   ],
   'Ovário Direito': [
-    [N, 'Normal', 'Ovário direito em topografia habitual, medindo {M1}, sem cistos ou massas.'],
+    [N, 'Normal', 'Ovário direito em topografia habitual ({M1}), sem cistos ou massas.'],
     [A, 'Cisto', 'Ovário direito ({M1}) com estrutura anecogênica de paredes finas, compatível com cisto ovariano/folicular.']
   ],
   'Ovário Esquerdo': [
-    [N, 'Normal', 'Ovário esquerdo em topografia habitual, medindo {M1}, sem cistos ou massas.'],
+    [N, 'Normal', 'Ovário esquerdo em topografia habitual ({M1}), sem cistos ou massas.'],
     [A, 'Cisto', 'Ovário esquerdo ({M1}) com estrutura anecogênica de paredes finas, compatível com cisto ovariano/folicular.']
   ],
   'Testículo Direito': [
-    [N, 'Normal', 'Testículo direito em bolsa escrotal, medindo {M1} x {M2}, de contornos regulares e parênquima homogêneo.'],
+    [N, 'Normal', 'Testículo direito em bolsa escrotal ({M1} x {M2}), de contornos regulares e parênquima homogêneo.'],
     [A, 'Nódulo', 'Testículo direito ({M1} x {M2}) com nódulo hipoecogênico em parênquima, sugestivo de neoplasia testicular.']
   ],
   'Testículo Esquerdo': [
-    [N, 'Normal', 'Testículo esquerdo em bolsa escrotal, medindo {M1} x {M2}, de contornos regulares e parênquima homogêneo.'],
+    [N, 'Normal', 'Testículo esquerdo em bolsa escrotal ({M1} x {M2}), de contornos regulares e parênquima homogêneo.'],
     [A, 'Nódulo', 'Testículo esquerdo ({M1} x {M2}) com nódulo hipoecogênico em parênquima, sugestivo de neoplasia testicular.']
   ],
   'Impressões Diagnósticas': [
@@ -255,4 +255,4 @@ export const ULTRASOUND_REFERENCE_VALUES = [
   REF('dog', 'Linfonodos', 'Espessura', 0, 0.8)
 ];
 
-export const BUILTIN_SEED_VERSION = 1;
+export const BUILTIN_SEED_VERSION = 2;

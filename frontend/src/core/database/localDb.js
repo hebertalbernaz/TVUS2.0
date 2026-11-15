@@ -105,11 +105,16 @@ export async function seedBuiltins(db = localDb) {
   if ((settings?.builtin_seed_version || 0) >= BUILTIN_SEED_VERSION) return;
   await db.transaction('rw', db.templates, db.reference_values, db.settings, async () => {
     for (const [table, rows] of [[db.templates, ULTRASOUND_TEMPLATES], [db.reference_values, ULTRASOUND_REFERENCE_VALUES]]) {
-      const existing = new Set(await table.bulkGet(rows.map((r) => r.id)).then((l) => l.filter(Boolean).map((r) => r.id)));
-      const missing = rows.filter((r) => !existing.has(r.id));
-      if (missing.length) await table.bulkAdd(missing);
+      const current = await table.bulkGet(rows.map((r) => r.id));
+      const firstSeed = !settings?.builtin_seed_version;
+      // Novos itens entram; itens nativos não editados pelo usuário recebem a versão atual. Excluídos não voltam.
+      const toPut = rows.filter((r, i) => (current[i] ? current[i].builtin && !current[i].edited : firstSeed || !settings?.builtin_ids_seen?.includes(r.id)));
+      if (toPut.length) await table.bulkPut(toPut);
     }
-    await db.settings.update('global_settings', { builtin_seed_version: BUILTIN_SEED_VERSION });
+    await db.settings.update('global_settings', {
+      builtin_seed_version: BUILTIN_SEED_VERSION,
+      builtin_ids_seen: [...ULTRASOUND_TEMPLATES, ...ULTRASOUND_REFERENCE_VALUES].map((r) => r.id)
+    });
   });
 }
 

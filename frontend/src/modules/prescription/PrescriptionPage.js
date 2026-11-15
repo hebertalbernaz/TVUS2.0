@@ -26,6 +26,7 @@ export default function PrescriptionPage() {
   const [loading, setLoading] = useState(true);
   const [draftId] = useState(() => genId());
   const [createdAt] = useState(() => new Date().toISOString());
+  const statusRef = React.useRef('draft');
 
   useEffect(() => {
     const loadData = async () => {
@@ -108,7 +109,7 @@ export default function PrescriptionPage() {
 
   const draft = useMemo(() => ({ items, notes }), [items, notes]);
 
-  const persist = useCallback(async ({ items: its, notes: nts }, status = 'draft') => {
+  const persist = useCallback(async ({ items: its, notes: nts }, status = statusRef.current) => {
       if (!its.length && !(nts || '').trim()) return db.deletePrescription(draftId);
       return db.savePrescription({
           id: draftId,
@@ -127,6 +128,7 @@ export default function PrescriptionPage() {
       if (!items.length) return toast.warning("Adicione medicamentos antes de salvar.");
       
       try {
+          statusRef.current = 'final';
           await persist(draft, 'final');
           autoSave.markSaved(draft);
           toast.success("Receita salva no histórico!");
@@ -161,7 +163,7 @@ export default function PrescriptionPage() {
                 <h1 className="text-2xl font-bold">{terms.prescription_header}</h1>
                 <p className="text-muted-foreground">
                     {terms.patient_label}: <span className="font-semibold text-foreground">{patient.name}</span> 
-                    {practice === 'vet' && patient.weight && ` • ${patient.weight}kg`}
+                    {practice === 'vet' && patient.weight ? ` • ${patient.weight}kg` : null}
                 </p>
             </div>
         </div>
