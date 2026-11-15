@@ -85,7 +85,3 @@
   }
 }
 
-/* Regras de Impressão (Mantidas) */
-@media screen {
-  #printable-report { display: none; }
-}

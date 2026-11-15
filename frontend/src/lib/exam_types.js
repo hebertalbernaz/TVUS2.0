@@ -76,7 +76,10 @@ export const ABDOMINAL_ORGANS = [
   'Cólon', 
   'Pâncreas',
   'Adrenais',
-  'Linfonodos'
+  'Adrenal Esquerda',
+  'Adrenal Direita',
+  'Linfonodos',
+  'Cavidade Peritoneal'
 ];
 
 export const REPRODUCTIVE_ORGANS_MALE = [
@@ -93,6 +96,15 @@ export const REPRODUCTIVE_ORGANS_FEMALE = [
   'Ovário Direito', 
   'Ovário Esquerdo'
 ];
+
+// Estruturas descritas em conjunto que também existem por lado no roteiro.
+export const AGGREGATE_ORGANS = {
+  'Rins': ['Rim Esquerdo', 'Rim Direito'],
+  'Adrenais': ['Adrenal Esquerda', 'Adrenal Direita'],
+  'Testículos': ['Testículo Direito', 'Testículo Esquerdo'],
+  'Ovários': ['Ovário Direito', 'Ovário Esquerdo'],
+  'Útero': ['Corpo Uterino']
+};
 
 // Itens finais do Ultrassom
 export const ULTRASOUND_CONCLUSION = [

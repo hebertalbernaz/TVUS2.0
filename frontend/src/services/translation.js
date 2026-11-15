@@ -28,6 +28,11 @@ const PT_TO_EN = {
   // Abdominal Organs
   'Estômago': 'Stomach',
   'Fígado': 'Liver',
+  'Adrenais': 'Adrenal Glands',
+  'Vesícula Biliar': 'Gallbladder',
+  'Adrenal Esquerda': 'Left Adrenal Gland',
+  'Adrenal Direita': 'Right Adrenal Gland',
+  'Cavidade Peritoneal': 'Peritoneal Cavity',
   'Baço': 'Spleen',
   'Rim Esquerdo': 'Left Kidney',
   'Rim Direito': 'Right Kidney',

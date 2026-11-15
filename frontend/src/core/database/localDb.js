@@ -15,6 +15,7 @@
 import Dexie from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
 import { initialDrugs, initialSettings, initialTemplates } from '../../config/seeds';
+import { ULTRASOUND_TEMPLATES, ULTRASOUND_REFERENCE_VALUES, BUILTIN_SEED_VERSION } from '../../config/ultrasound_templates';
 
 const LOCAL_DB_NAME = 'tvusvet_local_db';
 
@@ -98,6 +99,20 @@ export async function requestPersistentStorage() {
   }
 }
 
+// Registra textos guia e referências do ultrassom uma vez por versão, sem sobrescrever edições do usuário.
+export async function seedBuiltins(db = localDb) {
+  const settings = await db.settings.get('global_settings');
+  if ((settings?.builtin_seed_version || 0) >= BUILTIN_SEED_VERSION) return;
+  await db.transaction('rw', db.templates, db.reference_values, db.settings, async () => {
+    for (const [table, rows] of [[db.templates, ULTRASOUND_TEMPLATES], [db.reference_values, ULTRASOUND_REFERENCE_VALUES]]) {
+      const existing = new Set(await table.bulkGet(rows.map((r) => r.id)).then((l) => l.filter(Boolean).map((r) => r.id)));
+      const missing = rows.filter((r) => !existing.has(r.id));
+      if (missing.length) await table.bulkAdd(missing);
+    }
+    await db.settings.update('global_settings', { builtin_seed_version: BUILTIN_SEED_VERSION });
+  });
+}
+
 /**
  * Abre o banco e garante estrutura pronta. Idempotente.
  * Também re-aplica seeds essenciais (idempotente via bulkPut).
@@ -110,6 +125,7 @@ export function getLocalDb() {
       if (settingsCount === 0) {
         await db.settings.put(initialSettings);
       }
+      await seedBuiltins(db);
       requestPersistentStorage();
       console.log(`LocalDB: pronto (Dexie ${LOCAL_DB_NAME} v${db.verno}).`);
       return db;

@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
     Upload, Save, Download, X, Check, ArrowLeft, Trash2, Plus, Printer, 
     Bold, Italic, Edit, RotateCcw, History, Images, FileDigit, ChevronRight, 
-    Stethoscope, Maximize2, Loader2 
+    Stethoscope, Maximize2, Loader2, Eye, Wand2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { db } from '@/services/database';
@@ -16,7 +16,7 @@ import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, 
   ImageRun, Table, TableRow, TableCell, WidthType, BorderStyle, SectionType, PageBreak 
 } from 'docx';
-import { getStructuresForExam, getExamTypeName } from '@/lib/exam_types';
+import { getStructuresForExam, getExamTypeName, AGGREGATE_ORGANS } from '@/lib/exam_types';
 import { translate, getAvailableLanguages } from '@/services/translation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -30,7 +30,11 @@ import { HighlightTextarea } from '@/components/Editors/HighlightTextarea';
 import { useOrganSearch } from '@/components/Editors/useOrganSearch';
 import { useAutoSave } from '@/shared/hooks/useAutoSave';
 import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
-import '../print.css'; // CSS Atualizado
+import { UltrasoundOrganEditor } from '@/components/Editors/UltrasoundEditor';
+import { ReportDocument, PrintPortal, REPORT_TITLES, findMissingMeasures } from '@/components/Report/ReportDocument';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { fillPlaceholders, mergeOrgans } from '@/lib/ultrasound';
+import '../print.css';
 
 // Módulos Visuais
 import { EyeFundusEditor } from '@/components/ophthalmo/EyeFundusEditor';
@@ -56,6 +60,7 @@ export default function ExamPage() {
   const [uploading, setUploading] = useState(false);
   const [editingImage, setEditingImage] = useState(null); 
   const [reportLanguage, setReportLanguage] = useState('pt');
+  const [showPreview, setShowPreview] = useState(false);
 
   // Campos do Header
   const [examWeight, setExamWeight] = useState('');
@@ -109,15 +114,7 @@ export default function ExamPage() {
           const examType = examRes.exam_type || 'ultrasound_abd';
           const allStructures = getStructuresForExam(examType, patientRes);
           
-          if (examRes.organs_data && examRes.organs_data.length > 0) {
-             const mergedData = allStructures.map(struct => {
-                const saved = examRes.organs_data.find(od => od.organ_name === struct.label);
-                return saved || { organ_name: struct.label, measurements: {}, report_text: '', visual_data: null };
-             });
-             setOrgansData(mergedData);
-          } else {
-             setOrgansData(allStructures.map(s => ({ organ_name: s.label, measurements: {}, report_text: '', visual_data: null })));
-          }
+          setOrgansData(mergeOrgans(allStructures, examRes.organs_data || []));
         } catch (error) { 
             console.error(error);
             toast.error('Erro ao carregar dados do exame.'); 
@@ -382,12 +379,7 @@ export default function ExamPage() {
       docChildren.push(patientTable);
       docChildren.push(new Paragraph({ text: " " }));
 
-      const titleMap = {
-          'echocardiogram': 'RELATÓRIO ECOCARDIOGRÁFICO',
-          'ecg': 'RELATÓRIO ELETROCARDIOGRÁFICO',
-          'radiography': 'RELATÓRIO RADIOGRÁFICO',
-          'ultrasound_abd': 'RELATÓRIO ULTRASSONOGRÁFICO'
-      };
+      const titleMap = REPORT_TITLES;
       docChildren.push(new Paragraph({ 
           text: titleMap[exam.exam_type] || 'RELATÓRIO DE EXAME', 
           heading: HeadingLevel.HEADING_1, 
@@ -395,14 +387,7 @@ export default function ExamPage() {
           spacing: { after: 300 } 
       }));
 
-      const processPlaceholders = (txt, ms) => {
-          if(!txt) return '';
-          let p = txt;
-          if(ms?.m1) p = p.replace(/\{(MEDIDA1|M1)\}/gi, `${ms.m1.value} ${ms.m1.unit}`);
-          if(ms?.m2) p = p.replace(/\{(MEDIDA2|M2)\}/gi, `${ms.m2.value} ${ms.m2.unit}`);
-          if(ms?.m3) p = p.replace(/\{(MEDIDA3|M3)\}/gi, `${ms.m3.value} ${ms.m3.unit}`);
-          return p;
-      };
+      const processPlaceholders = (txt, ms) => fillPlaceholders(txt, ms);
 
       const parseFormatting = (txt) => {
           return txt.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map(part => {
@@ -417,12 +402,14 @@ export default function ExamPage() {
               docChildren.push(new Paragraph({ 
                   text: t(org.organ_name), 
                   heading: HeadingLevel.HEADING_3, 
+                  keepNext: true,
+                  keepLines: true,
                   spacing: { before: 200, after: 100 } 
               }));
               
               const finalTxt = processPlaceholders(org.report_text, org.measurements);
               finalTxt.split('\n').forEach(line => {
-                  docChildren.push(new Paragraph({ children: parseFormatting(line), alignment: AlignmentType.JUSTIFIED }));
+                  docChildren.push(new Paragraph({ children: parseFormatting(line), alignment: AlignmentType.JUSTIFIED, keepLines: true }));
               });
               docChildren.push(new Paragraph({ text: " " }));
           }
@@ -487,27 +474,20 @@ export default function ExamPage() {
     }
   };
 
-  const getProcessedText = (text, ms) => {
-      if(!text) return '';
-      let p = text;
-      if(ms?.m1) p = p.replace(/\{(MEDIDA1|M1)\}/gi, `${ms.m1.value} ${ms.m1.unit}`);
-      if(ms?.m2) p = p.replace(/\{(MEDIDA2|M2)\}/gi, `${ms.m2.value} ${ms.m2.unit}`);
-      if(ms?.m3) p = p.replace(/\{(MEDIDA3|M3)\}/gi, `${ms.m3.value} ${ms.m3.unit}`);
-      return p;
+  const fillEmptyWithNormal = () => {
+      const names = organsData.map(o => o.organ_name);
+      const normalFor = (o) => templates.find(t => t.organ === o.organ_name && (t.category || 'normal') === 'normal' && (t.lang || 'pt') === reportLanguage);
+      // Estruturas agrupadas (ex.: "Rins") são puladas quando o roteiro já tem os lados separados.
+      const skip = (o) => (AGGREGATE_ORGANS[o.organ_name] || []).some(part => names.includes(part));
+      const targets = new Set(organsData.filter(o => !(o.report_text || '').trim() && !skip(o) && normalFor(o)).map(o => o.organ_name));
+      setOrgansData(prev => prev.map(o => (targets.has(o.organ_name) && !(o.report_text || '').trim() ? { ...o, report_text: normalFor(o).text } : o)));
+      toast.success(targets.size ? `Texto normal aplicado em ${targets.size} órgão(s) vazio(s).` : 'Nenhum órgão vazio com texto normal disponível.');
   };
 
-  const renderFormattedText = (text) => {
-      const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-      return parts.map((part, index) => {
-          if (part.startsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>;
-          if (part.startsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
-          return <span key={index}>{part}</span>;
-      });
-  };
-
-  const calculateAge = (p) => {
-      if (p.birth_year) return (new Date().getFullYear() - p.birth_year) + ' anos';
-      return '';
+  const handlePrint = async () => {
+      await autoSave.flush();
+      await saveExam();
+      setTimeout(() => window.print(), 300);
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin mr-2"/> Carregando...</div>;
@@ -516,12 +496,8 @@ export default function ExamPage() {
   const currentOrgan = organsData[currentOrganIndex];
   const activeTemplates = templates.filter(t => t.organ === currentOrgan?.organ_name && (t.lang === reportLanguage || (!t.lang && reportLanguage === 'pt')));
 
-  const reportTitles = {
-      'echocardiogram': 'RELATÓRIO ECOCARDIOGRÁFICO',
-      'ecg': 'RELATÓRIO ELETROCARDIOGRÁFICO',
-      'radiography': 'RELATÓRIO RADIOGRÁFICO',
-      'ultrasound_abd': 'RELATÓRIO ULTRASSONOGRÁFICO'
-  };
+  const reportProps = { exam, patient, settings, organs: organsData, images: examImages, examDateTime, referringVet, examWeight, language: reportLanguage, referenceValues };
+  const missingMeasures = findMissingMeasures(organsData);
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -564,11 +540,9 @@ export default function ExamPage() {
                         </SelectContent>
                     </Select>
                     {/* Botão de Imprimir com Delay para renderização */}
-                    <Button variant="outline" size="sm" onClick={async () => { 
-                        await saveExam(); // Salva texto primeiro
-                        setTimeout(() => window.print(), 300); // Dá tempo do CSS carregar
-                    }} title="Imprimir"><Printer className="h-4 w-4"/></Button>
-                    <Button size="sm" onClick={exportToDocx} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"><Download className="h-4 w-4 mr-2"/> DOCX</Button>
+                    <Button data-testid="exam-preview-button" variant="outline" size="sm" onClick={() => setShowPreview(true)} title="Pré-visualizar laudo"><Eye className="h-4 w-4 mr-1"/> Prévia</Button>
+                    <Button data-testid="exam-print-button" variant="outline" size="sm" onClick={handlePrint} title="Imprimir / PDF"><Printer className="h-4 w-4"/></Button>
+                    <Button data-testid="exam-docx-button" size="sm" onClick={exportToDocx} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"><Download className="h-4 w-4 mr-2"/> DOCX</Button>
                     <Button data-testid="exam-save-button" size="sm" variant="default" onClick={saveExam} disabled={isSaving} className={cn("min-w-[100px]", isSaving ? "opacity-80" : "")}>
                         {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <Save className="h-4 w-4 mr-2"/>} Salvar
                     </Button>
@@ -623,8 +597,10 @@ export default function ExamPage() {
                             <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">Laudo</span>
                                 {search.hasTerm && (
-                                    <span className="text-[11px] text-muted-foreground truncate animate-in fade-in duration-150">
-                                        {search.total
+                                    <span data-testid="search-summary" className="text-[11px] text-muted-foreground truncate animate-in fade-in duration-150">
+                                        {search.byName
+                                            ? `${search.total} ${search.total === 1 ? 'órgão' : 'órgãos'} com esse nome no roteiro`
+                                            : search.total
                                             ? `${search.total} ${search.total === 1 ? 'ocorrência' : 'ocorrências'} em ${search.sectionsWithMatches} ${search.sectionsWithMatches === 1 ? 'seção' : 'seções'}`
                                             : 'Nenhuma ocorrência no texto'}
                                     </span>
@@ -645,6 +621,8 @@ export default function ExamPage() {
                             <OrganEditor
                                 key={currentOrganIndex}
                                 organ={currentOrgan}
+                                patient={patient}
+                                referenceValues={referenceValues}
                                 templates={activeTemplates}
                                 onChange={(field, value) => updateOrganData(currentOrganIndex, field, value)}
                                 searchTerm={search.searchTerm}
@@ -657,14 +635,14 @@ export default function ExamPage() {
 
                     {/* DIREITA: Roteiro */}
                     <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className="border-l bg-muted/10 flex flex-col">
-                        <div className="p-3 border-b bg-muted/5"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Roteiro</span></div>
+                        <div className="p-2 border-b bg-muted/5 flex items-center justify-between gap-2"><span className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">Roteiro</span><Button data-testid="roteiro-fill-normal" size="sm" variant="ghost" className="h-7 px-2 text-[11px] text-green-700 dark:text-green-400" onClick={fillEmptyWithNormal} title="Preencher órgãos vazios com o texto Normal"><Wand2 className="h-3.5 w-3.5 mr-1"/> Normal nos vazios</Button></div>
                         <ScrollArea className="flex-1">
                             <div className="flex flex-col p-2 gap-1">
                                 {organsData.map((organ, idx) => {
                                     const stat = search.stats[idx] || { count: 0, nameMatch: false };
                                     const dimmed = search.hasTerm && !stat.count && !stat.nameMatch && currentOrganIndex !== idx;
                                     return (
-                                        <button key={idx} data-testid={`organ-nav-${idx}`} ref={search.organButtonRef(idx)} onClick={() => search.selectOrgan(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between gap-2 group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground", dimmed && "opacity-40")}>
+                                        <button key={idx} data-testid={`organ-nav-${idx}`} ref={search.organButtonRef(idx)} onClick={() => search.selectOrgan(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between gap-2 group", currentOrganIndex === idx ? "bg-card border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground", dimmed && "opacity-40")}>
                                             <span className="truncate">{translate(organ.organ_name, reportLanguage)}</span>
                                             <span className="flex items-center gap-1.5 shrink-0">
                                                 {search.hasTerm && stat.count > 0 && (
@@ -682,79 +660,26 @@ export default function ExamPage() {
             </div>
         </div>
 
-        {/* === RELATÓRIO DE IMPRESSÃO (Oculto na tela, visível no print) === */}
-        <div id="printable-report">
-            {/* 1. Cabeçalho */}
-            <div className="report-header">
-                <div className="header-logo">
-                    {settings?.letterhead_path && <img src={settings.letterhead_path} alt="Logo" />}
-                </div>
-                <div className="header-info">
-                    <div className="clinic-name">{settings?.clinic_name || 'Clínica Veterinária'}</div>
-                    <div className="header-details">
-                        <div className="vet-name">{settings?.veterinarian_name}</div>
-                        {settings?.crmv && <p>CRMV: {settings.crmv}</p>}
-                        {settings?.professional_phone && <p>Tel: {settings.professional_phone}</p>}
-                        {settings?.professional_email && <p>{settings.professional_email}</p>}
-                        {settings?.clinic_address && <p>{settings.clinic_address}</p>}
-                        {referringVet && <div className="solicitante">Solicitante: Dr(a). {referringVet}</div>}
-                    </div>
-                </div>
-            </div>
+        <PrintPortal settings={settings}><ReportDocument {...reportProps} /></PrintPortal>
 
-            {/* 2. Dados Paciente */}
-            <div className="patient-box">
-                <div className="pb-col">
-                    <div><strong>Paciente:</strong> {patient.name}</div>
-                    <div><strong>Tutor:</strong> {patient.owner_name}</div>
-                </div>
-                <div className="pb-col">
-                    <div><strong>Raça:</strong> {patient.breed} ({getSpeciesLabel(patient.species)})</div>
-                    <div><strong>Data:</strong> {new Date(examDateTime).toLocaleDateString('pt-BR')}</div>
-                </div>
-            </div>
-
-            {/* 3. Título */}
-            <div className="report-title-main">{reportTitles[exam.exam_type] || 'RELATÓRIO DE EXAME'}</div>
-
-            {/* 4. Corpo do Laudo */}
-            {organsData.map((organ, idx) => (
-                organ.report_text ? (
-                    <div key={idx} className="organ-section avoid-break">
-                        <div className="organ-name">{translate(organ.organ_name, reportLanguage)}</div>
-                        <div className="organ-content">
-                            {renderFormattedText(getProcessedText(organ.report_text, organ.measurements))}
-                        </div>
-                    </div>
-                ) : null
-            ))}
-
-            {/* 5. Imagens */}
-            {examImages.length > 0 && (
-                <div className="images-section avoid-break">
-                    <div className="images-title">IMAGENS</div>
-                    <div className="print-image-grid">
-                        {examImages.map((img, i) => (
-                            (!img.mimeType?.includes('dicom')) && (
-                                <div key={i} className="print-image-item">
-                                    <img src={img.data} alt={`Imagem ${i+1}`} />
-                                </div>
-                            )
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* 6. Assinatura */}
-            {settings?.signature_path && (
-                <div className="signature-section">
-                    <img src={settings.signature_path} className="sig-img" alt="Assinatura" />
-                    <div className="sig-line"></div>
-                    <div>{settings.veterinarian_name}</div>
-                    <div>CRMV {settings.crmv}</div>
-                </div>
-            )}
-        </div>
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+            <DialogContent className="max-w-[230mm] w-[95vw] max-h-[94vh] overflow-y-auto bg-neutral-300 dark:bg-neutral-800 p-4" data-testid="report-preview-dialog">
+                <DialogHeader className="bg-card rounded-md p-3">
+                    <DialogTitle className="flex items-center justify-between gap-3">
+                        <span>Pré-visualização do laudo (A4)</span>
+                        <span className="flex gap-2">
+                            <Button data-testid="preview-print-button" size="sm" onClick={handlePrint}><Printer className="h-4 w-4 mr-1"/> Imprimir / PDF</Button>
+                        </span>
+                    </DialogTitle>
+                    <DialogDescription>
+                        {missingMeasures.length
+                            ? <span data-testid="preview-missing-measures" className="text-amber-700 dark:text-amber-400 font-medium">Medidas não preenchidas em: {missingMeasures.join(', ')} (aparecem como ___).</span>
+                            : 'A impressão sai exatamente como abaixo, sempre em fundo branco.'}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="report-sheet"><ReportDocument {...reportProps} /></div>
+            </DialogContent>
+        </Dialog>
 
         {/* MODAL EDITORES */}
         {editingImage && (
@@ -778,33 +703,9 @@ export default function ExamPage() {
   );
 }
 
-// Subcomponente OrganEditor (Mantido igual)
-function OrganEditor({ organ, templates, onChange, searchTerm, activeMatchIndex, selectNonce }) {
-    const [text, setText] = useState(organ.report_text || '');
-    const [measurements, setMeasurements] = useState(organ.measurements || {});
-    const textAreaRef = useRef(null);
-
-    useEffect(() => { setText(organ.report_text || ''); setMeasurements(organ.measurements || {}); }, [organ.organ_name]);
-    const updateText = (val) => { setText(val); onChange('report_text', val); };
-    const addTemplate = (txt) => { const n = text ? text + '\n' + txt : txt; updateText(n); };
-    const setMeasurement = (idx, val) => { const k = `m${idx}`; const m = { ...measurements }; if(val) m[k] = {value: val, unit: 'cm'}; else delete m[k]; setMeasurements(m); onChange('measurements', m); };
-    const formatText = (t) => { if(!textAreaRef.current) return; const s = textAreaRef.current.selectionStart; const e = textAreaRef.current.selectionEnd; const sel = text.substring(s, e); if(!sel) return; const m = t === 'bold' ? '**' : '*'; updateText(text.substring(0, s) + `${m}${sel}${m}` + text.substring(e)); };
-
+function OrganEditor(props) {
+    const { organ, onChange } = props;
     if (organ.organ_name.includes('Fundo de Olho')) return <EyeFundusEditor onSave={(b64) => onChange('visual_data', b64)} />;
     if (organ.organ_name.includes('Campimetria')) return <CampimetryGrid value={organ.visual_data} onChange={(v) => onChange('visual_data', v)} />;
-
-    return (
-        <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={70} minSize={40}>
-                <div className="flex flex-col h-full p-4 gap-3">
-                    <div className="flex justify-between items-center"><h2 className="text-xl font-bold text-primary">{organ.organ_name}</h2><div className="flex gap-2 bg-muted/30 px-2 py-1 rounded border">{[1,2,3].map(n=><div key={n} className="flex gap-1 items-center"><span className="text-[10px] font-bold">M{n}</span><input data-testid={`organ-measurement-m${n}`} className="w-10 h-6 text-xs border rounded text-center" placeholder="0.0" value={measurements[`m${n}`]?.value||''} onChange={e=>setMeasurement(n,e.target.value)}/></div>)}</div></div>
-                    <div className="flex-1 flex flex-col border rounded-md relative"><div className="flex gap-1 p-1 border-b bg-muted/10"><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('bold')}><Bold className="h-3.5 w-3.5"/></Button><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('italic')}><Italic className="h-3.5 w-3.5"/></Button></div><HighlightTextarea data-testid="organ-report-textarea" ref={textAreaRef} className="border-none shadow-none resize-none p-3" value={text} onChange={e=>updateText(e.target.value)} placeholder="Laudo..." searchTerm={searchTerm} activeIndex={activeMatchIndex} selectNonce={selectNonce}/></div>
-                </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={30} minSize={15} className="bg-muted/5">
-                <div className="flex flex-col h-full"><div className="p-2 border-b"><span className="text-xs font-bold text-muted-foreground">MODELOS</span></div><ScrollArea className="flex-1 p-2"><div className="grid grid-cols-2 gap-2">{templates.map(t=><button key={t.id} onClick={()=>addTemplate(t.text)} className="text-left p-2 border rounded bg-card hover:bg-primary/5"><div className="font-bold text-xs">{t.title}</div><div className="text-[10px] line-clamp-2">{t.text}</div></button>)}</div></ScrollArea></div>
-            </ResizablePanel>
-        </ResizablePanelGroup>
-    );
+    return <UltrasoundOrganEditor {...props} />;
 }

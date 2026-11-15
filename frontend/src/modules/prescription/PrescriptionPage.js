@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { genId } from '@/core/database/localDb';
+import { useAutoSave } from '@/shared/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +24,8 @@ export default function PrescriptionPage() {
   const [items, setItems] = useState([]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
+  const [draftId] = useState(() => genId());
+  const [createdAt] = useState(() => new Date().toISOString());
 
   useEffect(() => {
     const loadData = async () => {
@@ -98,25 +103,32 @@ export default function PrescriptionPage() {
   };
 
   const handleItemChange = (index, field, value) => {
-    const newItems = [...items];
-    newItems[index][field] = value;
-    setItems(newItems);
+    setItems(items.map((it, i) => (i === index ? { ...it, [field]: value } : it)));
   };
+
+  const draft = useMemo(() => ({ items, notes }), [items, notes]);
+
+  const persist = useCallback(async ({ items: its, notes: nts }, status = 'draft') => {
+      if (!its.length && !(nts || '').trim()) return db.deletePrescription(draftId);
+      return db.savePrescription({
+          id: draftId,
+          patient_id: patientId,
+          doctor_name: settings.veterinarian_name || '',
+          date: createdAt,
+          items: its,
+          notes: nts,
+          status
+      });
+  }, [draftId, patientId, settings.veterinarian_name, createdAt]);
+
+  const autoSave = useAutoSave({ data: draft, onSave: persist, enabled: !loading && !!patient });
 
   const handleSave = async () => {
       if (!items.length) return toast.warning("Adicione medicamentos antes de salvar.");
       
       try {
-          const prescriptionData = {
-              id: undefined, // gerado pelo serviço
-              patient_id: patient.id,
-              doctor_name: settings.veterinarian_name,
-              date: new Date().toISOString(),
-              items: items,
-              notes: notes
-          };
-          
-          await db.createPrescription(prescriptionData);
+          await persist(draft, 'final');
+          autoSave.markSaved(draft);
           toast.success("Receita salva no histórico!");
       } catch (e) {
           console.error(e);
@@ -153,8 +165,9 @@ export default function PrescriptionPage() {
                 </p>
             </div>
         </div>
-        <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSave}>
+        <div className="flex gap-2 items-center">
+            <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
+            <Button data-testid="prescription-save-button" variant="outline" onClick={handleSave}>
                 <Save className="mr-2 h-4 w-4" /> Salvar
             </Button>
             <Button onClick={handlePrint}>
@@ -190,6 +203,7 @@ export default function PrescriptionPage() {
                             <div className="col-span-2">
                                 <label className="text-xs text-muted-foreground font-medium">Posologia / Uso</label>
                                 <Input 
+                                    data-testid={`prescription-item-dosage-${idx}`}
                                     value={item.dosage} 
                                     onChange={(e) => handleItemChange(idx, 'dosage', e.target.value)}
                                     className="font-medium"
@@ -217,6 +231,7 @@ export default function PrescriptionPage() {
             <Card className="p-4">
                 <label className="font-semibold mb-2 block">Observações / Recomendações</label>
                 <Textarea 
+                    data-testid="prescription-notes"
                     placeholder="Ex: Retorno em 7 dias..." 
                     value={notes}
                     onChange={e => setNotes(e.target.value)}

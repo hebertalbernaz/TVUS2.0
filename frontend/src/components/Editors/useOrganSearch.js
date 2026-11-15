@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { findMatches } from '@/lib/textSearch';
+import { buildOrganSearchIndex } from '@/lib/textSearch';
 import { translate } from '@/services/translation';
 import { useFindShortcut, useMatchCursor } from '@/components/Editors/ReportSearch';
 
@@ -13,21 +13,18 @@ export function useOrganSearch({ organs, currentIndex, setCurrentIndex, language
 
     const hasTerm = searchTerm.trim().length > 0;
 
-    const stats = useMemo(() => organs.map((organ) => ({
-        count: findMatches(organ.report_text || '', searchTerm).length,
-        nameMatch: findMatches(`${organ.organ_name} ${translate(organ.organ_name, language)}`, searchTerm).length > 0,
-    })), [organs, searchTerm, language]);
-
-    const flat = useMemo(
-        () => stats.flatMap((s, organ) => Array.from({ length: s.count }, (_, index) => ({ organ, index }))),
-        [stats]
+    const { stats, flat, nameMatches } = useMemo(
+        () => buildOrganSearchIndex(organs, searchTerm, (o) => `${o.organ_name} ${translate(o.organ_name, language)}`),
+        [organs, searchTerm, language]
     );
 
-    const { current, step, setIndex } = useMatchCursor(flat.length);
+    // Sem ocorrências no texto, navega pelos órgãos cujo nome casa com o termo.
+    const byName = flat.length === 0 && nameMatches.length > 0;
+    const { current, step, setIndex } = useMatchCursor(byName ? nameMatches.length : flat.length);
 
     const goTo = (i) => {
-        const match = flat[i];
-        if (match && match.organ !== currentIndex) setCurrentIndex(match.organ);
+        const target = byName ? nameMatches[i] : flat[i]?.organ;
+        if (target !== undefined && target !== currentIndex) setCurrentIndex(target);
     };
 
     useEffect(() => {
@@ -37,9 +34,9 @@ export function useOrganSearch({ organs, currentIndex, setCurrentIndex, language
             const start = ahead === -1 ? 0 : ahead;
             setIndex(start);
             goTo(start);
-        } else {
-            const byName = stats.findIndex((s) => s.nameMatch);
-            if (byName !== -1) setCurrentIndex(byName);
+        } else if (nameMatches.length) {
+            setIndex(0);
+            setCurrentIndex(nameMatches[0]);
         }
     }, [searchTerm]);
 
@@ -50,11 +47,11 @@ export function useOrganSearch({ organs, currentIndex, setCurrentIndex, language
 
     const selectOrgan = (idx) => {
         setCurrentIndex(idx);
-        const first = flat.findIndex((m) => m.organ === idx);
+        const first = byName ? nameMatches.indexOf(idx) : flat.findIndex((m) => m.organ === idx);
         if (first !== -1) setIndex(first);
     };
 
-    const active = flat[current];
+    const active = byName ? null : flat[current];
 
     return {
         searchTerm,
@@ -62,7 +59,8 @@ export function useOrganSearch({ organs, currentIndex, setCurrentIndex, language
         hasTerm,
         inputRef,
         stats,
-        total: flat.length,
+        total: byName ? nameMatches.length : flat.length,
+        byName,
         current,
         sectionsWithMatches: stats.filter((s) => s.count > 0).length,
         activeIndexInCurrent: active && active.organ === currentIndex ? active.index : -1,

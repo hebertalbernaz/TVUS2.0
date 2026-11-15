@@ -1,4 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { genId } from '@/core/database/localDb';
+import { db } from '@/services/database';
+import { useAutoSave } from '@/shared/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,8 +52,35 @@ export function AnamnesisModal({ open, onOpenChange, patient, defaultDoctorName,
   });
 
   const type = useMemo(() => (isVet ? 'vet' : 'human'), [isVet]);
+  const [draftId, setDraftId] = useState(() => genId());
+
+  const physical = isVet ? vetPhysical : humanPhysical;
+  const payload = useMemo(() => ({
+    id: draftId,
+    patient_id: patient?.id,
+    date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00.000Z`).toISOString() : new Date().toISOString(),
+    doctor_name: doctorName,
+    type,
+    main_complaint: mainComplaint,
+    history,
+    general_data: {},
+    physical_exam: physical,
+    diagnosis,
+    conduct
+  }), [draftId, patient?.id, date, doctorName, type, mainComplaint, history, physical, diagnosis, conduct]);
+
+  const autoPersist = useCallback(async (d) => {
+    const hasContent = [d.main_complaint, d.history, d.diagnosis, d.conduct, ...Object.values(d.physical_exam || {})]
+      .some((v) => String(v || '').trim());
+    if (!d.patient_id) return;
+    if (!hasContent) return db.deleteAnamnesis(d.id);
+    return db.saveAnamnesis({ ...d, status: 'draft' });
+  }, []);
+
+  const autoSave = useAutoSave({ data: payload, onSave: autoPersist, enabled: open && !!patient?.id, resetKey: draftId });
 
   const reset = () => {
+    setDraftId(genId());
     setDate(new Date().toISOString().slice(0, 10));
     setDoctorName(defaultDoctorName || '');
     setMainComplaint('');
@@ -64,18 +95,9 @@ export function AnamnesisModal({ open, onOpenChange, patient, defaultDoctorName,
     if (!patient?.id) return;
     setSaving(true);
     try {
-      await onSave({
-        patient_id: patient.id,
-        date: new Date(`${date}T12:00:00.000Z`).toISOString(),
-        doctor_name: doctorName,
-        type,
-        main_complaint: mainComplaint,
-        history,
-        general_data: {},
-        physical_exam: isVet ? vetPhysical : humanPhysical,
-        diagnosis,
-        conduct
-      });
+      autoSave.cancel();
+      await onSave({ ...payload, status: 'final' });
+      autoSave.markSaved(payload);
       reset();
       onOpenChange(false);
     } finally {
@@ -188,13 +210,16 @@ export function AnamnesisModal({ open, onOpenChange, patient, defaultDoctorName,
           </div>
         </ScrollArea>
 
-        <DialogFooter>
+        <DialogFooter className="items-center sm:justify-between">
+          <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
+          <div className="flex gap-2">
           <Button data-testid="anamnesis-cancel" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancelar
+            Fechar
           </Button>
           <Button data-testid="anamnesis-save" onClick={handleSave} disabled={saving}>
             Salvar
           </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

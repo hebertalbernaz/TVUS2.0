@@ -41,7 +41,8 @@ export function TemplatesManager({ templates, onUpdate }) {
   const [editData, setEditData] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [newTemplate, setNewTemplate] = useState({ title: '', text: '', organ: '', lang: 'pt' });
+  const EMPTY = { title: '', text: '', organ: '', lang: 'pt', category: 'normal' };
+  const [newTemplate, setNewTemplate] = useState(EMPTY);
 
   const handleCreate = async () => {
     if (!newTemplate.title || !newTemplate.text) return toast.error("Preencha título e texto");
@@ -49,7 +50,7 @@ export function TemplatesManager({ templates, onUpdate }) {
       await db.createTemplate(newTemplate);
       toast.success('Modelo criado!');
       setShowNew(false);
-      setNewTemplate({ title: '', text: '', organ: '', lang: 'pt' });
+      setNewTemplate(EMPTY);
       onUpdate();
     } catch (error) { toast.error('Erro ao criar'); }
   };
@@ -141,8 +142,15 @@ export function TemplatesManager({ templates, onUpdate }) {
                       </Select>
                   </div>
 
+                  <Select value={newTemplate.category} onValueChange={v => setNewTemplate({...newTemplate, category: v})}>
+                      <SelectTrigger data-testid="template-category-select" className="bg-background w-[240px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="normal">Aspecto Normal</SelectItem>
+                          <SelectItem value="alteracao">Alteração Comum</SelectItem>
+                      </SelectContent>
+                  </Select>
                   <Textarea 
-                      placeholder="Texto do modelo..." 
+                      placeholder="Texto do modelo... use {M1}, {M2}, {M3} para medidas" 
                       value={newTemplate.text} 
                       onChange={e => setNewTemplate({...newTemplate, text: e.target.value})} 
                       className="min-h-[100px] bg-background font-mono text-sm shadow-inner" 
@@ -164,6 +172,10 @@ export function TemplatesManager({ templates, onUpdate }) {
                         {editingId === t.id ? (
                             <div className="space-y-3 animate-in fade-in">
                                 <div className="flex gap-2">
+                                    <Select value={editData.category || 'normal'} onValueChange={v => setEditData({...editData, category: v})}>
+                                        <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                                        <SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="alteracao">Alteração</SelectItem></SelectContent>
+                                    </Select>
                                     <Input value={editData.organ} onChange={e => setEditData({...editData, organ: e.target.value})} className="h-8 text-xs font-bold text-primary" />
                                     <Select value={editData.lang} onValueChange={v => setEditData({...editData, lang: v})}>
                                         <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -184,6 +196,7 @@ export function TemplatesManager({ templates, onUpdate }) {
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{t.organ}</span>
                                             <span className="text-[10px] text-muted-foreground uppercase border px-1 rounded">{t.lang}</span>
+                                            <span className={`text-[10px] px-1.5 rounded font-semibold ${t.category === 'alteracao' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>{t.category === 'alteracao' ? 'Alteração' : 'Normal'}</span>
                                         </div>
                                         <h4 className="font-bold text-foreground mt-1">{t.title}</h4>
                                     </div>

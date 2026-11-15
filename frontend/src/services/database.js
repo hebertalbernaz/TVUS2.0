@@ -27,7 +27,7 @@ class DatabaseService {
         if (Number.isNaN(w)) delete np.weight;
         else np.weight = w;
       }
-      if ('birth_year' in np) np.birth_year = String(np.birth_year);
+      if ('birth_year' in np) np.birth_year = np.birth_year == null || np.birth_year === '' ? null : String(np.birth_year);
 
       await localDb.patients.add(np);
       return np;
@@ -78,7 +78,7 @@ class DatabaseService {
         if (Number.isNaN(w)) delete patch.weight;
         else patch.weight = w;
       }
-      if ('birth_year' in patch) patch.birth_year = String(patch.birth_year);
+      if ('birth_year' in patch) patch.birth_year = patch.birth_year == null || patch.birth_year === '' ? null : String(patch.birth_year);
 
       await localDb.patients.update(id, patch);
       return await localDb.patients.get(id);
@@ -250,6 +250,17 @@ class DatabaseService {
     }
   }
 
+  // Upsert de receita (auto-save e salvar manual usam o mesmo id).
+  async savePrescription(d) {
+    const rec = { ...d, id: d.id || genId(), date: d.date || new Date().toISOString(), items: d.items || [], notes: d.notes || '', updated_at: new Date().toISOString() };
+    await localDb.prescriptions.put(rec);
+    return rec;
+  }
+
+  async deletePrescription(id) {
+    await localDb.prescriptions.delete(id);
+  }
+
   // ================= ANAMNESE (PEP) =================
   async createAnamnesis(data) {
     try {
@@ -267,12 +278,22 @@ class DatabaseService {
         diagnosis: data.diagnosis || '',
         conduct: data.conduct || ''
       };
-      await localDb.anamnesis.add(record);
+      if (data.status) record.status = data.status;
+      await localDb.anamnesis.put(record);
       return record;
     } catch (e) {
       _err('Erro ao salvar anamnese:', e);
       throw e;
     }
+  }
+
+  // Upsert usado pelo auto-save (rascunho com id fixo).
+  async saveAnamnesis(data) {
+    return this.createAnamnesis(data);
+  }
+
+  async deleteAnamnesis(id) {
+    await localDb.anamnesis.delete(id);
   }
 
   async getAnamnesis(patientId) {

@@ -7,7 +7,7 @@ export const AUTOSAVE_DELAY_MS = 3000;
  * Auto-save com debounce + proteção beforeunload.
  * status: 'idle' | 'pending' | 'saving' | 'saved' | 'error'
  */
-export function useAutoSave({ data, onSave, enabled = true, delay = AUTOSAVE_DELAY_MS }) {
+export function useAutoSave({ data, onSave, enabled = true, delay = AUTOSAVE_DELAY_MS, resetKey }) {
   const [status, setStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const saveRef = useRef(onSave);
@@ -29,6 +29,16 @@ export function useAutoSave({ data, onSave, enabled = true, delay = AUTOSAVE_DEL
       }
     }, delay);
   }
+
+  // Troca de documento (ex.: outro exame): grava pendências do anterior e recomeça a linha de base.
+  const keyRef = useRef(resetKey);
+  useEffect(() => {
+    if (keyRef.current === resetKey) return;
+    keyRef.current = resetKey;
+    saverRef.current.flush();
+    baselineRef.current = null;
+    setStatus('idle');
+  }, [resetKey]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -60,8 +70,9 @@ export function useAutoSave({ data, onSave, enabled = true, delay = AUTOSAVE_DEL
 
   const flush = useCallback(() => saverRef.current.flush(), []);
   const cancel = useCallback(() => saverRef.current.cancel(), []);
-  const markSaved = useCallback(() => {
-    baselineRef.current = JSON.stringify(data);
+  const markSaved = useCallback((saved) => {
+    saverRef.current.cancel();
+    baselineRef.current = JSON.stringify(saved ?? data);
     setLastSavedAt(new Date());
     setStatus('saved');
   }, [data]);

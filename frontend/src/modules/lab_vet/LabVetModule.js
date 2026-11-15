@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useAutoSave } from '@/shared/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -423,6 +425,11 @@ export default function LabVetModule() {
     setExamData({ ...examData, results: newResults });
   };
 
+  const autoPersist = useCallback(async (d) => {
+    await localDb.lab_exams.put({ ...d, updated_at: new Date().toISOString() });
+  }, []);
+  const autoSave = useAutoSave({ data: examData, onSave: autoPersist, enabled: editMode && !!examData?.exam_type, resetKey: examData?.id });
+
   // Save exam
   const handleSave = async (finalize = false) => {
     if (!examData) return;
@@ -444,7 +451,9 @@ export default function LabVetModule() {
       };
       
       // Upsert local: atualiza se existe, cria se não
+      autoSave.cancel();
       await localDb.lab_exams.put(dataToSave);
+      autoSave.markSaved(dataToSave);
       
       toast.success(finalize ? 'Exame finalizado!' : 'Exame salvo!');
       
@@ -629,6 +638,7 @@ export default function LabVetModule() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
+                  <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -640,6 +650,7 @@ export default function LabVetModule() {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    data-testid="lab-save-button"
                     onClick={() => handleSave(false)}
                     disabled={isSaving}
                   >
