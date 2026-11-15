@@ -90,9 +90,12 @@ class DatabaseService {
 
   async deletePatient(id) {
     try {
-      await localDb.patients.delete(id);
-      // Cascade: exames do paciente
-      await localDb.exams.where('patient_id').equals(id).delete();
+      await localDb.transaction('rw', localDb.patients, localDb.exams, localDb.media, async () => {
+        const examIds = await localDb.exams.where('patient_id').equals(id).primaryKeys();
+        if (examIds.length) await localDb.media.where('exam_id').anyOf(examIds).delete();
+        await localDb.exams.where('patient_id').equals(id).delete();
+        await localDb.patients.delete(id);
+      });
     } catch (e) {
       _err('Erro ao excluir paciente:', e);
       throw e;
@@ -153,6 +156,16 @@ class DatabaseService {
       _err('Erro ao criar exame:', e);
       throw e;
     }
+  }
+
+  // Fluxo principal: novo ultrassom abdominal já com o peso do paciente.
+  async createUltrasoundExam(patient) {
+    return this.createExam({
+      patient_id: patient.id,
+      exam_type: 'ultrasound_abd',
+      exam_weight: patient.weight ?? undefined,
+      created_at: new Date().toISOString()
+    });
   }
 
   async getExams(pid = null) {

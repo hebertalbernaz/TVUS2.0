@@ -51,8 +51,14 @@ export async function createBackup(passphrase) {
   const files = {};
   const counts = {};
 
+  // Snapshot consistente de todas as tabelas numa única transação de leitura.
+  const snapshot = {};
+  await localDb.transaction('r', localDb.tables, async () => {
+    for (const table of localDb.tables) snapshot[table.name] = await table.toArray();
+  });
+
   for (const table of localDb.tables) {
-    const rows = await table.toArray();
+    const rows = snapshot[table.name];
     counts[table.name] = rows.length;
     if (table.name === MEDIA_TABLE) {
       const meta = [];
@@ -119,11 +125,17 @@ export async function readBackupFile(file, passphrase) {
     const entry = entries[`db/${table.name}.json`];
     const rows = entry ? JSON.parse(strFromU8(entry)) : [];
     if (!Array.isArray(rows)) throw new Error(`Dados inválidos na tabela ${table.name}.`);
-    data[table.name] = table.name === MEDIA_TABLE
-      ? rows
-          .filter((m) => entries[`media/${m.id}`])
-          .map((m) => ({ ...m, blob: new Blob([entries[`media/${m.id}`]], { type: m.mimeType }) }))
-      : rows;
+    const expected = manifest.tables?.[table.name];
+    if (typeof expected === 'number' && expected !== rows.length) {
+      throw new Error(`Backup incompleto: tabela ${table.name} tem ${rows.length} de ${expected} registros.`);
+    }
+    if (table.name === MEDIA_TABLE) {
+      const missing = rows.find((m) => !entries[`media/${m.id}`]);
+      if (missing) throw new Error(`Backup incompleto: arquivo ${missing.filename || missing.id} ausente.`);
+      data[table.name] = rows.map((m) => ({ ...m, blob: new Blob([entries[`media/${m.id}`]], { type: m.mimeType }) }));
+    } else {
+      data[table.name] = rows;
+    }
   }
   return { manifest, data };
 }

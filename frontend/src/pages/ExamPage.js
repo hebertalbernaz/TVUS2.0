@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,8 @@ import { getSpeciesLabel } from '@/config/dictionaries/vet_terms';
 import { ReportSearch } from '@/components/Editors/ReportSearch';
 import { HighlightTextarea } from '@/components/Editors/HighlightTextarea';
 import { useOrganSearch } from '@/components/Editors/useOrganSearch';
+import { useAutoSave } from '@/shared/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import '../print.css'; // CSS Atualizado
 
 // Módulos Visuais
@@ -127,25 +129,36 @@ export default function ExamPage() {
   }, [examId, navigate]);
 
   // --- AÇÕES DO HEADER ---
+  const autoSaveData = useMemo(
+    () => ({ organsData, examWeight, examDateTime, referringVet }),
+    [organsData, examWeight, examDateTime, referringVet]
+  );
+
+  const persistExam = useCallback(async ({ organsData: od, examWeight: w, examDateTime: dt, referringVet: rv }) => {
+    const payload = {
+      organs_data: od,
+      date: dt ? new Date(dt).toISOString() : new Date().toISOString(),
+      status: 'draft',
+      updated_at: new Date().toISOString(),
+      referring_vet: (rv || '').trim()
+    };
+    if (w !== '' && !isNaN(parseFloat(w))) payload.exam_weight = parseFloat(w);
+    await db.updateExam(examId, payload);
+  }, [examId]);
+
+  const autoSave = useAutoSave({ data: autoSaveData, onSave: persistExam, enabled: !loading && !!exam });
+
   const saveExam = async () => {
     if (isSaving) return;
     setIsSaving(true);
     try {
-      const payload = {
-        organs_data: organsData,
-        date: examDateTime ? new Date(examDateTime).toISOString() : new Date().toISOString(),
-        status: 'draft'
-      };
-      
-      if (examWeight && !isNaN(parseFloat(examWeight))) payload.exam_weight = parseFloat(examWeight);
-      if (referringVet && referringVet.trim() !== '') payload.referring_vet = referringVet;
-
-      await db.updateExam(examId, payload);
+      autoSave.cancel();
+      await persistExam(autoSaveData);
+      autoSave.markSaved();
       toast.success('Laudo salvo!');
     } catch (error) { 
         console.error("Erro ao salvar:", error);
-        const msg = error?.parameters?.errors?.[0]?.message || error.message;
-        toast.error(`Erro ao salvar: ${msg}`); 
+        toast.error(`Erro ao salvar: ${error.message}`); 
     } finally {
         setIsSaving(false);
     }
@@ -285,9 +298,11 @@ export default function ExamPage() {
 
   // --- EDITOR DO ÓRGÃO (Central) ---
   const updateOrganData = (index, field, value) => {
-    const newOrgans = [...organsData];
-    newOrgans[index] = { ...newOrgans[index], [field]: value };
-    setOrgansData(newOrgans);
+    setOrgansData(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
   };
 
   // --- GERAÇÃO DE DOCX ---
@@ -516,7 +531,7 @@ export default function ExamPage() {
             {/* HEADER */}
             <div className="h-16 border-b flex items-center justify-between px-4 bg-card shrink-0 shadow-sm z-20">
                 <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full hover:bg-muted"><ArrowLeft className="h-5 w-5"/></Button>
+                    <Button data-testid="exam-back-button" variant="ghost" size="icon" onClick={async () => { await autoSave.flush(); navigate('/'); }} className="rounded-full hover:bg-muted"><ArrowLeft className="h-5 w-5"/></Button>
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-lg leading-none">{patient.name}</span>
@@ -529,18 +544,19 @@ export default function ExamPage() {
                             </span>
                             <div className="flex items-center gap-1 bg-muted/30 px-2 py-0.5 rounded border border-border/40">
                                 <span>Peso:</span>
-                                <input className="bg-transparent w-10 text-center font-medium focus:outline-none text-foreground" placeholder="0.0" value={examWeight} onChange={e => setExamWeight(e.target.value)} /> 
+                                <input data-testid="exam-weight-input" className="bg-transparent w-10 text-center font-medium focus:outline-none text-foreground" placeholder="0.0" value={examWeight} onChange={e => setExamWeight(e.target.value)} /> 
                                 <span>kg</span>
                             </div>
                             <div className="flex items-center gap-1 bg-muted/30 px-2 py-0.5 rounded border border-border/40">
                                 <span>Solic.:</span>
-                                <input className="bg-transparent w-24 font-medium focus:outline-none text-foreground placeholder:text-muted-foreground/50" placeholder="Dr. Nome" value={referringVet} onChange={e => setReferringVet(e.target.value)} />
+                                <input data-testid="exam-referring-vet-input" className="bg-transparent w-24 font-medium focus:outline-none text-foreground placeholder:text-muted-foreground/50" placeholder="Dr. Nome" value={referringVet} onChange={e => setReferringVet(e.target.value)} />
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <AutoSaveIndicator status={autoSave.status} lastSavedAt={autoSave.lastSavedAt} />
                     <Select value={reportLanguage} onValueChange={setReportLanguage}>
                         <SelectTrigger className="w-[70px] h-8 text-xs bg-muted/20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -553,7 +569,7 @@ export default function ExamPage() {
                         setTimeout(() => window.print(), 300); // Dá tempo do CSS carregar
                     }} title="Imprimir"><Printer className="h-4 w-4"/></Button>
                     <Button size="sm" onClick={exportToDocx} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"><Download className="h-4 w-4 mr-2"/> DOCX</Button>
-                    <Button size="sm" variant="default" onClick={saveExam} disabled={isSaving} className={cn("min-w-[100px]", isSaving ? "opacity-80" : "")}>
+                    <Button data-testid="exam-save-button" size="sm" variant="default" onClick={saveExam} disabled={isSaving} className={cn("min-w-[100px]", isSaving ? "opacity-80" : "")}>
                         {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <Save className="h-4 w-4 mr-2"/>} Salvar
                     </Button>
                 </div>
@@ -648,7 +664,7 @@ export default function ExamPage() {
                                     const stat = search.stats[idx] || { count: 0, nameMatch: false };
                                     const dimmed = search.hasTerm && !stat.count && !stat.nameMatch && currentOrganIndex !== idx;
                                     return (
-                                        <button key={idx} ref={search.organButtonRef(idx)} onClick={() => search.selectOrgan(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between gap-2 group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground", dimmed && "opacity-40")}>
+                                        <button key={idx} data-testid={`organ-nav-${idx}`} ref={search.organButtonRef(idx)} onClick={() => search.selectOrgan(idx)} className={cn("text-left px-3 py-2.5 text-sm rounded-md transition-all flex items-center justify-between gap-2 group", currentOrganIndex === idx ? "bg-white border shadow-sm text-primary font-semibold" : "hover:bg-muted text-muted-foreground", dimmed && "opacity-40")}>
                                             <span className="truncate">{translate(organ.organ_name, reportLanguage)}</span>
                                             <span className="flex items-center gap-1.5 shrink-0">
                                                 {search.hasTerm && stat.count > 0 && (
@@ -781,8 +797,8 @@ function OrganEditor({ organ, templates, onChange, searchTerm, activeMatchIndex,
         <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={70} minSize={40}>
                 <div className="flex flex-col h-full p-4 gap-3">
-                    <div className="flex justify-between items-center"><h2 className="text-xl font-bold text-primary">{organ.organ_name}</h2><div className="flex gap-2 bg-muted/30 px-2 py-1 rounded border">{[1,2,3].map(n=><div key={n} className="flex gap-1 items-center"><span className="text-[10px] font-bold">M{n}</span><input className="w-10 h-6 text-xs border rounded text-center" placeholder="0.0" value={measurements[`m${n}`]?.value||''} onChange={e=>setMeasurement(n,e.target.value)}/></div>)}</div></div>
-                    <div className="flex-1 flex flex-col border rounded-md relative"><div className="flex gap-1 p-1 border-b bg-muted/10"><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('bold')}><Bold className="h-3.5 w-3.5"/></Button><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('italic')}><Italic className="h-3.5 w-3.5"/></Button></div><HighlightTextarea ref={textAreaRef} className="border-none shadow-none resize-none p-3" value={text} onChange={e=>updateText(e.target.value)} placeholder="Laudo..." searchTerm={searchTerm} activeIndex={activeMatchIndex} selectNonce={selectNonce}/></div>
+                    <div className="flex justify-between items-center"><h2 className="text-xl font-bold text-primary">{organ.organ_name}</h2><div className="flex gap-2 bg-muted/30 px-2 py-1 rounded border">{[1,2,3].map(n=><div key={n} className="flex gap-1 items-center"><span className="text-[10px] font-bold">M{n}</span><input data-testid={`organ-measurement-m${n}`} className="w-10 h-6 text-xs border rounded text-center" placeholder="0.0" value={measurements[`m${n}`]?.value||''} onChange={e=>setMeasurement(n,e.target.value)}/></div>)}</div></div>
+                    <div className="flex-1 flex flex-col border rounded-md relative"><div className="flex gap-1 p-1 border-b bg-muted/10"><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('bold')}><Bold className="h-3.5 w-3.5"/></Button><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>formatText('italic')}><Italic className="h-3.5 w-3.5"/></Button></div><HighlightTextarea data-testid="organ-report-textarea" ref={textAreaRef} className="border-none shadow-none resize-none p-3" value={text} onChange={e=>updateText(e.target.value)} placeholder="Laudo..." searchTerm={searchTerm} activeIndex={activeMatchIndex} selectNonce={selectNonce}/></div>
                 </div>
             </ResizablePanel>
             <ResizableHandle withHandle />

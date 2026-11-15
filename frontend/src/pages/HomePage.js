@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, Settings, Plus, Users, LayoutGrid } from 'lucide-react';
+import { Search, Settings, Plus, Users, PawPrint, Activity } from 'lucide-react';
+import { toast } from 'sonner';
+import { db } from '@/services/database';
 import { localDb, getLocalDb } from '@/core/database/localDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { PatientCard } from '@/components/PatientCard';
@@ -69,11 +71,11 @@ export default function HomePage() {
         <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div className="flex items-center gap-3 self-start md:self-auto">
                <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                  <LayoutGrid className="h-6 w-6" />
+                  <PawPrint className="h-6 w-6" />
                </div>
                <div>
                   <h1 className="text-xl font-bold tracking-tight leading-none text-foreground">NexaClinq</h1>
-                  <p className="text-xs text-muted-foreground font-medium">Gestão & Inteligência Clínica</p>
+                  <p className="text-xs text-muted-foreground font-medium">Ultrassonografia Veterinária • 100% offline</p>
                </div>
             </div>
 
@@ -94,6 +96,25 @@ export default function HomePage() {
                 </div>
             </div>
         </header>
+
+        {/* FLUXO PRINCIPAL: ULTRASSOM */}
+        <Card data-testid="ultrasound-quickstart" className="mb-8 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Activity className="h-6 w-6" /></div>
+                <div>
+                    <h2 className="text-lg font-bold text-foreground">Ultrassom Veterinário</h2>
+                    <p className="text-sm text-muted-foreground">Cadastre um paciente novo e já abra o laudo, ou clique em <strong>Ultrassom</strong> no card de um paciente existente.</p>
+                </div>
+            </div>
+            <div className="flex gap-2">
+                <Button data-testid="quickstart-new-patient-ultrasound" size="lg" onClick={() => { setEditingPatient(null); setShowNewPatient(true); }}>
+                    <Plus className="mr-2 h-5 w-5" /> Novo paciente + Ultrassom
+                </Button>
+                <Button data-testid="quickstart-open-ultrasound-module" size="lg" variant="outline" onClick={() => navigate('/ultrasound')}>
+                    Selecionar paciente
+                </Button>
+            </div>
+        </Card>
 
         {/* BUSCA E AÇÃO */}
         <div className="flex flex-col md:flex-row gap-4 mb-8 items-stretch">
@@ -188,10 +209,17 @@ export default function HomePage() {
           </DialogHeader>
           <PatientForm 
             patient={editingPatient}
-            onSuccess={() => {
+            onSuccess={async (saved, opts) => {
               setShowNewPatient(false);
               setEditingPatient(null);
-              // A lista reage via useLiveQuery; nenhum reload necessário.
+              if (opts?.startUltrasound && saved) {
+                try {
+                  const exam = await db.createUltrasoundExam(saved);
+                  navigate(`/exam/${exam.id}`);
+                } catch (e) {
+                  toast.error('Erro ao iniciar ultrassom');
+                }
+              }
             }} 
             onCancel={() => { setShowNewPatient(false); setEditingPatient(null); }} 
           />

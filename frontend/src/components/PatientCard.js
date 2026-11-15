@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, PawPrint } from 'lucide-react';
+import { Plus, FileText, Pill, Dog, Cat, HelpCircle, User, PawPrint, Activity, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLicense } from '../contexts/LicenseContext';
 import { getAllExamTypes } from '@/lib/exam_types';
 import { db } from '@/services/database';
+import { getSpeciesLabel } from '@/config/dictionaries/vet_terms';
 
 const calcAgeLabel = (patient) => {
   try {
@@ -86,7 +87,7 @@ export function PatientCard({ patient, onUpdate }) {
                 {patient.name}
               </CardTitle>
               <div className="mt-1 text-xs text-muted-foreground truncate" data-testid={`patient-card-subtitle-${patient.id}`}>
-                {practice === 'human' ? terms.patient_label : (patient.breed || '--')}
+                {practice === 'human' ? terms.patient_label : `${getSpeciesLabel(patient.species)} • ${patient.breed || '--'} • ${patient.sex === 'female' ? terms.sex_female : terms.sex_male}`}
                 {' • '}
                 {terms.owner_label}: {patient.owner_name || '--'}
                 {' • '}
@@ -117,16 +118,28 @@ export function PatientCard({ patient, onUpdate }) {
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           {/* Ações clínicas */}
           <div className="flex flex-wrap gap-2">
+            {practice !== 'human' && (
+              <Button
+                data-testid={`patient-card-start-ultrasound-${patient.id}`}
+                onClick={() => createNewExam('ultrasound_abd')}
+                className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={busy}
+              >
+                <Activity className="h-4 w-4 mr-2" /> Ultrassom
+              </Button>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       data-testid={`patient-card-new-exam-button-${patient.id}`}
-                      className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                      variant="outline"
+                      className="h-9 px-2"
                       disabled={busy}
+                      title="Outros exames"
                     >
-                      <Plus className="h-4 w-4 mr-2" /> Novo Exame
+                      <Plus className="h-4 w-4" /><ChevronDown className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-64">
@@ -153,10 +166,10 @@ export function PatientCard({ patient, onUpdate }) {
                 <Button
                   data-testid={`patient-card-prescription-button-${patient.id}`}
                   onClick={() => navigate(`/prescription/new/${patient.id}`)}
-                  className="h-9 bg-green-600 hover:bg-green-700 text-white"
+                  className="h-9 px-3 bg-green-600 hover:bg-green-700 text-white"
                   disabled={!canUsePrescription}
                 >
-                  <Pill className="h-4 w-4 mr-2" /> Receita
+                  <Pill className="h-4 w-4 mr-1" /> Receita
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -168,6 +181,7 @@ export function PatientCard({ patient, onUpdate }) {
           {/* Info extra compacta */}
           <div className="text-xs text-muted-foreground" data-testid={`patient-card-vitals-${patient.id}`}>
             {practice !== 'human' && patient.weight ? `Peso: ${patient.weight}kg` : null}
+            {practice !== 'human' && patient.neutered === 'yes' ? ' • Castrado(a)' : null}
           </div>
         </div>
       </CardContent>

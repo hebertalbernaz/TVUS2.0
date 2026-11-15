@@ -24,6 +24,11 @@ const TABLE_LABELS = {
   ophthalmo: 'Oftalmologia',
   financial: 'Lançamentos financeiros',
   media: 'Arquivos (DICOM/imagens)',
+  templates: 'Textos padrão',
+  reference_values: 'Valores de referência',
+  profiles: 'Perfis / timbrados',
+  drugs: 'Medicamentos',
+  settings: 'Configurações',
 };
 
 function Summary({ counts }) {
@@ -123,6 +128,7 @@ export function BackupManager() {
         <div className="space-y-2">
           <Label htmlFor="backup-password" className="flex items-center gap-2"><Lock className="h-3 w-3" /> Senha (opcional)</Label>
           <Input
+            data-testid="backup-password-input"
             id="backup-password"
             type="password"
             autoComplete="new-password"
@@ -132,7 +138,7 @@ export function BackupManager() {
           />
           <p className="text-xs text-muted-foreground">Com senha, o arquivo fica criptografado. Sem a senha não é possível recuperá-lo.</p>
         </div>
-        <Button onClick={handleExport} disabled={exporting} className="w-full">
+        <Button data-testid="backup-export-button" onClick={handleExport} disabled={exporting} className="w-full">
           {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
           {exporting ? 'Gerando...' : 'Baixar backup'}
         </Button>
@@ -150,8 +156,8 @@ export function BackupManager() {
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <span>A restauração substitui todos os dados atuais deste computador.</span>
         </div>
-        <input ref={fileInputRef} type="file" accept=".zip,.tvusbak" className="hidden" onChange={handleFileChosen} />
-        <Button variant="outline" className="w-full" disabled={busy} onClick={() => fileInputRef.current?.click()}>
+        <input data-testid="backup-file-input" ref={fileInputRef} type="file" accept=".zip,.tvusbak" className="hidden" onChange={handleFileChosen} />
+        <Button data-testid="backup-restore-button" variant="outline" className="w-full" disabled={busy} onClick={() => fileInputRef.current?.click()}>
           {busy && !dialogOpen ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
           Escolher arquivo de backup
         </Button>

@@ -87,6 +87,17 @@ localDb.on('populate', (tx) => {
 // ---------- Preparação do banco ----------
 let _readyPromise = null;
 
+// Pede ao navegador para não apagar o IndexedDB sob pressão de espaço.
+export async function requestPersistentStorage() {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Abre o banco e garante estrutura pronta. Idempotente.
  * Também re-aplica seeds essenciais (idempotente via bulkPut).
@@ -99,6 +110,7 @@ export function getLocalDb() {
       if (settingsCount === 0) {
         await db.settings.put(initialSettings);
       }
+      requestPersistentStorage();
       console.log(`LocalDB: pronto (Dexie ${LOCAL_DB_NAME} v${db.verno}).`);
       return db;
     });
@@ -125,12 +137,12 @@ export async function saveMediaBlob(examId, blob, filename) {
 export async function getMediaDataUrl(mediaId) {
   const rec = mediaId ? await localDb.media.get(mediaId) : null;
   if (!rec) return null;
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(rec.blob);
-  });
+  const bytes = new Uint8Array(await rec.blob.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return `data:${rec.mimeType || 'application/octet-stream'};base64,${btoa(bin)}`;
 }
 
 // ---------- Helpers de consulta para laudos ----------
