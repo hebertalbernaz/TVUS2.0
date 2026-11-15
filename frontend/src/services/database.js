@@ -158,8 +158,15 @@ class DatabaseService {
     }
   }
 
-  // Fluxo principal: novo ultrassom abdominal já com o peso do paciente.
+  // Fluxo principal: reabre rascunho de ultrassom vazio do paciente ou cria um novo.
   async createUltrasoundExam(patient) {
+    const emptyDraft = await localDb.exams
+      .where('patient_id').equals(patient.id)
+      .filter((e) => e.exam_type === 'ultrasound_abd' && e.status === 'draft'
+        && !(e.organs_data || []).some((o) => o.report_text || Object.keys(o.measurements || {}).length)
+        && !(e.images || []).length)
+      .first();
+    if (emptyDraft) return emptyDraft;
     return this.createExam({
       patient_id: patient.id,
       exam_type: 'ultrasound_abd',

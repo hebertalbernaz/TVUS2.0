@@ -73,6 +73,18 @@ export function PatientCard({ patient, onUpdate }) {
     }
   };
 
+  const startUltrasound = async () => {
+    try {
+      setBusy(true);
+      const exam = await db.createUltrasoundExam(patient);
+      navigate(`/exam/${exam.id}`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao iniciar ultrassom');
+      setBusy(false);
+    }
+  };
+
   return (
     <TooltipProvider>
       <Card className="rounded-xl shadow-sm border border-border/60 hover:shadow-md hover:border-primary/30 transition-all duration-300 bg-background overflow-hidden" data-testid={`patient-card-${patient.id}`}>
@@ -121,7 +133,7 @@ export function PatientCard({ patient, onUpdate }) {
             {practice !== 'human' && (
               <Button
                 data-testid={`patient-card-start-ultrasound-${patient.id}`}
-                onClick={() => createNewExam('ultrasound_abd')}
+                onClick={startUltrasound}
                 className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
                 disabled={busy}
               >

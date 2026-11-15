@@ -33,6 +33,30 @@ describe('auto-save com debounce', () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 
+  test('falha numa gravação não bloqueia as próximas', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const save = jest.fn().mockRejectedValueOnce(new Error('disk')).mockResolvedValue();
+    const saver = createAutoSaver(save, 3000);
+    saver.schedule({ v: 1 });
+    await saver.flush();
+    saver.schedule({ v: 2 });
+    await saver.flush();
+    expect(save).toHaveBeenLastCalledWith({ v: 2 });
+    expect(saver.isBusy()).toBe(false);
+  });
+
+  test('falha numa gravação não bloqueia as próximas', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const save = jest.fn().mockRejectedValueOnce(new Error('disk')).mockResolvedValue();
+    const saver = createAutoSaver(save, 3000);
+    saver.schedule({ v: 1 });
+    await saver.flush();
+    saver.schedule({ v: 2 });
+    await saver.flush();
+    expect(save).toHaveBeenLastCalledWith({ v: 2 });
+    expect(saver.isBusy()).toBe(false);
+  });
+
   test('cancel descarta gravação pendente', () => {
     const save = jest.fn();
     const saver = createAutoSaver(save, 3000);

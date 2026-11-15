@@ -44,7 +44,7 @@ export function useAutoSave({ data, onSave, enabled = true, delay = AUTOSAVE_DEL
 
   useEffect(() => {
     const onBeforeUnload = (e) => {
-      if (!saverRef.current.hasPending()) return undefined;
+      if (!saverRef.current.isBusy()) return undefined;
       saverRef.current.flush();
       e.preventDefault();
       e.returnValue = 'Há alterações sendo salvas. Deseja realmente sair?';

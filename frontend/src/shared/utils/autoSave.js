@@ -3,6 +3,7 @@ export function createAutoSaver(saveFn, delay = 3000) {
   let timer = null;
   let pending = null;
   let running = Promise.resolve();
+  let inFlight = 0;
 
   const run = () => {
     clearTimeout(timer);
@@ -10,7 +11,11 @@ export function createAutoSaver(saveFn, delay = 3000) {
     if (pending === null) return running;
     const data = pending;
     pending = null;
-    running = running.then(() => saveFn(data));
+    inFlight += 1;
+    running = running
+      .then(() => saveFn(data))
+      .catch((e) => console.error('[AutoSave]', e))
+      .finally(() => { inFlight -= 1; });
     return running;
   };
 
@@ -26,6 +31,7 @@ export function createAutoSaver(saveFn, delay = 3000) {
       timer = null;
       pending = null;
     },
-    hasPending: () => pending !== null
+    hasPending: () => pending !== null,
+    isBusy: () => pending !== null || inFlight > 0
   };
 }

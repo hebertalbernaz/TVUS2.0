@@ -1,0 +1,33 @@
+{
+  "summary": "Tested the TVUS 2.0 offline vet ultrasound frontend at http://localhost:3000 (HashRouter, Dexie). Nothing was tested on the backend, as requested. All 10 requested features PASS. 1) No login: /#/login sends you to /#/. 2) Sidebar: 'Ultrassom' is the first link. There is no logout button and no VET/MD switcher. The badge reads 'Modo Veterinário (Humano bloqueado)'. 3) Quickstart: the new patient form (name, species, breed, weight, sex, neutered, owner) with 'Salvar e iniciar Ultrassom' goes to /#/exam/<id>. The exam weight is prefilled (23.5 and 7). 4) Patient card: one-click Ultrassom creates an exam. The dropdown lists 5 exam types. The subtitle shows species, breed and sex. 5) /#/ultrasound: search works (match, no match with a 'Cadastrar paciente' link, partial match). Start creates an exam. The recent drafts list appears and opens the exam. 6) Auto-save: status goes pending, then 'saved' about 3.1s after the last keystroke. After reload, the textarea, M1/M2/M3, weight and referring vet are all kept. Text survives switching organs plus reload. The manual save button gives 'saved' and the text persists. The back button saves pending text before leaving: text typed right before clicking back was there when the exam was reopened from drafts. 7) beforeunload: while pending, a synthetic beforeunload event is blocked (defaultPrevented=true) and the save starts. With nothing pending, it is not blocked. 8) Backup: export downloads a .zip. Restoring it shows a confirm dialog listing all 14 tables, including Textos padrão, Valores de referência, Perfis / timbrados and Configurações. Encrypted .tvusbak export with a password works. A wrong password shows a toast. With the right password, restore works: a patient added after the backup was removed and the earlier patient was kept. 9) Settings: creating a text template persists after reload. The reference value and profile forms render offline. 10) Jest: 18 of 18 tests pass. No page errors in the console. One real UI bug found: the hidden print report shows on screen in the exam page.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ExamPage #printable-report", "issue": "The print-only report (clinic name 'NexaClinq Demo Clinic', patient data and so on) shows on screen below the exam editor. ROOT CAUSE: the screen rule '#printable-report{display:none}' is only in src/App.css, and no file imports App.css. index.css only hides it inside @media print, which is the opposite of what is needed (print.css overrides it with !important). FIX: in index.css change '@media print { #printable-report { display: none; } }' to '@media screen { ... }', or import App.css.", "selector": "#printable-report", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Home patient grid", "issues": ["When there is a single patient, the card is very narrow (about 240px). The name ('TEST...') and the subtitle ('Canina • ...') get cut off, so species/breed/sex can't be read without hovering."]},
+      {"screen": "Sidebar on Home", "issues": ["'Ultrassom' (highlight, pink text) and the active 'Pacientes' (pink background) both look selected on /. This is a little confusing."]},
+      {"screen": "Ultrasound module", "issues": ["Each click on 'Iniciar' creates a new empty draft, even when the patient already has an ultrasound draft open. Empty drafts can pile up. Consider opening the existing draft, or asking first."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Hide #printable-report on screen: change the index.css rule to @media screen, or import App.css",
+    "Make the PatientCard wider (grid min width) so the name and subtitle are not cut off",
+    "Optional: add data-testid to the restore dialog confirm button ('Substituir e restaurar'), the password 'Abrir backup' button, and the Templates, ReferenceValues and Profiles manager buttons and inputs"
+  ],
+  "critical_code_review_comments": [
+    "useAutoSave: hasPending() is false while a save is in progress ('saving'). Closing the tab at that moment gets no beforeunload prompt. The IndexedDB write usually still finishes, but consider also tracking in-flight saves.",
+    "createAutoSaver: if saveFn ever rejects, the 'running' promise chain stays rejected and later saves would never run. Today the wrapper in useAutoSave catches errors, so it is safe, but it is fragile. Add .catch in run().",
+    "ExamPage.js is 810 lines. Consider splitting it (print report, DOCX export, image handling).",
+    "TemplatesManager, ReferenceValuesManager, ProfilesManager and the BackupManager dialog buttons have no data-testid."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not requested)", "frontend": "95%"},
+  "seed_data_creation": "Created TEST_ patients, exams and a TEST_Normal template in browser IndexedDB, in separate Playwright browser contexts that do not persist. No real data was touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "App is 100% offline. Data is in IndexedDB 'tvusvet_local_db' (14 stores). Each browser_automation call starts with a fresh browser, so create data inside the same script. organ-report-textarea is a <textarea>: use input_value, not inner_text. The restore confirm button is text 'Substituir e restaurar'. In the password dialog the button is 'Abrir backup'. Older iteration_1-12 reports belong to a different app (NexaClinq)."
+}

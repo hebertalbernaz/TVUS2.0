@@ -188,13 +188,13 @@ export function BackupManager() {
           )}
 
           <DialogFooter>
-            <Button variant="ghost" onClick={resetRestore} disabled={busy}>Cancelar</Button>
+            <Button data-testid="backup-cancel-restore-button" variant="ghost" onClick={resetRestore} disabled={busy}>Cancelar</Button>
             {parsed ? (
-              <Button variant="destructive" onClick={handleConfirmRestore} disabled={busy}>
+              <Button data-testid="backup-confirm-restore-button" variant="destructive" onClick={handleConfirmRestore} disabled={busy}>
                 {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Substituir e restaurar
               </Button>
             ) : (
-              <Button onClick={() => analyze(pendingFile, restorePassword)} disabled={busy || !restorePassword}>
+              <Button data-testid="backup-open-encrypted-button" onClick={() => analyze(pendingFile, restorePassword)} disabled={busy || !restorePassword}>
                 {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Abrir backup
               </Button>
             )}

@@ -36,7 +36,7 @@ export function Sidebar() {
             <div className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
               isActive(module.path) ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-              module.highlight && !isActive(module.path) && 'text-primary font-semibold'
+              module.highlight && !isActive(module.path) && 'font-semibold text-foreground'
             )}>
               <module.icon className="h-4 w-4" />
               {module.name}

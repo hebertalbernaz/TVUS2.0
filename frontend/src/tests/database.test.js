@@ -76,6 +76,12 @@ describe('fluxo de ultrassom', () => {
     const reloaded = await db.getExam(exam.id);
     expect(reloaded.organs_data).toEqual(organs);
     expect(reloaded.referring_vet).toBe('Dr. X');
+
+    // Rascunho com laudo não é reaproveitado; rascunho vazio é.
+    const second = await db.createUltrasoundExam(p);
+    expect(second.id).not.toBe(exam.id);
+    const third = await db.createUltrasoundExam(p);
+    expect(third.id).toBe(second.id);
     await db.deletePatient(p.id);
   });
 
