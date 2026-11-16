@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Bold, Italic, CheckCircle2, AlertTriangle, Replace, ArrowDown, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { HighlightTextarea } from '@/components/Editors/HighlightTextarea';
 import { getOrganMeasurements } from '@/config/ultrasound_templates';
 import { applyTemplateText, evaluateMeasurement, findReference, formatRange } from '@/lib/ultrasound';
@@ -88,9 +89,13 @@ export function UltrasoundOrganEditor({ organ, templates, onChange, patient, ref
 
   const applyGuide = (t, mode) => {
     const ta = textAreaRef.current;
+    const previous = text;
     const res = applyTemplateText(text, t.text, { mode, cursor: ta ? ta.selectionEnd : undefined });
     pendingCursor.current = res.cursor;
     updateText(res.text);
+    if (mode === 'replace' && previous.trim() && previous !== res.text) {
+      toast('Texto substituído', { description: t.title, action: { label: 'Desfazer', onClick: () => updateText(previous) } });
+    }
   };
 
   const setMeasurement = (key, val) => {

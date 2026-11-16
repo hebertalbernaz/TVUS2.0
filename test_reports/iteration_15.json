@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend-only retest of the iteration_14 fixes plus an ultrasound regression pass (Playwright, fresh IndexedDB per run) and Jest. ALL fixes verified. (1) HIGH FIX: with Fígado open and empty, roteiro-fill-normal shows the Normal text in organ-report-textarea right away. Typing appends ('... habituais. EXTRA_TEST'), and the text is kept after going to Baço and back and after a reload. (2) After fill-normal with no measurements, the preview report-document has 0 '___', no '()' and no '{M', and preview-missing-measures is absent. Baço M1=0.8 gives '(espessura: 0.8 cm)'. A manual 'Pâncreas mede {M1} de espessura.' with an empty M1 shows ___ and the warning 'Medidas não preenchidas em: Pâncreas'. (3) The dog Baço measures table has only 2 cells (Espessura | 0.8 cm) with no empty ref cell. (4) Prescription: the manual save gives status final. After editing notes and waiting 3.5s, IndexedDB has the same single record, still status final, with the new notes. (5) Settings > Valores Ref.: 30x 'Todos os portes', species shown as Felina/Canina, no 'Grande'/'Gato' labels. (6) exam-language-select shows '🇧🇷 PT' in full (scrollWidth == clientWidth, 90px). Regression: cat Vesícula Urinária M1=0,4 -> data-status=high, 'Ref: 0.13–0.17 cm · acima'. templates-tab-changes (5 items) and templates-tab-normal (1 item) work. template-insert puts the text after 'ABC\\n' and template-replace removes ABC. organ-apply-normal works. Autosave reaches 'Salvo automaticamente' after ~3.5s, and the text and M1 '0,4' are persisted after a reload. Search: Ctrl+F focuses the input, 'adrenal' -> Adrenal Esquerda and Enter -> Adrenal Direita. 'esplênicos' + Esc selects the match in the textarea and typing replaces it. Print media: #print-root is block and .no-print is none; on screen #print-root is none. Jest: 34/34 pass. No page errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Exam editor", "issues": ["organ-apply-normal ('Normal' button next to the organ title) replaces custom text in one click with no confirmation or undo. Low priority, but it carries a data-loss risk."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: ask for confirmation, or offer an undo toast, when organ-apply-normal or template-replace would overwrite existing custom text",
+    "Optional: carry over the open items from iteration_14 (lab flag raw enum, lab native date picker / missing testids, no draft badge in the timeline)"
+  ],
+  "critical_code_review_comments": [
+    "localDb.seedBuiltins: on a v1 DB with no builtin_ids_seen, `!settings?.builtin_ids_seen?.includes(r.id)` is true for every row, so builtins the user deleted come back once during the v1->v2 upgrade",
+    "PrescriptionPage.persist deletes the record when items and notes are both empty. Once a prescription is final, removing all items quietly deletes the saved prescription.",
+    "ExamPage.js is 713 lines, over the 700-line guideline. Consider extracting the preview dialog and the DOCX export."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "Only TEST_ patients/exams/prescriptions inside the ephemeral Playwright IndexedDB (fresh per run).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Two [data-testid=report-document] exist (the hidden #print-root one and the preview one). Scope it with '[data-testid=report-preview-dialog] [data-testid=report-document]'. Organ indexes for a dog: Fígado=0, Baço=2. Find others by matching the organ-nav-* text. Read IndexedDB 'tvusvet_local_db' through page.evaluate with indexedDB.open. Prescription route: #/prescription/new/<patientId>, drug-selector-input 'amo'."
+}
